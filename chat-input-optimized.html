@@ -1,0 +1,71 @@
+<!-- 优化后的输入区域 -->
+<div class="chat-input p-4 border-t border-gray-200">
+  <!-- 低置信度警告 -->
+  <div id="low-confidence-warning" class="hidden bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-3 rounded">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <i class="fa fa-exclamation-triangle text-yellow-400"></i>
+      </div>
+
+      <div class="ml-3">
+        <p class="text-sm text-yellow-700">此回复涉及计费变更，请务必核对合同SLA后再发送</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 文本提示区域 -->
+  <div class="text-tips mb-3 flex flex-wrap gap-2">
+    <span class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full cursor-pointer hover:bg-blue-100 transition-colors" onclick="insertText('非常抱歉给您带来不便。')">非常抱歉给您带来不便。</span>
+    <span class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full cursor-pointer hover:bg-blue-100 transition-colors" onclick="insertText('我们的技术团队正在全力修复。')">我们的技术团队正在全力修复。</span>
+    <span class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full cursor-pointer hover:bg-blue-100 transition-colors" onclick="insertText('预计将在15分钟内恢复正常。')">预计将在15分钟内恢复正常。</span>
+    <span class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full cursor-pointer hover:bg-blue-100 transition-colors" onclick="insertText('感谢您的理解与支持。')">感谢您的理解与支持。</span>
+  </div>
+  
+  <!-- 输入框 -->
+  <div class="relative">
+    <textarea id="message-input" class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" rows="3" placeholder="输入回复内容..."></textarea>
+    <div class="absolute bottom-3 left-3 flex space-x-2">
+      <button id="emoji-button" class="text-gray-500 hover:text-primary" title="表情">
+        <i class="fa fa-smile-o"></i>
+      </button>
+      <button class="text-gray-500 hover:text-primary" title="附件">
+        <i class="fa fa-paperclip"></i>
+      </button>
+      <button class="text-gray-500 hover:text-primary" title="提及">
+        <i class="fa fa-at"></i>
+      </button>
+      <!-- 话术优化图标 -->
+      <button id="optimize-button" class="text-gray-500 hover:text-primary" title="话术优化" onclick="optimizeMessage()">
+        <i class="fa fa-magic"></i>
+      </button>
+    </div>
+
+    <div class="absolute bottom-3 right-3">
+      <button id="send-button" class="w-8 h-8 flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary-dark transition-colors" onclick="sendMessage()">
+        <i class="fa fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+  
+  <!-- 表情选择面板 -->
+  <div id="emoji-panel" class="hidden mt-2 bg-white border border-gray-200 rounded-lg p-3 shadow-md">
+    <div class="grid grid-cols-8 gap-2">
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('😊')">😊</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('😢')">😢</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('👍')">👍</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('👎')">👎</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('🙏')">🙏</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('🔥')">🔥</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('💡')">💡</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('⚠️')">⚠️</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('✅')">✅</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('❌')">❌</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('⏰')">⏰</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('📞')">📞</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('📧')">📧</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('💻')">💻</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('🔧')">🔧</span>
+      <span class="emoji-item text-xl cursor-pointer hover:bg-gray-100 rounded p-1" onclick="insertEmoji('🔄')">🔄</span>
+    </div>
+  </div>
+</div>
