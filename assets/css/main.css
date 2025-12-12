@@ -1123,61 +1123,7 @@ body.app-bg {
   }
 }
 
-/* 暗色模式支持 */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-light: #0F172A;
-    --bg-white: #1E293B;
-    --text-primary: #F8FAFC;
-    --text-secondary: #94A3B8;
-    --text-muted: #64748B;
-    --border-color: #334155;
-  }
-  
-  .glass-effect {
-    background: rgba(30, 41, 59, 0.8);
-    border: 1px solid rgba(148, 163, 184, 0.1);
-  }
-  
-  .message-bubble-customer {
-    background-color: var(--bg-white);
-    color: var(--text-primary);
-  }
-  
-  .input-field {
-    background-color: var(--bg-white);
-    color: var(--text-primary);
-  }
-  
-  /* 调整其他元素的暗色模式样式 */
-  .emotion-neutral {
-    background-color: #1E293B;
-    color: #93C5FD;
-  }
-  .emotion-urgent {
-    background-color: #1E293B;
-    color: #FCA5A5;
-  }
-  .emotion-positive {
-    background-color: #1E293B;
-    color: #6EE7B7;
-  }
-  .emotion-negative {
-    background-color: #1E293B;
-    color: #FED7AA;
-  }
-  
-  /* 滚动条暗色模式 */
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: var(--bg-light);
-  }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: var(--text-muted);
-  }
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: var(--secondary-color);
-  }
-}
+/* 暗色模式支持已移除 */
 
 /* Analysis Restricted Mode - Hides specific tabs when opened from Tasks context */
 #right-sidebar.analysis-restricted [data-tab="knowledge"],
