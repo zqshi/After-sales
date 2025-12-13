@@ -1,6 +1,13 @@
 import { qs, qsa, on } from '../core/dom.js';
 import { showNotification } from '../core/notifications.js';
 import { toggleRightSidebar } from '../ui/layout.js';
+import {
+  isApiEnabled,
+  fetchTasks,
+  createTask,
+  actionTask,
+  fetchQualityProfile,
+} from '../api.js';
 
 const qualityProfiles = {
   'conv-001': {
@@ -119,6 +126,55 @@ const conversationQcProfiles = {
   },
 };
 
+async function loadTasksFromApi() {
+  if (!isApiEnabled()) return;
+
+  try {
+    const response = await fetchTasks({
+      agentId: window.config?.userId,
+      status: 'all',
+    });
+    const payload = response?.data ?? response;
+    const items = payload?.items ?? payload?.tasks ?? [];
+    const tasksList = qs('#tasks-list');
+    if (tasksList) tasksList.innerHTML = '';
+    items.forEach((task) => addTaskFromApi(task));
+  } catch (err) {
+    console.warn('[tasks] fetch failed', err);
+  }
+}
+
+function addTaskFromApi(task) {
+  if (!task) return;
+  const taskId = task.taskId || task.id || `task-${Date.now()}`;
+  const name = task.title || task.name || '任务';
+  const description = task.description || task.summary || '暂无描述';
+  const priority = mapTaskPriority(task.priority);
+  const owner = task.owner || 'primary';
+  const status = mapTaskStatus(task.status);
+  addTaskToList(taskId, name, description, priority, owner, status);
+}
+
+function mapTaskStatus(status) {
+  const normalized = (status || '').toLowerCase();
+  if (normalized.includes('complete') || normalized.includes('done')) return 'completed';
+  if (normalized.includes('in-progress') || normalized.includes('executing') || normalized.includes('processing'))
+    return 'in-progress';
+  if (normalized.includes('pending') || normalized.includes('todo') || !normalized) return 'pending';
+  return 'pending';
+}
+
+function mapTaskPriority(priority) {
+  const normalized = (priority || '').toLowerCase();
+  if (normalized.includes('low')) return 'low';
+  if (normalized.includes('high') || normalized.includes('urgent')) return 'high';
+  return 'medium';
+}
+
+function getActiveConversationId() {
+  return qs('.conversation-item.bg-blue-50')?.getAttribute('data-id') || 'conv-001';
+}
+
 export function initAgentTasks() {
   const newTaskBtn = qs('#new-task-btn');
   const newTaskForm = qs('#new-task-form');
@@ -196,12 +252,22 @@ export function initAgentTasks() {
 
       if (cancelBtn) {
         const taskId = cancelBtn.getAttribute('data-task-id');
+        if (isApiEnabled() && taskId) {
+          actionTask(taskId, 'cancel').catch(() => {
+            console.warn('[tasks] cancel API failed', taskId);
+          });
+        }
         cancelBtn.closest('.bg-white')?.remove();
         showNotification(`任务 ${taskId} 已取消`, 'info');
       }
 
       if (executeBtn) {
         const taskId = executeBtn.getAttribute('data-task-id');
+        if (isApiEnabled() && taskId) {
+          actionTask(taskId, 'execute').catch(() => {
+            console.warn('[tasks] execute API failed', taskId);
+          });
+        }
         const card = executeBtn.closest('.bg-white');
         if (card) {
           startTaskProgress(card, taskId, executeBtn);
@@ -235,6 +301,7 @@ export function initAgentTasks() {
   setupTaskConversationFlow();
   renderQualityDrawer('conv-001', false, false);
   initQcLeanControls();
+  loadTasksFromApi();
 }
 
 export function addTaskToList(taskId, name, description, priority, agent, status) {
@@ -350,23 +417,55 @@ function finalizeTask(card, triggerBtn, taskId) {
   showNotification(`任务 ${taskId} 已完成`, 'success');
 }
 
-export function createRelatedTask(solutionType, solutionName) {
-  const taskId = `task-${Date.now()}`;
-  let name = solutionName || '自动任务';
-  let description = '根据解决方案自动生成的任务';
+export async function createRelatedTask(solutionType, solutionName, taskDraft = null) {
+  const payload = taskDraft || buildTaskPayload(solutionType, solutionName);
+  let created = false;
 
-  if (solutionType === 'login-diagnosis') {
-    name = '登录问题跟进';
-    description = '跟进客户登录问题解决情况，确认修复效果并收集反馈';
-  } else if (solutionType === 'security-check') {
-    name = '账户安全加固';
-    description = '协助客户完成账户安全设置优化，确保账户安全';
-  } else if (solutionType === 'system-diagnosis') {
-    name = '系统优化建议';
-    description = '基于故障排查结果，提供系统性能优化建议';
+  if (isApiEnabled()) {
+    try {
+      const response = await createTask({
+        ...payload,
+        relatedEntity: payload.relatedEntity || { conversationId: getActiveConversationId() },
+      });
+      const taskData = response?.data ?? response;
+      addTaskFromApi(taskData);
+      created = true;
+    } catch (err) {
+      console.warn('[tasks] create related task API failed', err);
+    }
   }
 
-  addTaskToList(taskId, name, description, 'medium', 'primary', 'pending');
+  if (!created) {
+    addTaskToList(`task-${Date.now()}`, payload.title, payload.description, payload.priority, 'primary', 'pending');
+  }
+}
+
+function buildTaskPayload(solutionType, solutionName) {
+  let title = solutionName || '自动任务';
+  let description = '根据解决方案自动生成的任务';
+  let priority = 'medium';
+
+  if (solutionType === 'login-diagnosis') {
+    title = '登录问题跟进';
+    description = '跟进客户登录问题解决情况，确认修复效果并收集反馈';
+    priority = 'high';
+  } else if (solutionType === 'security-check') {
+    title = '账户安全加固';
+    description = '协助客户完成账户安全设置优化，确保账户安全';
+    priority = 'medium';
+  } else if (solutionType === 'system-diagnosis') {
+    title = '系统优化建议';
+    description = '基于故障排查结果，提供系统性能优化建议';
+    priority = 'medium';
+  }
+
+  return {
+    title,
+    description,
+    priority,
+    owner: 'primary',
+    relatedEntity: { conversationId: getActiveConversationId() },
+  };
 }
 
 function showTaskDetails(taskId) {
@@ -412,7 +511,7 @@ function setupCustomTaskEditor(config) {
   if (closeTaskEditorBtn) on(closeTaskEditorBtn, 'click', closeEditor);
 
   if (saveCustomTaskBtn) {
-    on(saveCustomTaskBtn, 'click', () => {
+    on(saveCustomTaskBtn, 'click', async () => {
       const title = customTitleInput?.value.trim();
       const desc = customDescInput?.value.trim();
       const priority = customPrioritySelect?.value || 'medium';
@@ -429,8 +528,32 @@ function setupCustomTaskEditor(config) {
         return;
       }
 
-      addTaskToList(`task-${Date.now()}`, title, desc, priority, 'primary', 'pending');
-      if (sidebarTasksList) addSidebarTask(sidebarTasksList, title, desc, priority);
+      const payload = {
+        title,
+        description: desc,
+        priority,
+        owner,
+        relatedEntity: { conversationId: getActiveConversationId() },
+      };
+
+      let created = false;
+      if (isApiEnabled()) {
+        try {
+          const response = await createTask(payload);
+          const taskData = response?.data ?? response;
+          addTaskFromApi(taskData);
+          created = true;
+        } catch (err) {
+          console.warn('[tasks] create task API failed', err);
+        }
+      }
+
+      if (!created) {
+        addTaskToList(`task-${Date.now()}`, title, desc, priority, 'primary', 'pending');
+      }
+
+      const sidebarDesc = desc || '无描述';
+      if (sidebarTasksList) addSidebarTask(sidebarTasksList, title, sidebarDesc, priority);
       showNotification(`已创建任务：${title}（负责人：${owner}）`, 'success');
       closeEditor();
       if (customTitleInput) customTitleInput.value = '';
@@ -892,8 +1015,19 @@ function inferTaskIntent(text) {
   return { isLongTerm, keyword, priority, priorityLabel, title, desc, taskId };
 }
 
-function renderQualityDrawer(conversationId, shouldOpen = false, useLean = false) {
-  const data = conversationQcProfiles[conversationId] || conversationQcProfiles['conv-001'];
+async function renderQualityDrawer(conversationId, shouldOpen = false, useLean = false) {
+  let data = conversationQcProfiles[conversationId] || conversationQcProfiles['conv-001'];
+  if (isApiEnabled()) {
+    try {
+      const response = await fetchQualityProfile(conversationId);
+      const payload = response?.data ?? response;
+      if (payload && Object.keys(payload).length) {
+        data = { ...data, ...payload };
+      }
+    } catch (err) {
+      console.warn('[tasks] fetch quality profile failed', err);
+    }
+  }
   if (!data) return;
 
   setTextContent('analysis-case-title', data.title);

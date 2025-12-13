@@ -6,8 +6,15 @@ import {
   loadRequirementsData,
 } from '../requirements/index.js';
 import { updateCustomerContext } from '../customer/index.js';
+import {
+  fetchConversations,
+  sendChatMessage,
+  postAuditEvent,
+  isApiEnabled,
+} from '../api.js';
 
 const outboundEnabled = false;
+let currentConversationId = 'conv-001';
 
 export function initChat() {
   initConversationList();
@@ -17,20 +24,107 @@ export function initChat() {
 }
 
 function initConversationList() {
+  loadConversationList();
+}
+
+async function loadConversationList() {
+  const container = qs('.conversation-list');
+  if (!container) return;
+
+  if (isApiEnabled()) {
+    try {
+      const response = await fetchConversations({
+        agentId: window.config?.userId,
+        status: 'active',
+        pageSize: 8,
+      });
+      const payload = response?.data ?? response;
+      const items = payload?.items ?? payload?.conversations ?? [];
+      if (items.length) {
+        renderConversationItems(container, items);
+      }
+    } catch (e) {
+      console.warn('[chat] fetch conversations failed', e);
+    }
+  }
+
+  bindConversationEvents();
+}
+
+function bindConversationEvents() {
   const conversationItems = qsa('.conversation-item');
+  if (!conversationItems.length) return;
 
   conversationItems.forEach((item) => {
     on(item, 'click', () => {
       conversationItems.forEach((node) => node.classList.remove('bg-blue-50'));
       item.classList.add('bg-blue-50');
-      updateChatContent(item.getAttribute('data-id'));
-      updateCustomerContext(item.getAttribute('data-id'));
+      const conversationId = item.getAttribute('data-id') || 'conv-001';
+      currentConversationId = conversationId;
+      updateChatContent(conversationId);
+      updateCustomerContext(conversationId);
     });
   });
 
-  // 默认同步首个会话的客户信息
   const active = conversationItems.find((node) => node.classList.contains('bg-blue-50'));
-  if (active) updateCustomerContext(active.getAttribute('data-id'));
+  if (active) {
+    const activeId = active.getAttribute('data-id') || 'conv-001';
+    currentConversationId = activeId;
+    updateCustomerContext(activeId);
+  }
+}
+
+function renderConversationItems(container, conversations) {
+  const html = conversations
+    .map((conv, index) => createConversationMarkup(conv, index === 0))
+    .join('');
+  container.innerHTML = html;
+}
+
+function createConversationMarkup(conv, isActive) {
+  const name = conv.customerName || '客户';
+  const initials = name.charAt(0) || '客';
+  const lastMessage = conv.lastMessage || '正在加载最新消息...';
+  const updatedAt = conv.updatedAt
+    ? new Date(conv.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '—';
+  const channelLabel = (conv.channel || 'IM').toUpperCase();
+  const severity = conv.severity || 'normal';
+  const badgeClass =
+    severity === 'high'
+      ? 'bg-red-100 text-red-700'
+      : severity === 'low'
+        ? 'bg-green-100 text-green-700'
+        : 'bg-gray-100 text-gray-700';
+
+  return `
+    <div class="conversation-item p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer ${
+    isActive ? 'bg-blue-50' : ''
+  }" data-id="${conv.conversationId}" data-channel="${conv.channel}">
+      <div class="flex items-start">
+        <div
+          class="avatar w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
+          ${initials}
+        </div>
+        <div class="ml-3 flex-1">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-gray-700">${name}</span>
+              <span class="text-xs text-gray-500">${channelLabel}</span>
+            </div>
+            <span class="text-xs text-gray-400">${updatedAt}</span>
+          </div>
+          <p class="text-[13px] text-gray-600 mt-1 line-clamp-2">${lastMessage}</p>
+          <div class="mt-2 flex items-center justify-between text-[11px] text-gray-500">
+            <span class="px-2 py-0.5 rounded-full ${badgeClass}">${conv.slaLevel || 'SLA 级别'}</span>
+            <span class="text-xs ${conv.urgency === 'high' ? 'text-red-600' : 'text-gray-500'}">${
+    conv.urgency || '正常'
+  }</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function updateChatContent(conversationId) {
@@ -137,6 +231,31 @@ export function sendMessage() {
 
   analyzeConversationEnd(message);
   scrollToBottom();
+
+  const conversationId = currentConversationId || 'conv-001';
+  if (!isApiEnabled()) return;
+
+  const payload = {
+    type: outboundEnabled ? 'response' : 'internal',
+    content: message,
+    channel: 'web',
+    traceId: `msg-${Date.now()}`,
+  };
+
+  sendChatMessage(conversationId, payload)
+    .then(() => {
+      postAuditEvent({
+        userId: window.config?.userId || 'unknown',
+        action: 'send_message',
+        entity: conversationId,
+        result: 'success',
+        traceId: payload.traceId,
+        metadata: { type: payload.type },
+      }).catch(() => {});
+    })
+    .catch(() => {
+      showNotification('消息同步接口异常，已记录为本地内容', 'warning');
+    });
 }
 
 export function addMessage(type, content) {

@@ -1,11 +1,13 @@
 import { qs, qsa, on } from '../core/dom.js';
 import { addToSuggestion } from '../chat/index.js';
+import { fetchKnowledge, isApiEnabled } from '../api.js';
 
 let activeKnowledgeCard = null;
 
 export function initKnowledgeBase() {
   bindKnowledgeClicks();
   bindPreviewButtons();
+  loadKnowledgeCards();
 }
 
 function bindKnowledgeClicks() {
@@ -59,6 +61,74 @@ function bindPreviewButtons() {
       openKnowledgeSource(activeKnowledgeCard.url, activeKnowledgeCard.title);
     }
   });
+}
+
+async function loadKnowledgeCards() {
+  const container = qs('#knowledge-card-container');
+  if (!container || !isApiEnabled()) return;
+
+  try {
+    const response = await fetchKnowledge({ page: 1, pageSize: 4 });
+    const payload = response?.data ?? response;
+    const items = payload?.items ?? payload?.knowledge ?? [];
+    if (!items.length) return;
+    container.innerHTML = items.map((item, index) => renderKnowledgeCard(item, index)).join('');
+    bindKnowledgeClicks();
+  } catch (err) {
+    console.warn('[knowledge] load failed', err);
+  }
+}
+
+function renderKnowledgeCard(item, index) {
+  const icon = getKnowledgeIcon(item.type);
+  const updated = item.updatedAt || item.updated || '更新于：-';
+  const preview = escapeAttr(item.preview || item.summary || '');
+  const full = escapeAttr(item.full || item.detail || '');
+  const tags = (item.tags || []).join(',');
+  const label = escapeAttr(item.title || `知识卡片 ${index + 1}`);
+  const url = item.url || '#';
+  const type = item.type || '文档';
+
+  return `
+    <div class="bg-white border border-gray-200 p-3 rounded-lg hover:shadow-md transition-shadow knowledge-card">
+      <div class="flex items-start">
+        <div class="flex-shrink-0 w-8 h-8 rounded-full ${icon.bg} flex items-center justify-center text-${icon.color}">
+          <i class="fa ${icon.icon}"></i>
+        </div>
+        <div class="ml-2 flex-1">
+          <h4 class="text-sm font-medium text-gray-800">${item.title}</h4>
+          <p class="text-xs text-gray-600 mt-1 line-clamp-2">${item.preview || '暂无摘要'}</p>
+          <div class="flex justify-between items-center mt-2 text-[11px] text-gray-500">
+            <span>${updated}</span>
+            <button class="text-xs text-primary hover:underline" data-click="knowledge-detail"
+              data-label="${label}"
+              data-url="${url}"
+              data-preview="${preview}"
+              data-full="${full}"
+              data-type="${type}"
+              data-updated="${item.updatedAt || ''}"
+              data-tags="${tags}">
+              查看详情
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getKnowledgeIcon(type) {
+  switch ((type || '').toLowerCase()) {
+    case 'video':
+      return { icon: 'fa-play-circle-o', bg: 'bg-green-100', color: 'green-600' };
+    case 'document':
+    default:
+      return { icon: 'fa-file-text-o', bg: 'bg-blue-100', color: 'blue-600' };
+  }
+}
+
+function escapeAttr(value) {
+  return String(value || '').replace(/"/g, '&quot;').replace(/\n/g, ' ').replace(/'/g, '&#39;');
 }
 
 export function parseKnowledgeTags(tagStr = '') {

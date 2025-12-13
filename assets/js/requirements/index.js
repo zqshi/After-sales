@@ -1,27 +1,27 @@
 import { qs, qsa, on } from '../core/dom.js';
 import { showNotification } from '../core/notifications.js';
 import { openHistoryDetail } from '../customer/index.js';
+import {
+  isApiEnabled,
+  fetchRequirementData,
+  fetchRequirementStatistics,
+  createRequirement as createRequirementApi,
+  ignoreRequirement as ignoreRequirementApi,
+} from '../api.js';
 
 const STORAGE_KEYS = {
   processed: 'processedRequirements',
   unprocessed: 'unprocessedRequirements',
 };
 
-export function initRequirementsTab() {
+export async function initRequirementsTab() {
   ensureMockData();
-  renderUnprocessedRequirements();
-  renderProcessedRequirements();
-  updateStatisticsCards();
-  initRequirementsChart();
+  await refreshRequirementsState();
   bindRequirementControls();
 }
 
 export function loadRequirementsData() {
-  ensureMockData();
-  renderUnprocessedRequirements();
-  renderProcessedRequirements();
-  updateStatisticsCards();
-  initRequirementsChart();
+  return refreshRequirementsState();
 }
 
 let requirementControlsBound = false;
@@ -31,10 +31,42 @@ function bindRequirementControls() {
   const rescanBtn = qs('#requirements-rescan');
   const statusFilter = qs('#requirement-status-filter');
 
-  on(refreshBtn, 'click', () => loadRequirementsData());
+  on(refreshBtn, 'click', () => refreshRequirementsState());
   on(rescanBtn, 'click', () => scanConversationForRequirements());
   on(statusFilter, 'change', (e) => renderProcessedRequirements(e.target.value));
   requirementControlsBound = true;
+}
+
+async function refreshRequirementsState() {
+  ensureMockData();
+  await trySyncRequirements();
+  renderUnprocessedRequirements();
+  renderProcessedRequirements();
+  updateStatisticsCards();
+  initRequirementsChart();
+}
+
+async function trySyncRequirements() {
+  if (!isApiEnabled()) return;
+
+  try {
+    const raw = await fetchRequirementData({ status: 'all' });
+    const payload = raw?.data ?? raw;
+    const processed = payload?.processed ?? payload?.processedRequirements ?? [];
+    const unprocessed = payload?.unprocessed ?? payload?.unprocessedRequirements ?? [];
+    if (processed.length || unprocessed.length) {
+      localStorage.setItem(STORAGE_KEYS.processed, JSON.stringify(processed));
+      localStorage.setItem(STORAGE_KEYS.unprocessed, JSON.stringify(unprocessed));
+    }
+
+    const statsRaw = await fetchRequirementStatistics();
+    const statsPayload = statsRaw?.data ?? statsRaw;
+    if (statsPayload) {
+      localStorage.setItem('requirementStats', JSON.stringify(statsPayload));
+    }
+  } catch (err) {
+    console.warn('[requirements] API sync failed, using local mock data', err);
+  }
 }
 
 function ensureMockData() {
@@ -256,17 +288,42 @@ function updateStatisticsCards() {
   if (unprocessedCount) unprocessedCount.textContent = unprocessed.length.toString();
 }
 
-export function createRequirementFromList(content, unprocessedId) {
+export async function createRequirementFromList(content, unprocessedId) {
   const requirementId = `REQ-${Date.now().toString().slice(-6)}`;
-  saveProcessedRequirement(requirementId, content, '待处理');
+  const payload = {
+    content,
+    sourceConversationId: 'conv-001',
+    customerId: 'CUST-001',
+    priority: 'medium',
+    category: 'feature',
+  };
+
+  if (isApiEnabled()) {
+    try {
+      await createRequirementApi(payload);
+    } catch (err) {
+      console.warn('[requirements] API create failed, falling back to local data', err);
+      saveProcessedRequirement(requirementId, content, '待处理');
+    }
+  } else {
+    saveProcessedRequirement(requirementId, content, '待处理');
+  }
+
   if (unprocessedId) removeUnprocessedRequirement(unprocessedId);
-  loadRequirementsData();
+  await loadRequirementsData();
   showNotification('需求卡片创建成功', 'success');
 }
 
-export function ignoreUnprocessedRequirement(id) {
+export async function ignoreUnprocessedRequirement(id) {
+  if (isApiEnabled()) {
+    try {
+      await ignoreRequirementApi(id);
+    } catch (err) {
+      console.warn('[requirements] API ignore failed', err);
+    }
+  }
   removeUnprocessedRequirement(id);
-  loadRequirementsData();
+  await loadRequirementsData();
   showNotification('需求已忽略', 'info');
 }
 

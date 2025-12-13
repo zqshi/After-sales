@@ -1,5 +1,11 @@
 import { qs, on } from '../core/dom.js';
 import { toggleRightSidebar } from '../ui/layout.js';
+import { fetchProfile, fetchProfileInteractions, isApiEnabled } from '../api.js';
+
+// 注意：DEFAULT_PROFILES 已移至独立的 mock 数据文件
+// 开发环境：从 mock-data/customer-profiles.js 导入
+// 生产环境：完全依赖 API 数据
+const DEFAULT_PROFILES = window.__DEV__ ? await import('../mock-data/customer-profiles.js').then(m => m.MOCK_CUSTOMER_PROFILES).catch(() => ({})) : {};
 
 let currentConversationId = 'conv-001';
 const interactionFilter = {
@@ -7,8 +13,6 @@ const interactionFilter = {
   type: '全部',
 };
 let interactionFilterBound = false;
-
-const profiles = {
   'conv-001': {
     name: '张三',
     title: 'ABC科技有限公司 | 技术总监',
@@ -994,6 +998,8 @@ const profiles = {
   },
 };
 
+let activeProfile = DEFAULT_PROFILES['conv-001'];
+
 export function initCustomerProfile() {
   bindInteractionFilters();
   updateCustomerContext('conv-001');
@@ -1002,12 +1008,47 @@ export function initCustomerProfile() {
 
 export function updateCustomerContext(conversationId) {
   currentConversationId = conversationId || 'conv-001';
-  const profile = profiles[conversationId] || profiles['conv-001'];
+  loadCustomerProfile(currentConversationId);
+}
+
+async function loadCustomerProfile(conversationId) {
+  let profile = {
+    ...(DEFAULT_PROFILES[conversationId] || DEFAULT_PROFILES['conv-001']),
+  };
+
+  if (isApiEnabled()) {
+    try {
+      const response = await fetchProfile(conversationId);
+      const payload = response?.data ?? response;
+      if (payload) {
+        profile = { ...profile, ...payload };
+      }
+    } catch (err) {
+      console.warn('[customer] fetch profile failed', err);
+    }
+    try {
+      const interactionResponse = await fetchProfileInteractions(conversationId, {
+        range: interactionFilter.range,
+      });
+      const interactions = interactionResponse?.data ?? interactionResponse;
+      if (Array.isArray(interactions) && interactions.length) {
+        profile.interactions = interactions;
+      } else if (interactions) {
+        profile.interactions = interactions.list || interactions.items || interactions;
+      }
+    } catch (err) {
+      console.warn('[customer] fetch interactions failed', err);
+    }
+  }
+
+  activeProfile = profile;
   renderProfile(profile);
   renderConversationTimeline(profile);
   renderCommitmentSummary(profile);
   renderServiceRecords(profile);
   renderContractRange(profile.contractRange);
+  renderInteractions(profile);
+  renderInsights(profile);
   bindHistoryDetails();
 }
 
@@ -1374,7 +1415,7 @@ function commitmentStatusClass(status, risk) {
 }
 
 function getCurrentProfile() {
-  return profiles[currentConversationId] || profiles['conv-001'];
+  return activeProfile;
 }
 
 let historyBound = false;
