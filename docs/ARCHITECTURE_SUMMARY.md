@@ -455,21 +455,11 @@ Level 4: Database (Source of Truth)
 - [分层架构设计](./architecture/LAYERED_ARCHITECTURE.md)
 - [目录结构设计](./architecture/DIRECTORY_STRUCTURE.md)
 - [领域事件设计](./architecture/DOMAIN_EVENTS.md)
-- [API设计规范](./architecture/API_DESIGN.md)
-
-### API文档
-- [API契约指南](./api/API_CONTRACT_GUIDE.md)
-- [API网关规范](./api/API_GATEWAY_SPEC.md)
-- [OpenAPI规范](./api/API_OPENAPI_SPEC.md)
+- [API设计规范](./API_DESIGN.md)
+- [技术方案设计](./TECHNICAL_SOLUTIONS.md)
 
 ### 开发指南
-- [开发指南](../DEVELOPMENT.md)
-- [编码规范](./development/CODING_STANDARDS.md)
-- [测试指南](./development/TESTING_GUIDE.md)
-
-### 治理文档
-- [治理转型计划](./governance/GOVERNANCE_TRANSFORMATION_PLAN.md)
-- [治理检查清单](./governance/GOVERNANCE_CHECKLIST.md)
+- [开发指南](./development/DEVELOPMENT.md)
 
 ---
 
