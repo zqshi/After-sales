@@ -31,7 +31,7 @@
 
 - **当前版本**：v0.1.0（开发阶段）
 - **代码质量**：⭐⭐⭐☆☆ (3.3/5.0)
-- **距离生产就绪**：预计20周（详见[PROJECT_QUALITY_ASSESSMENT.md](./PROJECT_QUALITY_ASSESSMENT.md)）
+- **距离生产就绪**：预计20周（详见[项目质量评估](./docs/PROJECT_QUALITY_ASSESSMENT.md)）
 
 ## 🚀 快速开始
 
@@ -233,7 +233,7 @@ window.config = {
 
 ### 治理检查清单
 
-部署前请完成以下检查（详见 [GOVERNANCE_CHECKLIST.md](./GOVERNANCE_CHECKLIST.md)）：
+部署前请完成以下检查（详见 [治理检查清单](./docs/governance/GOVERNANCE_CHECKLIST.md)）：
 
 - ✅ API契约验证
 - ✅ 安全测试（XSS、CSRF）
@@ -244,28 +244,43 @@ window.config = {
 
 ## 📖 文档
 
-### 架构设计
+### 📘 核心文档
 
-- [前端架构设计](./FRONTEND_ARCHITECTURE.md)
-- [后端架构设计](./BACKEND_ARCHITECTURE.md)
-- [技术设计文档](./TECHNICAL_DESIGN.md)
+- [架构总览](./docs/ARCHITECTURE_SUMMARY.md) - 所有架构文档的导航中心
+- [项目重构计划](./docs/PROJECT_RESTRUCTURE_PLAN.md) - 目录结构治理方案
+- [项目质量评估](./docs/PROJECT_QUALITY_ASSESSMENT.md) - 质量现状与改进计划
+- [变更日志](./CHANGELOG.md) - 版本变更记录
 
-### API文档
+### 🏗️ 架构设计
 
-- [API契约指南](./API_CONTRACT_GUIDE.md)
-- [API网关规范](./API_GATEWAY_SPEC.md)
-- [OpenAPI规范](./API_OPENAPI_SPEC.md)
+**DDD战略设计**:
+- [DDD战略设计](./docs/architecture/DDD_STRATEGIC_DESIGN.md) - 限界上下文、聚合设计
+- [分层架构设计](./docs/architecture/LAYERED_ARCHITECTURE.md) - 四层架构详解
+- [领域事件设计](./docs/architecture/DOMAIN_EVENTS.md) - 事件驱动架构
+- [目录结构设计](./docs/architecture/DIRECTORY_STRUCTURE.md) - 代码组织规范
 
-### 治理与发布
+**技术架构**:
+- [前端架构设计](./docs/architecture/FRONTEND_ARCHITECTURE.md) - 前端技术方案
+- [后端架构设计](./docs/architecture/BACKEND_ARCHITECTURE.md) - 后端技术选型
+- [技术设计文档](./docs/architecture/TECHNICAL_DESIGN.md) - 技术设计总览
+- [技术方案设计](./docs/TECHNICAL_SOLUTIONS.md) - 工程化、测试、部署方案
 
-- [治理转型计划](./GOVERNANCE_TRANSFORMATION_PLAN.md)
-- [治理检查清单](./GOVERNANCE_CHECKLIST.md)
-- [模块待办事项](./MODULE_BACKLOG.md)
+### 🔌 API文档
 
-### 质量报告
+- [API设计规范](./docs/API_DESIGN.md) - RESTful API完整设计
+- [API契约指南](./docs/api/API_CONTRACT_GUIDE.md) - API契约约定
+- [API网关规范](./docs/api/API_GATEWAY_SPEC.md) - 网关治理规范
+- [OpenAPI规范](./docs/api/API_OPENAPI_SPEC.md) - OpenAPI Spec
 
-- [项目质量评估](./PROJECT_QUALITY_ASSESSMENT.md)
-- [开发指南](./DEVELOPMENT.md)（即将发布）
+### 📋 治理与发布
+
+- [治理转型计划](./docs/governance/GOVERNANCE_TRANSFORMATION_PLAN.md) - 治理实施计划
+- [治理检查清单](./docs/governance/GOVERNANCE_CHECKLIST.md) - 上线检查清单
+
+### 💻 开发文档
+
+- [开发指南](./docs/development/DEVELOPMENT.md) - 开发环境配置与规范
+- [模块待办事项](./docs/MODULE_BACKLOG.md) - 功能开发待办
 
 ## 🤝 贡献指南
 
