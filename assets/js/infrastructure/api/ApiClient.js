@@ -141,14 +141,14 @@ export class ApiClient {
           ...rest,
           headers: this._getHeaders(rest.headers),
         },
-        timeout
+        timeout,
       );
     } catch (err) {
       // 网络错误,尝试重试
       if (retryCount < this.maxRetries) {
         const delay = this._getRetryDelay(retryCount);
         console.warn(
-          `[ApiClient] Request failed, retrying in ${delay}ms (${retryCount + 1}/${this.maxRetries})...`
+          `[ApiClient] Request failed, retrying in ${delay}ms (${retryCount + 1}/${this.maxRetries})...`,
         );
         await this._delay(delay);
         return this.request(path, options, retryCount + 1);
@@ -169,7 +169,7 @@ export class ApiClient {
           'Invalid JSON response',
           `Failed to parse response from ${path}`,
           response.status,
-          null
+          null,
         );
       }
     }
@@ -179,7 +179,7 @@ export class ApiClient {
       if (this._shouldRetry(response.status, retryCount)) {
         const delay = this._getRetryDelay(retryCount);
         console.warn(
-          `[ApiClient] Request failed with status ${response.status}, retrying in ${delay}ms (${retryCount + 1}/${this.maxRetries})...`
+          `[ApiClient] Request failed with status ${response.status}, retrying in ${delay}ms (${retryCount + 1}/${this.maxRetries})...`,
         );
         await this._delay(delay);
         return this.request(path, options, retryCount + 1);
@@ -286,10 +286,23 @@ export class ApiClient {
   isEnabled() {
     return Boolean(this.baseURL);
   }
+
+  /**
+   * 获取单例实例
+   * @returns {ApiClient} ApiClient 单例
+   */
+  static getInstance() {
+    if (!ApiClient._instance) {
+      ApiClient._instance = new ApiClient();
+    }
+    return ApiClient._instance;
+  }
 }
 
 // 导出单例
 export const apiClient = new ApiClient();
+// 保存到静态属性
+ApiClient._instance = apiClient;
 
 // 导出工具函数(保持向后兼容)
 export function isApiEnabled() {

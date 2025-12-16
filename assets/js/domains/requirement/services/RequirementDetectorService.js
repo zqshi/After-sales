@@ -215,7 +215,7 @@ export class RequirementDetectorService {
 
     // 根据匹配的关键词数量提高置信度
     const patterns = REQUIREMENT_PATTERNS[Object.keys(RequirementCategory).find(
-      key => RequirementCategory[key] === category
+      key => RequirementCategory[key] === category,
     )] || [];
 
     const matchCount = patterns.filter((pattern) => content.includes(pattern)).length;
@@ -250,14 +250,18 @@ export class RequirementDetectorService {
     const processed = new Set();
 
     for (let i = 0; i < requirements.length; i++) {
-      if (processed.has(i)) continue;
+      if (processed.has(i)) {
+        continue;
+      }
 
       const current = requirements[i];
       const similar = [];
 
       // 查找相似的需求
       for (let j = i + 1; j < requirements.length; j++) {
-        if (processed.has(j)) continue;
+        if (processed.has(j)) {
+          continue;
+        }
 
         const other = requirements[j];
         if (this._isSimilar(current, other)) {
@@ -271,7 +275,7 @@ export class RequirementDetectorService {
         const mergedReq = {
           ...current,
           description: [current.description, ...similar.map((r) => r.description)].join(
-            '\n---\n'
+            '\n---\n',
           ),
           sourceMessageIds: [
             ...current.sourceMessageIds,
@@ -318,11 +322,21 @@ export class RequirementDetectorService {
    * @returns {boolean} 是否有效
    */
   isValidRequirement(requirement) {
-    if (!requirement) return false;
-    if (!requirement.category) return false;
-    if (!requirement.title || requirement.title.length < 2) return false;
-    if (!requirement.description || requirement.description.length < 5) return false;
-    if (requirement.confidence < 0.3) return false;
+    if (!requirement) {
+      return false;
+    }
+    if (!requirement.category) {
+      return false;
+    }
+    if (!requirement.title || requirement.title.length < 2) {
+      return false;
+    }
+    if (!requirement.description || requirement.description.length < 5) {
+      return false;
+    }
+    if (requirement.confidence < 0.3) {
+      return false;
+    }
 
     return true;
   }

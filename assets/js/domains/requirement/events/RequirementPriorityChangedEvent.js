@@ -9,7 +9,7 @@
  * - 统计服务：更新优先级分布统计
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class RequirementPriorityChangedEvent {
   constructor(data) {

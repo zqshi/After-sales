@@ -10,7 +10,7 @@
  * - 客户画像服务：更新互动记录
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class MessageSentEvent {
   constructor(data) {

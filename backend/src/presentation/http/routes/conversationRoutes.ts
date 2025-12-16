@@ -1,0 +1,279 @@
+/**
+ * Conversation Routes - 对话路由配置
+ */
+
+import { FastifyInstance } from 'fastify';
+import { ConversationController } from '../controllers/ConversationController';
+
+export async function conversationRoutes(
+  fastify: FastifyInstance,
+  controller: ConversationController,
+): Promise<void> {
+  /**
+   * @swagger
+   * /api/conversations:
+   *   post:
+   *     tags:
+   *       - Conversations
+   *     summary: 创建对话
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - customerId
+   *               - channel
+   *             properties:
+   *               customerId:
+   *                 type: string
+   *               channel:
+   *                 type: string
+   *                 enum: [chat, email, phone, web, sms, voice]
+   *               agentId:
+   *                 type: string
+   *               priority:
+   *                 type: string
+   *                 enum: [low, normal, high]
+   *               slaDeadline:
+   *                 type: string
+   *                 format: date-time
+   *               metadata:
+   *                 type: object
+   *               initialMessage:
+   *                 type: object
+   *                 required:
+   *                   - senderId
+   *                   - content
+   *                 properties:
+   *                   senderId:
+   *                     type: string
+   *                   senderType:
+   *                     type: string
+   *                     enum: [internal, external]
+   *                   content:
+   *                     type: string
+   *     responses:
+   *       201:
+   *         description: 对话创建成功
+   *       400:
+   *         description: 请求参数错误
+   */
+  fastify.post(
+    '/api/conversations',
+    async (request, reply) => {
+      await controller.createConversation(request, reply);
+    },
+  );
+
+  /**
+   * @swagger
+   * /api/conversations:
+   *   get:
+   *     tags:
+   *       - Conversations
+   *     summary: 查询对话列表
+   *     parameters:
+   *       - name: status
+   *         in: query
+   *         schema:
+   *           type: string
+   *           enum: [open, pending, closed]
+   *       - name: agentId
+   *         in: query
+   *         schema:
+   *           type: string
+   *       - name: customerId
+   *         in: query
+   *         schema:
+   *           type: string
+   *       - name: channel
+   *         in: query
+   *         schema:
+   *           type: string
+   *       - name: slaStatus
+   *         in: query
+   *         schema:
+   *           type: string
+   *           enum: [normal, warning, violated]
+   *       - name: page
+   *         in: query
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *       - name: limit
+   *         in: query
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *     responses:
+   *       200:
+   *         description: 对话列表
+   */
+  fastify.get(
+    '/api/conversations',
+    async (request, reply) => {
+      await controller.listConversations(request, reply);
+    },
+  );
+
+  /**
+   * @swagger
+   * /api/conversations/{id}/assign:
+   *   post:
+   *     tags:
+   *       - Conversations
+   *     summary: 分配客服
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - agentId
+   *             properties:
+   *               agentId:
+   *                 type: string
+   *               assignedBy:
+   *                 type: string
+   *               reason:
+   *                 type: string
+   *                 enum: [manual, auto, reassign]
+   *     responses:
+   *       200:
+   *         description: 分配成功
+   *       404:
+   *         description: 对话不存在
+   */
+  fastify.post(
+    '/api/conversations/:id/assign',
+    async (request, reply) => {
+      await controller.assignAgent(request, reply);
+    },
+  );
+
+  /**
+   * @swagger
+   * /api/conversations/{id}/messages:
+   *   post:
+   *     tags:
+   *       - Conversations
+   *     summary: 发送消息
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - senderId
+   *               - senderType
+   *               - content
+   *             properties:
+   *               senderId:
+   *                 type: string
+   *               senderType:
+   *                 type: string
+   *                 enum: [internal, external]
+   *               content:
+   *                 type: string
+   *     responses:
+   *       201:
+   *         description: 消息发送成功
+   *       400:
+   *         description: 请求参数错误
+   *       404:
+   *         description: 对话不存在
+   */
+  fastify.post(
+    '/api/conversations/:id/messages',
+    async (request, reply) => {
+      await controller.sendMessage(request, reply);
+    },
+  );
+
+  /**
+   * @swagger
+   * /api/conversations/{id}/close:
+   *   post:
+   *     tags:
+   *       - Conversations
+   *     summary: 关闭对话
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - closedBy
+   *             properties:
+   *               closedBy:
+   *                 type: string
+   *               reason:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: 对话关闭成功
+   *       404:
+   *         description: 对话不存在
+   */
+  fastify.post(
+    '/api/conversations/:id/close',
+    async (request, reply) => {
+      await controller.closeConversation(request, reply);
+    },
+  );
+
+  /**
+   * @swagger
+   * /api/conversations/{id}:
+   *   get:
+   *     tags:
+   *       - Conversations
+   *     summary: 获取对话详情
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - name: includeMessages
+   *         in: query
+   *         required: false
+   *         schema:
+   *           type: boolean
+   *           default: true
+   *     responses:
+   *       200:
+   *         description: 对话详情
+   *       404:
+   *         description: 对话不存在
+   */
+  fastify.get(
+    '/api/conversations/:id',
+    async (request, reply) => {
+      await controller.getConversation(request, reply);
+    },
+  );
+}

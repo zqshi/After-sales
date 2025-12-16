@@ -1,3 +1,5 @@
+import { generateId } from '../../../core/utils.js';
+
 /**
  * Conversation聚合根
  *
@@ -13,7 +15,6 @@
  * - 消息必须按时间顺序
  */
 
-import { generateId } from '@/core/utils.js';
 import { MessageSentEvent } from '../events/MessageSentEvent.js';
 import { ConversationAssignedEvent } from '../events/ConversationAssignedEvent.js';
 import { ConversationClosedEvent } from '../events/ConversationClosedEvent.js';
@@ -215,7 +216,7 @@ export class Conversation {
         channel: this.channel.type,
         customerId: this.customerId,
         agentId: this.agentId,
-      })
+      }),
     );
 
     return message;
@@ -255,7 +256,7 @@ export class Conversation {
         assignedBy: agentId, // 暂时使用agentId，实际应该传入操作人ID
         priority: this.priority,
         channel: this.channel.type,
-      })
+      }),
     );
   }
 
@@ -285,7 +286,7 @@ export class Conversation {
         channel: this.channel.type,
         slaViolated: this.sla.isViolated,
         slaStatus: this.sla.isViolated ? '违规' : '达标',
-      })
+      }),
     );
   }
 
@@ -377,7 +378,9 @@ export class Conversation {
    * 计算对话持续时间(秒)
    */
   _calculateDuration() {
-    if (!this.closedAt) return 0;
+    if (!this.closedAt) {
+      return 0;
+    }
     const start = new Date(this.createdAt);
     const end = new Date(this.closedAt);
     return Math.floor((end - start) / 1000);
@@ -410,7 +413,7 @@ export class Conversation {
           agentId: this.agentId,
           agentName: this.agentName,
           channel: this.channel.type,
-        })
+        }),
       );
     }
 
@@ -441,9 +444,3 @@ export class Conversation {
   }
 }
 
-/**
- * 生成唯一ID的辅助函数
- */
-function generateId() {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}

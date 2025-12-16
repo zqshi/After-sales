@@ -15,7 +15,9 @@ export function initAiSolutions() {
 
 function bindReanalyze() {
   const btn = qs('#reanalyze-btn');
-  if (!btn) return;
+  if (!btn) {
+    return;
+  }
   on(btn, 'click', () => runAnalysisFlow(btn));
 }
 
@@ -41,7 +43,7 @@ async function runAnalysisFlow(triggerBtn = null) {
       const response = await apiAnalyzeConversation(
         getActiveConversationId(),
         '',
-        window.config?.analysisContext || ''
+        window.config?.analysisContext || '',
       );
       const analysis = response?.data ?? response;
       if (analysis && (analysis.summary || analysis.issues?.length)) {
@@ -65,13 +67,15 @@ async function runAnalysisFlow(triggerBtn = null) {
 
 function renderAnalysisResult(data) {
   const result = qs('#analysis-result');
-  if (!result) return;
+  if (!result) {
+    return;
+  }
   const summary = data.summary || 'AI 尚未给出结论';
   const issues = Array.isArray(data.issues) ? data.issues : [];
   const issuesHtml = issues
     .map(
       (issue) =>
-        `<div class="flex items-center gap-2 text-xs text-gray-700"><i class="fa fa-bullseye text-blue-500"></i><span>${issue}</span></div>`
+        `<div class="flex items-center gap-2 text-xs text-gray-700"><i class="fa fa-bullseye text-blue-500"></i><span>${issue}</span></div>`,
     )
     .join('');
   result.innerHTML = `
@@ -96,9 +100,13 @@ function renderAnalysisResultFallback() {
 }
 
 async function handleApplySolution(btn) {
-  if (!btn) return;
+  if (!btn) {
+    return;
+  }
   const type = btn.getAttribute('data-solution');
-  if (!type) return;
+  if (!type) {
+    return;
+  }
   const template = btn.getAttribute('data-template') || btn.textContent.trim();
   const originalText = btn.innerHTML;
   btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';

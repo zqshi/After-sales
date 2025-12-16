@@ -10,7 +10,7 @@
  * - 质检服务：标记需要质检
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class SLAViolatedEvent {
   constructor(data) {
@@ -90,7 +90,9 @@ export class SLAViolatedEvent {
    * 获取超时百分比
    */
   getDelayPercentage() {
-    if (this.expectedTime === 0) return 0;
+    if (this.expectedTime === 0) {
+      return 0;
+    }
     return Math.round((this.delayTime / this.expectedTime) * 100);
   }
 

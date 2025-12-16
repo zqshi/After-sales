@@ -31,24 +31,49 @@ import { initAgentTasks, createRelatedTask, openAnalysisPanelClassic } from './t
 import { scrollToBottom } from './core/scroll.js';
 import { initCustomerProfile, updateCustomerContext, openHistoryDetail } from './customer/index.js';
 import { initRoleSwitcher } from './roles.js';
+import { initializeContainer } from './application/container/bootstrap.js';
+import { EventSubscriptionManager } from './application/eventHandlers/EventSubscriptionManager.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-  initRoleSwitcher();
-  initLayout();
-  initChat();
-  initCustomerProfile();
-  initKnowledgeBase();
-  initRequirementsTab();
-  initRightPanelActions();
-  initAiSolutions();
-  initAgentTasks();
-  scrollToBottom();
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    console.log('[Main] ========== 应用启动 ==========');
 
-  const actionOverlay = document.getElementById('action-modal-overlay');
-  if (actionOverlay) {
-    actionOverlay.addEventListener('click', (e) => {
-      if (e.target === actionOverlay) closeActionModal();
-    });
+    // 1. 初始化DI容器（必须在其他初始化之前完成）
+    console.log('[Main] 步骤1: 正在初始化应用服务层...');
+    await initializeContainer();
+    console.log('[Main] ✓ 应用服务层初始化完成');
+
+    // 2. 初始化事件订阅（在DI容器之后，UI组件之前）
+    console.log('[Main] 步骤2: 正在初始化事件订阅...');
+    const eventSubscriptionManager = new EventSubscriptionManager();
+    eventSubscriptionManager.initialize();
+    console.log('[Main] ✓ 事件订阅初始化完成');
+
+    // 3. 初始化UI组件
+    initRoleSwitcher();
+    initLayout();
+    initChat();
+    initCustomerProfile();
+    initKnowledgeBase();
+    initRequirementsTab();
+    initRightPanelActions();
+    initAiSolutions();
+    initAgentTasks();
+    scrollToBottom();
+
+    const actionOverlay = document.getElementById('action-modal-overlay');
+    if (actionOverlay) {
+      actionOverlay.addEventListener('click', (e) => {
+        if (e.target === actionOverlay) {
+          closeActionModal();
+        }
+      });
+    }
+
+    console.log('[Main] 应用初始化完成 ✅');
+  } catch (error) {
+    console.error('[Main] 应用初始化失败:', error);
+    alert('应用初始化失败，请刷新页面重试');
   }
 });
 

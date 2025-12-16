@@ -29,7 +29,9 @@ function initConversationList() {
 
 async function loadConversationList() {
   const container = qs('.conversation-list');
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   if (isApiEnabled()) {
     try {
@@ -53,7 +55,9 @@ async function loadConversationList() {
 
 function bindConversationEvents() {
   const conversationItems = qsa('.conversation-item');
-  if (!conversationItems.length) return;
+  if (!conversationItems.length) {
+    return;
+  }
 
   conversationItems.forEach((item) => {
     on(item, 'click', () => {
@@ -99,8 +103,8 @@ function createConversationMarkup(conv, isActive) {
 
   return `
     <div class="conversation-item p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer ${
-    isActive ? 'bg-blue-50' : ''
-  }" data-id="${conv.conversationId}" data-channel="${conv.channel}">
+  isActive ? 'bg-blue-50' : ''
+}" data-id="${conv.conversationId}" data-channel="${conv.channel}">
       <div class="flex items-start">
         <div
           class="avatar w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
@@ -118,8 +122,8 @@ function createConversationMarkup(conv, isActive) {
           <div class="mt-2 flex items-center justify-between text-[11px] text-gray-500">
             <span class="px-2 py-0.5 rounded-full ${badgeClass}">${conv.slaLevel || 'SLA 级别'}</span>
             <span class="text-xs ${conv.urgency === 'high' ? 'text-red-600' : 'text-gray-500'}">${
-    conv.urgency || '正常'
-  }</span>
+  conv.urgency || '正常'
+}</span>
           </div>
         </div>
       </div>
@@ -129,7 +133,9 @@ function createConversationMarkup(conv, isActive) {
 
 function updateChatContent(conversationId) {
   const chatMessages = qs('#chat-messages');
-  if (!chatMessages) return;
+  if (!chatMessages) {
+    return;
+  }
 
   if (conversationId !== 'conv-001') {
     const anchorLabelMap = {
@@ -158,12 +164,12 @@ function updateChatContent(conversationId) {
           <div class="ml-2 max-w-[70%]">
             <div class="message-bubble bg-blue-100 p-3 message-bubble-customer">
               <p>${
-                conversationId === 'conv-002'
-                  ? '关于上个月的账单有一些疑问，想咨询一下'
-                  : conversationId === 'conv-003'
-                  ? '新功能使用很流畅，感谢你们的支持！'
-                  : '需要申请新的API密钥，请问如何操作？'
-              }</p>
+  conversationId === 'conv-002'
+    ? '关于上个月的账单有一些疑问，想咨询一下'
+    : conversationId === 'conv-003'
+      ? '新功能使用很流畅，感谢你们的支持！'
+      : '需要申请新的API密钥，请问如何操作？'
+}</p>
             </div>
             <div class="message-meta flex justify-between items-center mt-1">
               <span class="text-xs text-gray-500">09:45</span>
@@ -183,7 +189,9 @@ function initInputEvents() {
   const emojiPanel = qs('#emoji-panel');
   const warning = qs('#low-confidence-warning');
 
-  if (!messageInput) return;
+  if (!messageInput) {
+    return;
+  }
 
   on(messageInput, 'input', () => {
     const content = messageInput.value;
@@ -215,10 +223,14 @@ function initInputEvents() {
 
 export function sendMessage() {
   const messageInput = qs('#message-input');
-  if (!messageInput) return;
+  if (!messageInput) {
+    return;
+  }
 
   const message = messageInput.value.trim();
-  if (!message) return;
+  if (!message) {
+    return;
+  }
 
   if (!outboundEnabled) {
     addMessage('internal', message);
@@ -233,7 +245,9 @@ export function sendMessage() {
   scrollToBottom();
 
   const conversationId = currentConversationId || 'conv-001';
-  if (!isApiEnabled()) return;
+  if (!isApiEnabled()) {
+    return;
+  }
 
   const payload = {
     type: outboundEnabled ? 'response' : 'internal',
@@ -260,7 +274,9 @@ export function sendMessage() {
 
 export function addMessage(type, content) {
   const chatMessages = qs('#chat-messages');
-  if (!chatMessages) return;
+  if (!chatMessages) {
+    return;
+  }
 
   const now = new Date();
   const time = `${now.getHours().toString().padStart(2, '0')}:${now
@@ -306,15 +322,21 @@ export function addMessage(type, content) {
 
 export function adoptSuggestion(id) {
   const suggestionCard = qs(`.suggestion-card[data-id="${id}"]`);
-  if (!suggestionCard) return;
+  if (!suggestionCard) {
+    return;
+  }
   const suggestionText = suggestionCard.querySelector('p:last-of-type')?.textContent || '';
   const input = qs('#message-input');
-  if (input) input.value = suggestionText;
+  if (input) {
+    input.value = suggestionText;
+  }
 }
 
 export function optimizeMessage() {
   const messageInput = qs('#message-input');
-  if (!messageInput) return;
+  if (!messageInput) {
+    return;
+  }
 
   const message = messageInput.value.trim();
   if (!message) {
@@ -323,10 +345,14 @@ export function optimizeMessage() {
   }
 
   const optimizeButton = qs('#optimize-button');
-  if (optimizeButton) optimizeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+  if (optimizeButton) {
+    optimizeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+  }
 
   setTimeout(() => {
-    if (optimizeButton) optimizeButton.innerHTML = '<i class="fa fa-magic"></i>';
+    if (optimizeButton) {
+      optimizeButton.innerHTML = '<i class="fa fa-magic"></i>';
+    }
     messageInput.value = `${message} 感谢您的理解与支持，如有其他问题，请随时联系我们。`;
     showNotification('话术已优化', 'success');
   }, 800);
@@ -334,7 +360,9 @@ export function optimizeMessage() {
 
 export function insertText(text) {
   const messageInput = qs('#message-input');
-  if (!messageInput) return;
+  if (!messageInput) {
+    return;
+  }
 
   const { selectionStart = 0, selectionEnd = 0, value } = messageInput;
   const newValue = `${value.slice(0, selectionStart)}${text}${value.slice(selectionEnd)}`;
@@ -352,7 +380,9 @@ export function insertEmoji(emoji) {
 
 export function addToSuggestion(content) {
   const replySuggestions = qs('.reply-suggestions');
-  if (!replySuggestions) return;
+  if (!replySuggestions) {
+    return;
+  }
 
   const suggestionId = `sug-${Date.now()}`;
   const suggestionHTML = `
@@ -378,7 +408,9 @@ function initConversationEndDetection() {
   const sendButton = qs('#send-button');
   on(sendButton, 'click', () => {
     const message = qs('#message-input')?.value.trim();
-    if (message) analyzeConversationEnd(message);
+    if (message) {
+      analyzeConversationEnd(message);
+    }
   });
 }
 
@@ -401,5 +433,7 @@ function showSatisfactionSurvey() {
 export function submitSatisfaction(score) {
   showNotification(`感谢反馈，评分：${score}`, 'success');
   const card = qs('#satisfaction-card');
-  if (card) card.classList.add('hidden');
+  if (card) {
+    card.classList.add('hidden');
+  }
 }

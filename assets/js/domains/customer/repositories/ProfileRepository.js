@@ -79,10 +79,14 @@ export class ProfileRepository {
         const profile = await this.getByConversationId(conversationId);
         return profile.interactions.filter(i => {
           if (filters.range && filters.range !== '全部') {
-            if (i.window !== filters.range) return false;
+            if (i.window !== filters.range) {
+              return false;
+            }
           }
           if (filters.type && filters.type !== '全部') {
-            if (i.type !== filters.type) return false;
+            if (i.type !== filters.type) {
+              return false;
+            }
           }
           return true;
         });
@@ -92,10 +96,14 @@ export class ProfileRepository {
       const profile = await this.getByConversationId(conversationId);
       return profile.interactions.filter(i => {
         if (filters.range && filters.range !== '全部') {
-          if (i.window !== filters.range) return false;
+          if (i.window !== filters.range) {
+            return false;
+          }
         }
         if (filters.type && filters.type !== '全部') {
-          if (i.type !== filters.type) return false;
+          if (i.type !== filters.type) {
+            return false;
+          }
         }
         return true;
       });

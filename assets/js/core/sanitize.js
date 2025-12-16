@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /**
  * HTML 转义工具 - 防止 XSS 攻击
@@ -20,7 +20,9 @@ const HTML_ENTITIES = {
  * @returns {string} 转义后的安全字符串
  */
 export function escapeHtml(str) {
-  if (typeof str !== 'string') return str;
+  if (typeof str !== 'string') {
+    return str;
+  }
   return str.replace(/[&<>"'/]/g, (char) => HTML_ENTITIES[char]);
 }
 
@@ -30,7 +32,9 @@ export function escapeHtml(str) {
  * @param {string} text - 文本内容
  */
 export function setText(element, text) {
-  if (!element) return;
+  if (!element) {
+    return;
+  }
   element.textContent = text;
 }
 
@@ -40,7 +44,9 @@ export function setText(element, text) {
  * @param {string} html - HTML 内容（应该是已转义或可信的）
  */
 export function setHtml(element, html) {
-  if (!element) return;
+  if (!element) {
+    return;
+  }
   // 警告：此方法应仅用于已转义或可信的 HTML
   element.innerHTML = html;
 }

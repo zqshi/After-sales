@@ -12,11 +12,15 @@ export function initKnowledgeBase() {
 
 function bindKnowledgeClicks() {
   const knowledgeTab = qs('#knowledge-tab');
-  if (!knowledgeTab) return;
+  if (!knowledgeTab) {
+    return;
+  }
 
   on(knowledgeTab, 'click', (event) => {
     const target = event.target.closest('[data-click]');
-    if (!target) return;
+    if (!target) {
+      return;
+    }
 
     const action = target.getAttribute('data-click');
     if (action === 'knowledge-detail' || action === 'knowledge-video') {
@@ -31,11 +35,13 @@ function bindKnowledgeClicks() {
           updated: target.getAttribute('data-updated') || '',
           tags: parseKnowledgeTags(target.getAttribute('data-tags')),
         },
-        target
+        target,
       );
     } else if (action === 'knowledge-add') {
       const label = target.getAttribute('data-label') || '';
-      if (label) addToSuggestion(`知识引用：${label}`);
+      if (label) {
+        addToSuggestion(`知识引用：${label}`);
+      }
     }
   });
 
@@ -65,13 +71,17 @@ function bindPreviewButtons() {
 
 async function loadKnowledgeCards() {
   const container = qs('#knowledge-card-container');
-  if (!container || !isApiEnabled()) return;
+  if (!container || !isApiEnabled()) {
+    return;
+  }
 
   try {
     const response = await fetchKnowledge({ page: 1, pageSize: 4 });
     const payload = response?.data ?? response;
     const items = payload?.items ?? payload?.knowledge ?? [];
-    if (!items.length) return;
+    if (!items.length) {
+      return;
+    }
     container.innerHTML = items.map((item, index) => renderKnowledgeCard(item, index)).join('');
     bindKnowledgeClicks();
   } catch (err) {
@@ -148,7 +158,9 @@ export function openKnowledgePreview(options = {}, triggerBtn = null) {
   const tagWrap = qs('#knowledge-preview-tags');
   const expandBtn = qs('#knowledge-preview-open');
 
-  if (!wrapper || !titleEl || !typeEl || !updatedEl || !sourceEl || !bodyEl || !tagWrap) return;
+  if (!wrapper || !titleEl || !typeEl || !updatedEl || !sourceEl || !bodyEl || !tagWrap) {
+    return;
+  }
 
   activeKnowledgeCard = {
     title: options.title,
@@ -173,9 +185,13 @@ export function openKnowledgePreview(options = {}, triggerBtn = null) {
 
   wrapper.classList.remove('hidden');
   wrapper.dataset.expanded = 'false';
-  if (expandBtn) expandBtn.innerHTML = '<i class="fa fa-angle-down mr-1"></i>展开全文';
+  if (expandBtn) {
+    expandBtn.innerHTML = '<i class="fa fa-angle-down mr-1"></i>展开全文';
+  }
 
-  if (triggerBtn) triggerBtn.blur();
+  if (triggerBtn) {
+    triggerBtn.blur();
+  }
 }
 
 export function toggleKnowledgePreviewExpand(forceExpand) {
@@ -184,7 +200,9 @@ export function toggleKnowledgePreviewExpand(forceExpand) {
   const btn = qs('#knowledge-preview-open');
   const fade = wrapper?.querySelector('.knowledge-preview-fade');
 
-  if (!wrapper || !bodyEl || !btn) return;
+  if (!wrapper || !bodyEl || !btn) {
+    return;
+  }
 
   const shouldExpand =
     typeof forceExpand === 'boolean'
@@ -196,7 +214,9 @@ export function toggleKnowledgePreviewExpand(forceExpand) {
     ? activeKnowledgeCard?.full || bodyEl.textContent
     : activeKnowledgeCard?.preview || bodyEl.textContent;
 
-  if (fade) fade.style.display = shouldExpand ? 'none' : 'block';
+  if (fade) {
+    fade.style.display = shouldExpand ? 'none' : 'block';
+  }
   btn.innerHTML = shouldExpand
     ? '<i class="fa fa-angle-up mr-1"></i>收起全文'
     : '<i class="fa fa-angle-down mr-1"></i>展开全文';

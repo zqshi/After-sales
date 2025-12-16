@@ -9,7 +9,7 @@
  * - 时间追踪服务：开始计时
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class TaskStartedEvent {
   constructor(data) {

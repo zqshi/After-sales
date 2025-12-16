@@ -1,6 +1,5 @@
-"use strict";
+'use strict';
 
-/* eslint-disable import/prefer-default-export */
 const GLOBAL_CONFIG = window.config || {};
 const API_BASE = GLOBAL_CONFIG.apiBaseUrl?.replace(/\/$/, '') || '';
 const IS_API_ENABLED = Boolean(API_BASE);
@@ -106,7 +105,7 @@ async function request(path, options = {}, retryCount = 0) {
         ...rest,
         headers: getHeaders(rest.headers),
       },
-      timeout
+      timeout,
     );
   } catch (err) {
     // 网络错误，尝试重试

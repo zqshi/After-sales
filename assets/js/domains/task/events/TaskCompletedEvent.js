@@ -10,7 +10,7 @@
  * - 需求服务：更新关联需求状态
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class TaskCompletedEvent {
   constructor(data) {
@@ -79,7 +79,9 @@ export class TaskCompletedEvent {
    * 是否超出预估工时
    */
   isOverEstimated() {
-    if (!this.estimatedHours || !this.actualHours) return false;
+    if (!this.estimatedHours || !this.actualHours) {
+      return false;
+    }
     return this.actualHours > this.estimatedHours;
   }
 
@@ -87,7 +89,9 @@ export class TaskCompletedEvent {
    * 获取工时偏差百分比
    */
   getHoursDeviationPercentage() {
-    if (!this.estimatedHours || !this.actualHours) return 0;
+    if (!this.estimatedHours || !this.actualHours) {
+      return 0;
+    }
     const deviation = this.actualHours - this.estimatedHours;
     return Math.round((deviation / this.estimatedHours) * 100);
   }

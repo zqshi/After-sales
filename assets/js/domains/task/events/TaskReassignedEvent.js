@@ -8,7 +8,7 @@
  * - 统计服务：更新负载统计
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class TaskReassignedEvent {
   constructor(data) {

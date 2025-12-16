@@ -10,7 +10,7 @@
  * - 任务服务：关闭相关任务
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class ConversationClosedEvent {
   constructor(data) {

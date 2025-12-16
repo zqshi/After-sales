@@ -26,7 +26,9 @@ export function loadRequirementsData() {
 
 let requirementControlsBound = false;
 function bindRequirementControls() {
-  if (requirementControlsBound) return;
+  if (requirementControlsBound) {
+    return;
+  }
   const refreshBtn = qs('#requirements-refresh');
   const rescanBtn = qs('#requirements-rescan');
   const statusFilter = qs('#requirement-status-filter');
@@ -47,7 +49,9 @@ async function refreshRequirementsState() {
 }
 
 async function trySyncRequirements() {
-  if (!isApiEnabled()) return;
+  if (!isApiEnabled()) {
+    return;
+  }
 
   try {
     const raw = await fetchRequirementData({ status: 'all' });
@@ -72,7 +76,9 @@ async function trySyncRequirements() {
 function ensureMockData() {
   const processed = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
   const unprocessed = JSON.parse(localStorage.getItem(STORAGE_KEYS.unprocessed) || '[]');
-  if (processed.length || unprocessed.length) return;
+  if (processed.length || unprocessed.length) {
+    return;
+  }
 
   const now = Date.now();
   const sampleProcessed = [
@@ -126,14 +132,6 @@ function ensureMockData() {
   localStorage.setItem(STORAGE_KEYS.unprocessed, JSON.stringify(sampleUnprocessed));
 }
 
-function bindRequirementFilters() {
-  const refreshBtn = qs('#requirements-tab button');
-  const statusFilter = qs('#requirements-tab select');
-
-  on(refreshBtn, 'click', () => loadRequirementsData());
-  on(statusFilter, 'change', (e) => renderProcessedRequirements(e.target.value));
-}
-
 function formatDate(iso) {
   const date = new Date(iso);
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
@@ -156,7 +154,9 @@ function createStatusClass(status) {
 
 function renderUnprocessedRequirements() {
   const container = qs('#unprocessed-requirements-list');
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   const unprocessed = JSON.parse(localStorage.getItem(STORAGE_KEYS.unprocessed) || '[]');
   container.innerHTML = '';
@@ -191,7 +191,9 @@ function renderUnprocessedRequirements() {
 
 function renderProcessedRequirements(status = '全部状态') {
   const container = qs('#processed-requirements-list');
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   const processed = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
   container.innerHTML = '';
@@ -231,18 +233,23 @@ function renderProcessedRequirements(status = '全部状态') {
 
 function initRequirementsChart() {
   const ctx = qs('#requirementsChart');
-  if (!ctx || !window.Chart) return;
+  if (!ctx || !window.Chart) {
+    return;
+  }
 
   const processed = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
-  const unprocessed = JSON.parse(localStorage.getItem(STORAGE_KEYS.unprocessed) || '[]');
 
   const statusCounts = { 待处理: 0, 处理中: 0, 已完成: 0, 已拒绝: 0 };
   processed.forEach((req) => {
-    if (statusCounts[req.status] !== undefined) statusCounts[req.status] += 1;
+    if (statusCounts[req.status] !== undefined) {
+      statusCounts[req.status] += 1;
+    }
   });
 
   const existing = window.requirementsChart;
-  if (existing) existing.destroy();
+  if (existing) {
+    existing.destroy();
+  }
 
   window.requirementsChart = new window.Chart(ctx, {
     type: 'doughnut',
@@ -274,7 +281,9 @@ function updateStatisticsCards() {
   const processed = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
   const statusCounts = { 待处理: 0, 处理中: 0, 已完成: 0, 已拒绝: 0 };
   processed.forEach((req) => {
-    if (statusCounts[req.status] !== undefined) statusCounts[req.status] += 1;
+    if (statusCounts[req.status] !== undefined) {
+      statusCounts[req.status] += 1;
+    }
   });
 
   const totalCount = qs('#req-total-count');
@@ -282,10 +291,18 @@ function updateStatisticsCards() {
   const completedCount = qs('#req-done-count');
   const unprocessedCount = qs('#req-uncreated-count');
 
-  if (totalCount) totalCount.textContent = (processed.length + unprocessed.length).toString();
-  if (pendingCount) pendingCount.textContent = statusCounts['待处理'].toString();
-  if (completedCount) completedCount.textContent = statusCounts['已完成'].toString();
-  if (unprocessedCount) unprocessedCount.textContent = unprocessed.length.toString();
+  if (totalCount) {
+    totalCount.textContent = (processed.length + unprocessed.length).toString();
+  }
+  if (pendingCount) {
+    pendingCount.textContent = statusCounts['待处理'].toString();
+  }
+  if (completedCount) {
+    completedCount.textContent = statusCounts['已完成'].toString();
+  }
+  if (unprocessedCount) {
+    unprocessedCount.textContent = unprocessed.length.toString();
+  }
 }
 
 export async function createRequirementFromList(content, unprocessedId) {
@@ -309,7 +326,9 @@ export async function createRequirementFromList(content, unprocessedId) {
     saveProcessedRequirement(requirementId, content, '待处理');
   }
 
-  if (unprocessedId) removeUnprocessedRequirement(unprocessedId);
+  if (unprocessedId) {
+    removeUnprocessedRequirement(unprocessedId);
+  }
   await loadRequirementsData();
   showNotification('需求卡片创建成功', 'success');
 }
@@ -383,7 +402,9 @@ export function initRightPanelActions() {
   buttons.forEach((btn) => {
     on(btn, 'click', (e) => {
       const type = btn.getAttribute('data-click');
-      if (type && type.startsWith('knowledge')) return;
+      if (type && type.startsWith('knowledge')) {
+        return;
+      }
       e.preventDefault();
       const label = btn.getAttribute('data-label') || btn.textContent.trim();
       handleRightPanelAction(type, label, btn);
@@ -398,7 +419,7 @@ function handleRightPanelAction(type, label, btn) {
       break;
     case 'tool':
       showActionModal(label, `已打开「${label}」工具，后续可嵌入真实工具页面。`, '新开窗口', () =>
-        open(label, '_blank')
+        open(label, '_blank'),
       );
       break;
     case 'quick':
@@ -411,7 +432,9 @@ function handleRightPanelAction(type, label, btn) {
       showActionModal('操作提示', `已触发操作：${label}`);
   }
 
-  if (btn) btn.blur();
+  if (btn) {
+    btn.blur();
+  }
 }
 
 function showActionModal(title, bodyHTML, primaryText, primaryCb) {
@@ -420,7 +443,9 @@ function showActionModal(title, bodyHTML, primaryText, primaryCb) {
   const modalBody = qs('#action-modal-body');
   const primaryBtn = qs('#action-modal-primary');
 
-  if (!overlay || !modalTitle || !modalBody || !primaryBtn) return;
+  if (!overlay || !modalTitle || !modalBody || !primaryBtn) {
+    return;
+  }
 
   modalTitle.textContent = title;
   modalBody.innerHTML = bodyHTML;
@@ -443,7 +468,9 @@ function showActionModal(title, bodyHTML, primaryText, primaryCb) {
 
 export function closeActionModal() {
   const overlay = qs('#action-modal-overlay');
-  if (overlay) overlay.classList.add('hidden');
+  if (overlay) {
+    overlay.classList.add('hidden');
+  }
 }
 
 export function scanConversationForRequirements() {

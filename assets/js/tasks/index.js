@@ -127,7 +127,9 @@ const conversationQcProfiles = {
 };
 
 async function loadTasksFromApi() {
-  if (!isApiEnabled()) return;
+  if (!isApiEnabled()) {
+    return;
+  }
 
   try {
     const response = await fetchTasks({
@@ -137,7 +139,9 @@ async function loadTasksFromApi() {
     const payload = response?.data ?? response;
     const items = payload?.items ?? payload?.tasks ?? [];
     const tasksList = qs('#tasks-list');
-    if (tasksList) tasksList.innerHTML = '';
+    if (tasksList) {
+      tasksList.innerHTML = '';
+    }
     items.forEach((task) => addTaskFromApi(task));
   } catch (err) {
     console.warn('[tasks] fetch failed', err);
@@ -145,7 +149,9 @@ async function loadTasksFromApi() {
 }
 
 function addTaskFromApi(task) {
-  if (!task) return;
+  if (!task) {
+    return;
+  }
   const taskId = task.taskId || task.id || `task-${Date.now()}`;
   const name = task.title || task.name || '任务';
   const description = task.description || task.summary || '暂无描述';
@@ -157,17 +163,26 @@ function addTaskFromApi(task) {
 
 function mapTaskStatus(status) {
   const normalized = (status || '').toLowerCase();
-  if (normalized.includes('complete') || normalized.includes('done')) return 'completed';
-  if (normalized.includes('in-progress') || normalized.includes('executing') || normalized.includes('processing'))
+  if (normalized.includes('complete') || normalized.includes('done')) {
+    return 'completed';
+  }
+  if (normalized.includes('in-progress') || normalized.includes('executing') || normalized.includes('processing')) {
     return 'in-progress';
-  if (normalized.includes('pending') || normalized.includes('todo') || !normalized) return 'pending';
+  }
+  if (normalized.includes('pending') || normalized.includes('todo') || !normalized) {
+    return 'pending';
+  }
   return 'pending';
 }
 
 function mapTaskPriority(priority) {
   const normalized = (priority || '').toLowerCase();
-  if (normalized.includes('low')) return 'low';
-  if (normalized.includes('high') || normalized.includes('urgent')) return 'high';
+  if (normalized.includes('low')) {
+    return 'low';
+  }
+  if (normalized.includes('high') || normalized.includes('urgent')) {
+    return 'high';
+  }
   return 'medium';
 }
 
@@ -208,12 +223,22 @@ export function initAgentTasks() {
   });
 
   on(cancelTaskBtn, 'click', () => {
-    if (!newTaskForm) return;
+    if (!newTaskForm) {
+      return;
+    }
     newTaskForm.classList.add('hidden');
-    if (nameInput) nameInput.value = '';
-    if (descriptionInput) descriptionInput.value = '';
-    if (prioritySelect) prioritySelect.value = 'medium';
-    if (agentSelect) agentSelect.value = 'primary';
+    if (nameInput) {
+      nameInput.value = '';
+    }
+    if (descriptionInput) {
+      descriptionInput.value = '';
+    }
+    if (prioritySelect) {
+      prioritySelect.value = 'medium';
+    }
+    if (agentSelect) {
+      agentSelect.value = 'primary';
+    }
   });
 
   on(saveTaskBtn, 'click', () => {
@@ -236,10 +261,18 @@ export function initAgentTasks() {
     const id = `task-${Date.now()}`;
     addTaskToList(id, name, description, priority, agent, 'pending');
     newTaskForm?.classList.add('hidden');
-    if (nameInput) nameInput.value = '';
-    if (descriptionInput) descriptionInput.value = '';
-    if (prioritySelect) prioritySelect.value = 'medium';
-    if (agentSelect) agentSelect.value = 'primary';
+    if (nameInput) {
+      nameInput.value = '';
+    }
+    if (descriptionInput) {
+      descriptionInput.value = '';
+    }
+    if (prioritySelect) {
+      prioritySelect.value = 'medium';
+    }
+    if (agentSelect) {
+      agentSelect.value = 'primary';
+    }
     showNotification('任务创建成功', 'success');
   });
 
@@ -306,11 +339,15 @@ export function initAgentTasks() {
 
 export function addTaskToList(taskId, name, description, priority, agent, status) {
   const tasksList = qs('#tasks-list');
-  if (!tasksList) return;
+  if (!tasksList) {
+    return;
+  }
 
   const taskEl = document.createElement('div');
   taskEl.className = 'bg-white border border-gray-200 rounded-lg p-3';
-  if (status === 'completed') taskEl.style.opacity = '0.75';
+  if (status === 'completed') {
+    taskEl.style.opacity = '0.75';
+  }
 
   const statusMap = {
     pending: { className: 'bg-gray-100 text-gray-800', text: '待执行' },
@@ -369,7 +406,9 @@ function startTaskProgress(card, taskId, triggerBtn) {
     <span class="text-xs text-gray-500 ml-2">0%</span>`;
 
   const contentArea = card.querySelector('.flex.items-start > div:last-child');
-  if (contentArea) contentArea.appendChild(progressContainer);
+  if (contentArea) {
+    contentArea.appendChild(progressContainer);
+  }
 
   triggerBtn.className = 'cancel-task text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300';
   triggerBtn.textContent = '取消';
@@ -385,9 +424,15 @@ function simulateTaskProgress(taskId, progressContainer, card, triggerBtn) {
 
   const interval = setInterval(() => {
     progress += Math.floor(Math.random() * 12) + 5;
-    if (progress > 100) progress = 100;
-    if (progressBar) progressBar.style.width = `${progress}%`;
-    if (progressText) progressText.textContent = `${progress}%`;
+    if (progress > 100) {
+      progress = 100;
+    }
+    if (progressBar) {
+      progressBar.style.width = `${progress}%`;
+    }
+    if (progressText) {
+      progressText.textContent = `${progress}%`;
+    }
 
     if (progress === 100) {
       clearInterval(interval);
@@ -493,7 +538,9 @@ function setupCustomTaskEditor(config) {
     sidebarTasksList,
   } = config;
 
-  if (!taskEditor) return;
+  if (!taskEditor) {
+    return;
+  }
 
   const openEditor = () => {
     taskEditor.classList.remove('hidden');
@@ -507,8 +554,12 @@ function setupCustomTaskEditor(config) {
     openTaskEditorBtn?.classList.remove('hidden');
   };
 
-  if (openTaskEditorBtn) on(openTaskEditorBtn, 'click', openEditor);
-  if (closeTaskEditorBtn) on(closeTaskEditorBtn, 'click', closeEditor);
+  if (openTaskEditorBtn) {
+    on(openTaskEditorBtn, 'click', openEditor);
+  }
+  if (closeTaskEditorBtn) {
+    on(closeTaskEditorBtn, 'click', closeEditor);
+  }
 
   if (saveCustomTaskBtn) {
     on(saveCustomTaskBtn, 'click', async () => {
@@ -553,19 +604,31 @@ function setupCustomTaskEditor(config) {
       }
 
       const sidebarDesc = desc || '无描述';
-      if (sidebarTasksList) addSidebarTask(sidebarTasksList, title, sidebarDesc, priority);
+      if (sidebarTasksList) {
+        addSidebarTask(sidebarTasksList, title, sidebarDesc, priority);
+      }
       showNotification(`已创建任务：${title}（负责人：${owner}）`, 'success');
       closeEditor();
-      if (customTitleInput) customTitleInput.value = '';
-      if (customDescInput) customDescInput.value = '';
-      if (customPrioritySelect) customPrioritySelect.value = 'medium';
-      if (customOwnerInput) customOwnerInput.value = '';
+      if (customTitleInput) {
+        customTitleInput.value = '';
+      }
+      if (customDescInput) {
+        customDescInput.value = '';
+      }
+      if (customPrioritySelect) {
+        customPrioritySelect.value = 'medium';
+      }
+      if (customOwnerInput) {
+        customOwnerInput.value = '';
+      }
     });
   }
 }
 
 function setupLayoutPreview({ layoutInput, layoutPreview, layoutLabel, layoutApplyBtn, layoutChips }) {
-  if (!layoutPreview) return;
+  if (!layoutPreview) {
+    return;
+  }
 
   const applyLayout = (style) => {
     layoutPreview.classList.remove('layout-dashboard', 'layout-board', 'layout-focus');
@@ -581,11 +644,16 @@ function setupLayoutPreview({ layoutInput, layoutPreview, layoutLabel, layoutApp
   };
 
   const inferLayout = (text) => {
-    if (!text) return 'dashboard';
+    if (!text) {
+      return 'dashboard';
+    }
     const lower = text.toLowerCase();
-    if (lower.includes('瀑布') || lower.includes('卡片') || lower.includes('board')) return 'board';
-    if (lower.includes('右') || lower.includes('重点') || lower.includes('突出') || lower.includes('focus'))
+    if (lower.includes('瀑布') || lower.includes('卡片') || lower.includes('board')) {
+      return 'board';
+    }
+    if (lower.includes('右') || lower.includes('重点') || lower.includes('突出') || lower.includes('focus')) {
       return 'focus';
+    }
     return 'dashboard';
   };
 
@@ -596,7 +664,9 @@ function setupLayoutPreview({ layoutInput, layoutPreview, layoutLabel, layoutApp
     showNotification('布局意图已应用到预览', 'info');
   };
 
-  if (layoutApplyBtn) on(layoutApplyBtn, 'click', handleApply);
+  if (layoutApplyBtn) {
+    on(layoutApplyBtn, 'click', handleApply);
+  }
   if (layoutInput) {
     on(layoutInput, 'keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -617,7 +687,9 @@ function setupLayoutPreview({ layoutInput, layoutPreview, layoutLabel, layoutApp
 }
 
 function setupSidebarTasks(listEl, createBtn) {
-  if (!listEl) return;
+  if (!listEl) {
+    return;
+  }
   if (createBtn) {
     on(createBtn, 'click', () => {
       qs('#open-task-editor')?.click();
@@ -627,7 +699,9 @@ function setupSidebarTasks(listEl, createBtn) {
   on(listEl, 'click', (e) => {
     const target = e.target;
     const item = target.closest('.task-list-item');
-    if (!item) return;
+    if (!item) {
+      return;
+    }
     const taskTitle = item.querySelector('.text-sm.font-semibold')?.textContent?.trim() || '任务';
 
     if (target.classList.contains('task-delete-btn')) {
@@ -672,7 +746,9 @@ function addSidebarTask(listEl, title, desc, priority) {
 
 function setupQualityPanel() {
   const selector = qs('#quality-conversation-select');
-  if (!selector) return;
+  if (!selector) {
+    return;
+  }
 
   const scoreEl = qs('#quality-score');
   const summaryEl = qs('#quality-summary');
@@ -681,10 +757,16 @@ function setupQualityPanel() {
 
   const render = (id) => {
     const profile = qualityProfiles[id];
-    if (!profile) return;
+    if (!profile) {
+      return;
+    }
 
-    if (scoreEl) scoreEl.textContent = `${profile.score} 分`;
-    if (summaryEl) summaryEl.textContent = profile.summary;
+    if (scoreEl) {
+      scoreEl.textContent = `${profile.score} 分`;
+    }
+    if (summaryEl) {
+      summaryEl.textContent = profile.summary;
+    }
 
     if (chipsEl) {
       chipsEl.innerHTML = '';
@@ -716,7 +798,9 @@ function setupTaskCommandConsole() {
   const submitBtn = qs('#task-command-btn');
   const log = qs('#task-command-log');
   const chips = qsa('.command-chip');
-  if (!input || !submitBtn) return;
+  if (!input || !submitBtn) {
+    return;
+  }
 
   const dispatch = () => {
     const text = input.value.trim();
@@ -748,7 +832,9 @@ function setupTaskCommandConsole() {
 }
 
 function addCommandLog(text, logContainer) {
-  if (!logContainer) return;
+  if (!logContainer) {
+    return;
+  }
   const row = document.createElement('div');
   row.className = 'flex items-start gap-2 text-xs text-gray-600';
   row.innerHTML = `
@@ -762,7 +848,9 @@ function addCommandLog(text, logContainer) {
 
 function setupReportShortcuts() {
   const reportBtns = qsa('.report-entry');
-  if (!reportBtns.length) return;
+  if (!reportBtns.length) {
+    return;
+  }
 
   reportBtns.forEach((btn) => {
     on(btn, 'click', () => {
@@ -797,7 +885,9 @@ function setupTaskConversationFlow() {
       workspace?.classList.remove('task-conversation-active');
     });
   }
-  if (startBtn) on(startBtn, 'click', openConversation);
+  if (startBtn) {
+    on(startBtn, 'click', openConversation);
+  }
   qcButtons.forEach((btn) => {
     on(btn, 'click', () => {
       const convId = btn.getAttribute('data-conv-id') || 'conv-001';
@@ -816,13 +906,17 @@ function setupTaskConversationFlow() {
 
     // 1. 用户消息上屏
     appendMessage(text, 'user');
-    if (input) input.value = '';
+    if (input) {
+      input.value = '';
+    }
 
     // 2. 模拟Agent思考/回复
     simulateAgentReply(text, log);
   };
 
-  if (sendBtn) on(sendBtn, 'click', dispatch);
+  if (sendBtn) {
+    on(sendBtn, 'click', dispatch);
+  }
   if (input) {
     on(input, 'keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -844,7 +938,9 @@ function setupTaskConversationFlow() {
 // 替换 appendAgentLog 为 appendMessage
 function appendMessage(text, role, extraContent = '') {
   const logContainer = qs('#task-agent-log');
-  if (!logContainer) return;
+  if (!logContainer) {
+    return;
+  }
 
   const entry = document.createElement('div');
   const isUser = role === 'user';
@@ -852,8 +948,8 @@ function appendMessage(text, role, extraContent = '') {
   entry.className = `flex w-full mb-4 ${isUser ? 'justify-end' : 'justify-start'}`;
 
   const avatarInfo = isUser
-    ? `<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs ml-2 order-2">我</div>`
-    : `<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs mr-2 order-1"><i class="fa fa-android"></i></div>`;
+    ? '<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs ml-2 order-2">我</div>'
+    : '<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs mr-2 order-1"><i class="fa fa-android"></i></div>';
 
   const bubbleClass = isUser
     ? 'bg-blue-600 text-white rounded-l-lg rounded-br-lg'
@@ -881,7 +977,9 @@ function appendMessage(text, role, extraContent = '') {
 }
 
 function simulateAgentReply(userText, logContainer) {
-  if (!logContainer) return;
+  if (!logContainer) {
+    return;
+  }
 
   // 模拟思考延迟
   setTimeout(() => {
@@ -922,9 +1020,11 @@ function simulateAgentReply(userText, logContainer) {
         const statusEl = document.querySelector(`#exec-status-${intent.taskId}`);
         const resultEl = document.querySelector(`#exec-result-${intent.taskId}`);
         if (statusEl) {
-          statusEl.innerHTML = `<i class="fa fa-check-circle text-green-500"></i><span class="text-green-600 font-medium">执行完成</span>`;
+          statusEl.innerHTML = '<i class="fa fa-check-circle text-green-500"></i><span class="text-green-600 font-medium">执行完成</span>';
         }
-        if (resultEl) resultEl.classList.remove('hidden');
+        if (resultEl) {
+          resultEl.classList.remove('hidden');
+        }
       }, 2000);
     }
 
@@ -940,9 +1040,11 @@ function simulateAgentReply(userText, logContainer) {
       lastBtn.dataset.bound = 'true';
       on(lastBtn, 'click', (e) => {
         const btn = e.target.closest('button');
-        if (btn.disabled) return;
+        if (btn.disabled) {
+          return;
+        }
         saveAsLongTermTask(btn.dataset.title, btn.dataset.desc, btn.dataset.priority);
-        btn.innerHTML = `<i class="fa fa-check mr-1"></i> 已保存`;
+        btn.innerHTML = '<i class="fa fa-check mr-1"></i> 已保存';
         btn.disabled = true;
         btn.classList.add('opacity-50', 'cursor-not-allowed');
       });
@@ -953,7 +1055,9 @@ function simulateAgentReply(userText, logContainer) {
 
 function saveAsLongTermTask(title, desc, priority) {
   const sidebarTasks = qs('#sidebar-tasks-list');
-  if (!sidebarTasks) return;
+  if (!sidebarTasks) {
+    return;
+  }
 
   // 复用 addSidebarTask，但可以加一点样式区分，或者仅仅是加到列表里
   // 这里我们假设长期任务在列表里有一个特殊的标识
@@ -989,9 +1093,15 @@ function saveAsLongTermTask(title, desc, priority) {
 
 function generateMockResult(intent) {
   const text = intent.title;
-  if (text.includes('状态') || text.includes('巡检')) return '系统核心服务运行正常，CPU负载 45%，内存使用率 60%。未发现异常报警。';
-  if (text.includes('报表') || text.includes('报告')) return '已生成《今日质量日报》，并发送至您的邮箱。关键指标：客户满意度 4.8，平均响应时间 2m。';
-  if (text.includes('公告')) return '已生成系统维护公告草稿，并通过内部IM发送给您预览。请确认后发布。';
+  if (text.includes('状态') || text.includes('巡检')) {
+    return '系统核心服务运行正常，CPU负载 45%，内存使用率 60%。未发现异常报警。';
+  }
+  if (text.includes('报表') || text.includes('报告')) {
+    return '已生成《今日质量日报》，并发送至您的邮箱。关键指标：客户满意度 4.8，平均响应时间 2m。';
+  }
+  if (text.includes('公告')) {
+    return '已生成系统维护公告草稿，并通过内部IM发送给您预览。请确认后发布。';
+  }
   return '指令已执行完成。相关数据已更新至仪表盘。';
 }
 
@@ -1028,7 +1138,9 @@ async function renderQualityDrawer(conversationId, shouldOpen = false, useLean =
       console.warn('[tasks] fetch quality profile failed', err);
     }
   }
-  if (!data) return;
+  if (!data) {
+    return;
+  }
 
   setTextContent('analysis-case-title', data.title);
   setTextContent('analysis-case-summary', `智能摘要：${data.summary}`);
@@ -1043,9 +1155,13 @@ async function renderQualityDrawer(conversationId, shouldOpen = false, useLean =
   setTextContent('tm-urgency', data.urgency === '高紧急' ? '高' : data.urgency === '处理中' ? '中' : '低');
   const urgencyEl = qs('#tm-urgency');
   if (urgencyEl) {
-    if (data.urgency === '高紧急') urgencyEl.className = 'text-sm font-bold text-red-600';
-    else if (data.urgency === '处理中') urgencyEl.className = 'text-sm font-bold text-blue-600';
-    else urgencyEl.className = 'text-sm font-bold text-gray-600';
+    if (data.urgency === '高紧急') {
+      urgencyEl.className = 'text-sm font-bold text-red-600';
+    } else if (data.urgency === '处理中') {
+      urgencyEl.className = 'text-sm font-bold text-blue-600';
+    } else {
+      urgencyEl.className = 'text-sm font-bold text-gray-600';
+    }
   }
 
   setTextContent('tm-response', data.time ? '2m' : '--'); // Example static or derived
@@ -1053,9 +1169,13 @@ async function renderQualityDrawer(conversationId, shouldOpen = false, useLean =
   const emotionEl = qs('#tm-emotion');
   if (emotionEl) {
     const score = data.dimensions?.emotion?.score || 100;
-    if (score < 60) emotionEl.className = 'text-sm font-bold text-red-600';
-    else if (score < 85) emotionEl.className = 'text-sm font-bold text-amber-600';
-    else emotionEl.className = 'text-sm font-bold text-green-600';
+    if (score < 60) {
+      emotionEl.className = 'text-sm font-bold text-red-600';
+    } else if (score < 85) {
+      emotionEl.className = 'text-sm font-bold text-amber-600';
+    } else {
+      emotionEl.className = 'text-sm font-bold text-green-600';
+    }
   }
 
   setTextContent('analysis-tip', data.tip || '');
@@ -1077,17 +1197,23 @@ async function renderQualityDrawer(conversationId, shouldOpen = false, useLean =
   setTextContent('qc-action-tip', data.tip || '建议：补充回访');
 
   toggleQcLayout(useLean);
-  if (shouldOpen) toggleRightSidebar(true);
+  if (shouldOpen) {
+    toggleRightSidebar(true);
+  }
 }
 
 function setTextContent(id, text) {
   const el = qs(`#${id}`);
-  if (el) el.textContent = text;
+  if (el) {
+    el.textContent = text;
+  }
 }
 
 function applyAnalysisChip(id, text, className) {
   const el = qs(`#${id}`);
-  if (!el) return;
+  if (!el) {
+    return;
+  }
   const tone = className && className.startsWith('chip-') ? className : className ? `chip-${className}` : 'chip-neutral';
   el.className = `analysis-chip ${tone}`;
   el.textContent = text;
@@ -1095,7 +1221,9 @@ function applyAnalysisChip(id, text, className) {
 
 function applyQcChip(id, text, tone = 'soft') {
   const el = qs(`#${id}`);
-  if (!el) return;
+  if (!el) {
+    return;
+  }
   const toneClass =
     tone === 'urgent' ? 'qc-chip-urgent' : tone === 'ghost' ? 'qc-chip-ghost' : tone === 'neutral' ? 'qc-chip-ghost' : 'qc-chip-soft';
   el.className = `qc-chip ${toneClass}`;
@@ -1104,7 +1232,9 @@ function applyQcChip(id, text, tone = 'soft') {
 
 function renderTags(id, tags = []) {
   const wrap = qs(`#${id}`);
-  if (!wrap) return;
+  if (!wrap) {
+    return;
+  }
   wrap.innerHTML = '';
   tags.forEach((tag) => {
     const span = document.createElement('span');
@@ -1115,7 +1245,9 @@ function renderTags(id, tags = []) {
 }
 
 function renderDimensions(dimensions) {
-  if (!dimensions) return;
+  if (!dimensions) {
+    return;
+  }
   setTextContent('qc-emotion-score', dimensions.emotion ? `${dimensions.emotion.score}%` : '--');
   setTextContent('qc-quality-score', dimensions.quality ? `${dimensions.quality.score}` : '--');
   setTextContent('qc-satisfaction-score', dimensions.satisfaction ? `${dimensions.satisfaction.score}/5` : '--');
@@ -1138,7 +1270,9 @@ function renderDimensions(dimensions) {
 
 function setBarWidth(id, value) {
   const bar = qs(`#${id}`);
-  if (!bar || value === undefined || value === null) return;
+  if (!bar || value === undefined || value === null) {
+    return;
+  }
   const safeValue = Math.max(0, Math.min(100, value));
   bar.style.width = `${safeValue}%`;
 }
@@ -1146,7 +1280,9 @@ function setBarWidth(id, value) {
 function renderThread(title, thread = []) {
   setTextContent('qc-thread-title', title || '对话节选');
   const container = qs('#qc-thread');
-  if (!container) return;
+  if (!container) {
+    return;
+  }
   container.innerHTML = '';
   thread.forEach((msg) => {
     const row = document.createElement('div');
@@ -1167,7 +1303,9 @@ function renderThread(title, thread = []) {
 
 function renderInsights(list = []) {
   const wrap = qs('#qc-insights-list');
-  if (!wrap) return;
+  if (!wrap) {
+    return;
+  }
   wrap.innerHTML = '';
   list.forEach((text) => {
     const row = document.createElement('div');
@@ -1180,7 +1318,9 @@ function renderInsights(list = []) {
 function initQcLeanControls() {
   const modeBtns = qsa('[data-qc-mode]');
   const main = qs('.analysis-main');
-  if (main) main.classList.add('mode-mixed');
+  if (main) {
+    main.classList.add('mode-mixed');
+  }
 
   modeBtns.forEach((btn) => {
     on(btn, 'click', () => {
@@ -1200,16 +1340,26 @@ function toggleQcLayout(useLean) {
   const railMetrics = qs('#rail-card-metrics');
   const railHistory = qs('#rail-card-history');
 
-  if (lean) lean.classList.toggle('hidden', !useLean);
-  if (classic) classic.classList.toggle('hidden', useLean);
+  if (lean) {
+    lean.classList.toggle('hidden', !useLean);
+  }
+  if (classic) {
+    classic.classList.toggle('hidden', useLean);
+  }
 
-  if (railMetrics) railMetrics.classList.toggle('hidden', useLean);
-  if (railHistory) railHistory.classList.toggle('hidden', useLean);
+  if (railMetrics) {
+    railMetrics.classList.toggle('hidden', useLean);
+  }
+  if (railHistory) {
+    railHistory.classList.toggle('hidden', useLean);
+  }
 }
 
 export function openAnalysisPanelClassic() {
   const sidebar = document.querySelector('#right-sidebar');
-  if (sidebar) sidebar.classList.add('analysis-restricted');
+  if (sidebar) {
+    sidebar.classList.add('analysis-restricted');
+  }
   toggleQcLayout(false);
   toggleRightSidebar(true);
 }

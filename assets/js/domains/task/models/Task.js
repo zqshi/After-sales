@@ -1,3 +1,5 @@
+import { generateId } from '../../../core/utils.js';
+
 /**
  * Task聚合根
  *
@@ -12,7 +14,6 @@
  * - 实际工时不能为负数
  */
 
-import { generateId } from '@/core/utils.js';
 import { TaskStartedEvent } from '../events/TaskStartedEvent.js';
 import { TaskCompletedEvent } from '../events/TaskCompletedEvent.js';
 import { TaskCancelledEvent } from '../events/TaskCancelledEvent.js';
@@ -44,7 +45,7 @@ export const TaskType = {
 export class Task {
   constructor(data = {}) {
     // 聚合根标识
-    this.id = data.id || generateId();
+    this.id = data.id || generateId('task');
 
     // 关联信息
     this.conversationId = data.conversationId || null;
@@ -121,7 +122,7 @@ export class Task {
         priority: this.priority,
         dueDate: this.dueDate,
         estimatedHours: this.estimatedHours,
-      })
+      }),
     );
   }
 
@@ -173,7 +174,7 @@ export class Task {
         quality: this.quality,
         dueDate: this.dueDate,
         isOverdue: this.isOverdue(),
-      })
+      }),
     );
   }
 
@@ -210,7 +211,7 @@ export class Task {
         assignedToName: this.assignedToName,
         startedAt: this.startedAt,
         elapsedHours: this.getElapsedHours(),
-      })
+      }),
     );
   }
 
@@ -265,7 +266,7 @@ export class Task {
         priority: this.priority,
         status: this.status,
         dueDate: this.dueDate,
-      })
+      }),
     );
   }
 
@@ -334,7 +335,9 @@ export class Task {
    * 获取已用时间(小时)
    */
   getElapsedHours() {
-    if (!this.startedAt) return 0;
+    if (!this.startedAt) {
+      return 0;
+    }
 
     const start = new Date(this.startedAt);
     const end = this.completedAt ? new Date(this.completedAt) : new Date();
@@ -354,8 +357,4 @@ export class Task {
   clearDomainEvents() {
     this._domainEvents = [];
   }
-}
-
-function generateId() {
-  return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }

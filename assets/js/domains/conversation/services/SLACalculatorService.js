@@ -105,7 +105,7 @@ export class SLACalculatorService {
 
     // 获取首次客服响应时间
     const firstAgentMessage = conversation.messages.find(
-      (m) => m.senderType === 'agent'
+      (m) => m.senderType === 'agent',
     );
     const firstAgentResponseTime = firstAgentMessage
       ? firstAgentMessage.timestamp
@@ -114,23 +114,23 @@ export class SLACalculatorService {
     // 计算首次响应时间
     const firstResponseElapsed = this.calculateFirstResponseTime(
       conversation.createdAt,
-      firstAgentResponseTime
+      firstAgentResponseTime,
     );
 
     // 计算解决时间
     const resolutionElapsed = this.calculateResolutionTime(
       conversation.createdAt,
-      conversation.closedAt
+      conversation.closedAt,
     );
 
     // 判断是否违规
     const firstResponseViolated = this.isFirstResponseViolated(
       slaLevel,
-      firstResponseElapsed
+      firstResponseElapsed,
     );
     const resolutionViolated = this.isResolutionViolated(
       slaLevel,
-      resolutionElapsed
+      resolutionElapsed,
     );
 
     return {
@@ -150,7 +150,7 @@ export class SLACalculatorService {
         resolutionViolated,
         firstResponseElapsed,
         resolutionElapsed,
-        config
+        config,
       ),
     };
   }
@@ -164,7 +164,7 @@ export class SLACalculatorService {
     resolutionViolated,
     firstResponseElapsed,
     resolutionElapsed,
-    config
+    config,
   ) {
     if (!firstResponseViolated && !resolutionViolated) {
       return null;
@@ -185,8 +185,12 @@ export class SLACalculatorService {
     }
 
     // 根据超时百分比判断严重程度
-    if (delayPercentage >= 100) return 'critical'; // 超时100%以上
-    if (delayPercentage >= 50) return 'major'; // 超时50%-100%
+    if (delayPercentage >= 100) {
+      return 'critical';
+    } // 超时100%以上
+    if (delayPercentage >= 50) {
+      return 'major';
+    } // 超时50%-100%
     return 'minor'; // 超时50%以内
   }
 

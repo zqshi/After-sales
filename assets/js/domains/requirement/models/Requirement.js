@@ -1,3 +1,5 @@
+import { generateId } from '../../../core/utils.js';
+
 /**
  * Requirement聚合根
  *
@@ -12,7 +14,6 @@
  * - 优先级变更需要记录
  */
 
-import { generateId } from '@/core/utils.js';
 import { RequirementStatusChangedEvent } from '../events/RequirementStatusChangedEvent.js';
 import { RequirementPriorityChangedEvent } from '../events/RequirementPriorityChangedEvent.js';
 
@@ -43,7 +44,7 @@ export const RequirementCategory = {
 export class Requirement {
   constructor(data = {}) {
     // 聚合根标识
-    this.id = data.id || generateId();
+    this.id = data.id || generateId('req');
 
     // 基本信息
     this.conversationId = data.conversationId;
@@ -111,7 +112,7 @@ export class Requirement {
         category: this.category,
         priority: this.priority,
         title: this.title,
-      })
+      }),
     );
   }
 
@@ -141,7 +142,7 @@ export class Requirement {
         category: this.category,
         priority: this.priority,
         title: this.title,
-      })
+      }),
     );
   }
 
@@ -169,7 +170,7 @@ export class Requirement {
         category: this.category,
         priority: this.priority,
         title: this.title,
-      })
+      }),
     );
   }
 
@@ -198,7 +199,7 @@ export class Requirement {
           category: this.category,
           status: this.status,
           assignedTo: this.assignedTo,
-        })
+        }),
       );
     }
   }
@@ -275,8 +276,4 @@ export class Requirement {
   clearDomainEvents() {
     this._domainEvents = [];
   }
-}
-
-function generateId() {
-  return `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }

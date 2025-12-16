@@ -91,7 +91,7 @@ export class EventBus {
 
     // 异步执行所有处理器
     const promises = Array.from(handlers).map((handler) =>
-      this._executeHandler(handler, event)
+      this._executeHandler(handler, event),
     );
 
     // 等待所有处理器完成
@@ -102,7 +102,7 @@ export class EventBus {
     if (failures.length > 0) {
       console.error(
         `[EventBus] ${failures.length} handler(s) failed for ${event.eventType}:`,
-        failures.map((f) => f.reason)
+        failures.map((f) => f.reason),
       );
     }
   }
@@ -117,7 +117,7 @@ export class EventBus {
     } catch (err) {
       console.error(
         `[EventBus] Handler execution error for ${event.eventType}:`,
-        err
+        err,
       );
       throw err;
     }
@@ -235,7 +235,20 @@ export class EventBus {
 
     return stats;
   }
+
+  /**
+   * 获取单例实例
+   * @returns {EventBus} EventBus 单例
+   */
+  static getInstance() {
+    if (!EventBus._instance) {
+      EventBus._instance = new EventBus();
+    }
+    return EventBus._instance;
+  }
 }
 
 // 导出单例
 export const eventBus = new EventBus();
+// 保存到静态属性
+EventBus._instance = eventBus;

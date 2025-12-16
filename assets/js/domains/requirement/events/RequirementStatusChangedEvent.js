@@ -10,7 +10,7 @@
  * - 客户画像服务：更新需求反馈记录
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class RequirementStatusChangedEvent {
   constructor(data) {

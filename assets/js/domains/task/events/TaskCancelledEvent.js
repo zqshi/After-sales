@@ -9,7 +9,7 @@
  * - 需求服务：检查是否需要调整需求状态
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class TaskCancelledEvent {
   constructor(data) {

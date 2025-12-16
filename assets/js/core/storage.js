@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /**
  * 安全的 localStorage 封装
@@ -30,8 +30,8 @@ function isStorageAvailable() {
  */
 function getStorageSize() {
   let total = 0;
-  for (let key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
+  for (const key in localStorage) {
+    if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
       total += localStorage[key].length + key.length;
     }
   }

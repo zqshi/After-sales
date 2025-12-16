@@ -9,7 +9,7 @@
  * - 任务服务：创建跟进任务
  */
 
-import { generateId } from '@/core/utils.js';
+import { generateId } from '../../../core/utils.js';
 
 export class ConversationAssignedEvent {
   constructor(data) {

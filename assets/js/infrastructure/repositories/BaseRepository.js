@@ -87,7 +87,7 @@ export class BaseRepository {
     }
 
     if (import.meta.env.DEV) {
-      console.log(`[${this.entityName}Repository] Cache hit:`, key);
+      // Cache hit
     }
 
     return cached;
@@ -105,7 +105,7 @@ export class BaseRepository {
     });
 
     if (import.meta.env.DEV) {
-      console.log(`[${this.entityName}Repository] Cache set:`, key);
+      // Cache set
     }
   }
 
@@ -145,37 +145,37 @@ export class BaseRepository {
 
   /**
    * 通用的查找方法 (子类可覆盖)
-   * @param {string} id - 实体ID
+   * @param {string} _id - 实体ID
    * @returns {Promise<any>}
    */
-  async findById(id) {
+  async findById(_id) {
     throw new Error(`[${this.entityName}Repository] findById() must be implemented by subclass`);
   }
 
   /**
    * 通用的保存方法 (子类可覆盖)
-   * @param {Object} entity - 实体对象
+   * @param {Object} _entity - 实体对象
    * @returns {Promise<any>}
    */
-  async save(entity) {
+  async save(_entity) {
     throw new Error(`[${this.entityName}Repository] save() must be implemented by subclass`);
   }
 
   /**
    * 通用的删除方法 (子类可覆盖)
-   * @param {string} id - 实体ID
+   * @param {string} _id - 实体ID
    * @returns {Promise<boolean>}
    */
-  async delete(id) {
+  async delete(_id) {
     throw new Error(`[${this.entityName}Repository] delete() must be implemented by subclass`);
   }
 
   /**
    * 通用的查询方法 (子类可覆盖)
-   * @param {Object} criteria - 查询条件
+   * @param {Object} _criteria - 查询条件
    * @returns {Promise<Array>}
    */
-  async findAll(criteria = {}) {
+  async findAll(_criteria = {}) {
     throw new Error(`[${this.entityName}Repository] findAll() must be implemented by subclass`);
   }
 }

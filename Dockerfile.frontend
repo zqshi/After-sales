@@ -1,0 +1,23 @@
+# 前端Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+# 复制package文件
+COPY package*.json ./
+
+# 安装依赖
+RUN npm ci
+
+# 复制项目文件
+COPY . .
+
+# 暴露端口
+EXPOSE 3000
+
+# 开发模式
+CMD ["npm", "run", "dev"]
+
+# 生产构建（使用时切换）
+# RUN npm run build
+# CMD ["npm", "run", "preview"]

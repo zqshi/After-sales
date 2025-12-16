@@ -26,7 +26,9 @@ function initTabs() {
 
     tabContents.forEach((content) => {
       const contentGroup = content.dataset.tabGroup || 'default';
-      if (contentGroup !== group) return;
+      if (contentGroup !== group) {
+        return;
+      }
       const shouldShow = content.id === `${tabId}-tab`;
       content.classList.toggle('hidden', !shouldShow);
       content.classList.toggle('active', shouldShow);
@@ -54,7 +56,9 @@ function initResizers() {
   const leftSidebar = qs('.left-sidebar');
   const mainContent = qs('.main-content');
 
-  if (!appContainer || !leftSidebar || !mainContent) return;
+  if (!appContainer || !leftSidebar || !mainContent) {
+    return;
+  }
 
   const leftResizer = document.createElement('div');
   leftResizer.className = 'resizer';
@@ -94,7 +98,9 @@ function startResize(e) {
 }
 
 function resize(e) {
-  if (!isDragging || !activeResizer) return;
+  if (!isDragging || !activeResizer) {
+    return;
+  }
   e.preventDefault();
 
   const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
@@ -104,19 +110,25 @@ function resize(e) {
     const newWidth = startWidth + deltaX;
     if (newWidth > 150 && newWidth < 420) {
       const sidebar = qs('.left-sidebar');
-      if (sidebar) sidebar.style.width = `${newWidth}px`;
+      if (sidebar) {
+        sidebar.style.width = `${newWidth}px`;
+      }
     }
   } else {
     const newWidth = startWidth - deltaX;
     if (newWidth > 280 && newWidth < 520) {
       const drawer = qs('#right-sidebar');
-      if (drawer) drawer.style.width = `${newWidth}px`;
+      if (drawer) {
+        drawer.style.width = `${newWidth}px`;
+      }
     }
   }
 }
 
 function stopResize() {
-  if (!isDragging) return;
+  if (!isDragging) {
+    return;
+  }
   isDragging = false;
   if (activeResizer) {
     activeResizer.classList.remove('active');
@@ -140,7 +152,9 @@ function initDrawer() {
 
 function initDrawerResizer() {
   const resizer = qs('#right-drawer-resizer');
-  if (!resizer || !drawer) return;
+  if (!resizer || !drawer) {
+    return;
+  }
 
   let resizing = false;
   let startClientX = 0;
@@ -155,7 +169,9 @@ function initDrawerResizer() {
   };
 
   const performResize = (event) => {
-    if (!resizing) return;
+    if (!resizing) {
+      return;
+    }
     const clientX = event.clientX || event.touches?.[0]?.clientX || 0;
     const delta = startClientX - clientX;
     // 允许覆盖对话窗口：上限随视口变化，预留少量边距
@@ -181,7 +197,9 @@ export function toggleRightSidebar(forceState) {
     drawer = qs('#right-sidebar');
     overlay = qs('#right-sidebar-overlay');
   }
-  if (!drawer || !overlay) return;
+  if (!drawer || !overlay) {
+    return;
+  }
 
   const shouldOpen =
     typeof forceState === 'boolean'
@@ -201,6 +219,8 @@ export function toggleRightSidebar(forceState) {
 
 export function openFullAnalysisPanel() {
   const drawer = qs('#right-sidebar');
-  if (drawer) drawer.classList.remove('analysis-restricted');
+  if (drawer) {
+    drawer.classList.remove('analysis-restricted');
+  }
   toggleRightSidebar(true);
 }

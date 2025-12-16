@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  backend:
+    name: Backend Lint & Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: aftersales_test
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin123
+        options: >-
+          --health-cmd "pg_isready -U admin"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          redis-server --save "" --appendonly no --requirepass redis123
+
+    env:
+      CI: true
+      TEST_DB_HOST: localhost
+      TEST_DB_PORT: 5432
+      TEST_DB_NAME: aftersales_test
+      TEST_DB_USER: admin
+      TEST_DB_PASSWORD: admin123
+      DATABASE_URL: postgresql://admin:admin123@localhost:5432/aftersales_test
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis123
+      REDIS_DB: '1'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run backend lint
+        working-directory: backend
+        run: npm run lint
+
+      - name: Run backend unit tests
+        working-directory: backend
+        run: npm run test:unit
+
+      - name: Run backend integration tests
+        working-directory: backend
+        run: npm run test:integration
+
+      - name: Run backend E2E tests
+        working-directory: backend
+        run: npm run test:e2e
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
