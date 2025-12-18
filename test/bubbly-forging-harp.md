@@ -558,7 +558,8 @@
 }
 
 ## 阶段3: 需求提交
-如果需要产品开发,准备需求工单(EZONE):
+**说明**: 需求管理独立于故障告警的工单系统, 由 ezOne 平台承载, 需要与常规运维工单平台分离同步。
+如果需要产品开发,准备需求工单(ezOne平台):
 
 **需求工单内容**:
 1. 需求标题: 简明扼要
@@ -619,7 +620,7 @@
 - `search_product_docs`: 搜索产品文档
 - `query_feature_list`: 查询功能列表
 - `assess_feasibility`: 可行性评估(调用内部评估API)
-- `create_requirement_ticket`: 创建需求工单(EZONE)
+- `create_requirement_ticket`: 创建需求工单(ezOne)
 - `sync_with_ezone`: 同步 ezOne 工单状态与评论
 - `append_ezone_comment`: 向 ezOne 添加备注或客户反馈
 - `query_ezone_ticket_status`: 查询 ezOne 工单状态
@@ -627,6 +628,8 @@
 - `update_requirement_tracking`: 更新需求跟踪记录
 - `generate_requirement_report`: 生成需求报告
 - `notify_requirement_online`: 需求上线通知
+- `create_incident_ticket`: 创建故障/告警工单(运维工单平台)
+- `query_incident_status`: 查询运维工单状态以辅助沟通
 
 ---
 
@@ -986,15 +989,15 @@ class EzOneRequirementSync:
 
 ### 4.3 工单系统集成工具
 
-**工具名称**: `ticket_management`
+**工具名称**: `incident_ticket_management`
 
-**功能**: 创建、查询、更新工单(EZONE)
+**功能**: 负责故障/告警/其他工单的创建、查询与更新, 与 ezOne 需求平台分开
 
 **实现方案**:
 ```python
-class TicketManagement:
-    def __init__(self, ezone_api_url, api_key):
-        self.api_url = ezone_api_url
+class IncidentTicketManagement:
+    def __init__(self, incident_api_url, api_key):
+        self.api_url = incident_api_url
         self.api_key = api_key
 
     def create_ticket(self, ticket_type: str, title: str, description: str,
@@ -1003,7 +1006,7 @@ class TicketManagement:
         创建工单
 
         Args:
-            ticket_type: 工单类型(fault/requirement/consultation)
+            ticket_type: 工单类型(fault/consultation)
             title: 工单标题
             description: 详细描述
             priority: 优先级(P0-P3)
@@ -1061,6 +1064,16 @@ class TicketManagement:
             json=comment_data
         )
         return response.json()
+
+    def assign_ticket(self, ticket_id: str, owner: str):
+        """分配工单"""
+        updates = {'owner': owner}
+        return self.update_ticket(ticket_id, updates)
+
+    def close_ticket(self, ticket_id: str, resolution: str):
+        """关闭工单"""
+        updates = {'status': 'closed', 'resolution': resolution}
+        return self.update_ticket(ticket_id, updates)
 ```
 
 **API接口**:
