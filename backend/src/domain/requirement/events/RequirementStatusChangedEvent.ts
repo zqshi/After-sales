@@ -7,7 +7,7 @@ export interface RequirementStatusChangedPayload {
   updatedAt: Date;
 }
 
-export class RequirementStatusChangedEvent extends DomainEvent {
+export class RequirementStatusChangedEvent extends DomainEvent<RequirementStatusChangedPayload> {
   constructor(props: DomainEventProps, payload: RequirementStatusChangedPayload) {
     super('RequirementStatusChanged', props, payload);
   }

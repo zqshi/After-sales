@@ -6,15 +6,19 @@ export interface DomainEventProps {
   version?: number;
 }
 
-export abstract class DomainEvent {
+export abstract class DomainEvent<TPayload extends object = Record<string, unknown>> {
   public readonly eventId: string;
   public readonly eventType: string;
   public readonly aggregateId: string;
   public readonly occurredAt: Date;
   public readonly version: number;
-  public readonly payload: Record<string, unknown>;
+  public readonly payload: TPayload;
 
-  constructor(eventType: string, props: DomainEventProps, payload: Record<string, unknown>) {
+  public get occurredOn(): Date {
+    return this.occurredAt;
+  }
+
+  constructor(eventType: string, props: DomainEventProps, payload: TPayload) {
     this.eventId = uuidv4();
     this.eventType = eventType;
     this.aggregateId = props.aggregateId;

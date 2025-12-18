@@ -23,7 +23,7 @@ import { TaskReassignedEvent } from '../events/TaskReassignedEvent.js';
  * 任务状态
  */
 export const TaskStatus = {
-  TODO: 'todo',
+  PENDING: 'pending',
   IN_PROGRESS: 'in_progress',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
@@ -57,7 +57,7 @@ export class Task {
     this.title = data.title || '';
     this.description = data.description || '';
     this.priority = data.priority || 'medium'; // 'low' | 'medium' | 'high' | 'urgent'
-    this.status = data.status || TaskStatus.TODO;
+    this.status = data.status || TaskStatus.PENDING;
 
     // 分配信息
     this.assignedTo = data.assignedTo || null;
@@ -230,8 +230,8 @@ export class Task {
     this.progress = progress;
     this.updatedAt = new Date().toISOString();
 
-    // 自动开始任务(如果进度>0且状态为TODO)
-    if (progress > 0 && this.status === TaskStatus.TODO) {
+    // 自动开始任务(如果进度>0且状态为pending)
+    if (progress > 0 && this.status === TaskStatus.PENDING) {
       this.start();
     }
   }

@@ -45,7 +45,7 @@ export class ConversationRepository implements IConversationRepository {
         eventEntity.aggregateId = conversation.id;
         eventEntity.aggregateType = 'Conversation';
         eventEntity.eventType = event.eventType;
-        eventEntity.eventData = event.payload;
+        eventEntity.eventData = event.payload as Record<string, unknown>;
         eventEntity.occurredAt = event.occurredAt;
         eventEntity.version = event.version;
 

@@ -18,6 +18,14 @@ import { RiskLevelChangedEventHandler } from './customer/RiskLevelChangedEventHa
 // Requirement事件处理器
 import { RequirementCreatedEventHandler } from './requirement/RequirementCreatedEventHandler.js';
 
+// Task事件处理器
+import { TaskStartedEventHandler } from './task/TaskStartedEventHandler.js';
+import { TaskCompletedEventHandler } from './task/TaskCompletedEventHandler.js';
+import { TaskCancelledEventHandler } from './task/TaskCancelledEventHandler.js';
+import { TaskReassignedEventHandler } from './task/TaskReassignedEventHandler.js';
+import { KnowledgeItemCreatedEventHandler } from './knowledge/KnowledgeItemCreatedEventHandler.js';
+import { KnowledgeItemUpdatedEventHandler } from './knowledge/KnowledgeItemUpdatedEventHandler.js';
+
 export class EventSubscriptionManager {
   constructor() {
     this.eventBus = EventBus.getInstance();
@@ -37,11 +45,19 @@ export class EventSubscriptionManager {
     this.handlers.set('profileRefreshed', new ProfileRefreshedEventHandler());
     this.handlers.set('riskLevelChanged', new RiskLevelChangedEventHandler());
     this.handlers.set('requirementCreated', new RequirementCreatedEventHandler());
+    this.handlers.set('taskStarted', new TaskStartedEventHandler());
+    this.handlers.set('taskCompleted', new TaskCompletedEventHandler());
+    this.handlers.set('taskCancelled', new TaskCancelledEventHandler());
+    this.handlers.set('taskReassigned', new TaskReassignedEventHandler());
+    this.handlers.set('knowledgeItemCreated', new KnowledgeItemCreatedEventHandler());
+    this.handlers.set('knowledgeItemUpdated', new KnowledgeItemUpdatedEventHandler());
 
     // 注册订阅
     this._registerConversationEvents();
     this._registerCustomerEvents();
     this._registerRequirementEvents();
+    this._registerTaskEvents();
+    this._registerKnowledgeEvents();
 
     console.log('[EventSubscriptionManager] 事件订阅初始化完成，共订阅', this.handlers.size, '个处理器');
   }
@@ -125,6 +141,46 @@ export class EventSubscriptionManager {
     });
 
     console.log('[EventSubscriptionManager] 需求事件订阅完成 (2个)');
+  }
+
+  /**
+   * 注册任务相关事件
+   * @private
+   */
+  _registerTaskEvents() {
+    this.eventBus.subscribe('TaskStarted', async (event) => {
+      await this.handlers.get('taskStarted').handle(event);
+    });
+
+    this.eventBus.subscribe('TaskCompleted', async (event) => {
+      await this.handlers.get('taskCompleted').handle(event);
+    });
+
+    this.eventBus.subscribe('TaskCancelled', async (event) => {
+      await this.handlers.get('taskCancelled').handle(event);
+    });
+
+    this.eventBus.subscribe('TaskReassigned', async (event) => {
+      await this.handlers.get('taskReassigned').handle(event);
+    });
+
+    console.log('[EventSubscriptionManager] 任务事件订阅完成 (4个)');
+  }
+
+  /**
+   * 注册知识相关事件
+   * @private
+   */
+  _registerKnowledgeEvents() {
+    this.eventBus.subscribe('KnowledgeItemCreated', async (event) => {
+      await this.handlers.get('knowledgeItemCreated').handle(event);
+    });
+
+    this.eventBus.subscribe('KnowledgeItemUpdated', async (event) => {
+      await this.handlers.get('knowledgeItemUpdated').handle(event);
+    });
+
+    console.log('[EventSubscriptionManager] 知识事件订阅完成 (2个)');
   }
 
   /**

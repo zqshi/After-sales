@@ -7,7 +7,7 @@ export interface ServiceRecordAddedPayload {
   recordedAt: Date;
 }
 
-export class ServiceRecordAddedEvent extends DomainEvent {
+export class ServiceRecordAddedEvent extends DomainEvent<ServiceRecordAddedPayload> {
   constructor(props: DomainEventProps, payload: ServiceRecordAddedPayload) {
     super('ServiceRecordAdded', props, payload);
   }

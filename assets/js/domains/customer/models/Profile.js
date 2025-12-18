@@ -12,6 +12,8 @@ import { CommitmentProgressUpdatedEvent } from '../events/CommitmentProgressUpda
 import { InteractionAddedEvent } from '../events/InteractionAddedEvent.js';
 import { CustomerMarkedAsVIPEvent } from '../events/CustomerMarkedAsVIPEvent.js';
 import { generateId } from '../../../core/utils.js';
+import { HealthScoreCalculator } from '../services/HealthScoreCalculator.js';
+import { RiskEvaluator } from '../services/RiskEvaluator.js';
 
 export class CustomerProfile {
   constructor(data) {
@@ -33,8 +35,20 @@ export class CustomerProfile {
     this.history = (data.history || []).map(h => new HistoryRecord(h));
     this.contractRange = data.contractRange || '';
 
+    // 健康度与风险评估
+    this.healthScore = 0;
+    this.healthRating = 'neutral';
+    this.healthBreakdown = {};
+    this.riskAssessment = {
+      level: 'none',
+      severity: 'clear',
+      reasons: [],
+      isCritical: false,
+    };
+
     // 领域事件集合 - DDD核心机制
     this._domainEvents = [];
+    this._recalculateHealthAndRisk();
   }
 
   // ==================== 命令方法（改变状态） ====================
@@ -94,6 +108,8 @@ export class CustomerProfile {
     // 更新时间戳
     this.updatedAt = new Date().toISOString();
 
+    this._recalculateHealthAndRisk();
+
     // 发布画像刷新事件
     if (updatedFields.length > 0) {
       this._addDomainEvent(new ProfileRefreshedEvent({
@@ -131,6 +147,8 @@ export class CustomerProfile {
 
     const serviceRecord = new ServiceRecord(record);
     this.serviceRecords.push(serviceRecord);
+
+    this._recalculateHealthAndRisk();
 
     // 发布服务记录添加事件
     this._addDomainEvent(new ServiceRecordAddedEvent({
@@ -171,6 +189,8 @@ export class CustomerProfile {
     // 检查是否存在风险（进度低于50%且临近截止日期）
     const hasRisk = commitment.risk || (progress < 50 && commitment.nextDue);
 
+    this._recalculateHealthAndRisk();
+
     // 发布承诺进度更新事件
     this._addDomainEvent(new CommitmentProgressUpdatedEvent({
       customerId: this.conversationId,
@@ -194,6 +214,8 @@ export class CustomerProfile {
 
     const interactionRecord = new Interaction(interaction);
     this.interactions.unshift(interactionRecord); // 最新的排在前面
+
+    this._recalculateHealthAndRisk();
 
     // 发布互动记录添加事件
     this._addDomainEvent(new InteractionAddedEvent({
@@ -233,6 +255,8 @@ export class CustomerProfile {
         this.tags.push('重点客户');
       }
     }
+
+    this._recalculateHealthAndRisk();
 
     // 仅在新标记为VIP时发布事件
     if (!alreadyVIP || vipLevel === '金牌客户') {
@@ -368,6 +392,21 @@ export class CustomerProfile {
   }
 
   // ==================== 领域事件管理 ====================
+
+  /**
+   * 重新计算健康得分与风险评估
+   * @private
+   */
+  _recalculateHealthAndRisk() {
+    const calculator = new HealthScoreCalculator();
+    const riskEvaluator = new RiskEvaluator();
+
+    const health = calculator.calculate(this);
+    this.healthScore = health.score;
+    this.healthRating = health.rating;
+    this.healthBreakdown = health.breakdown;
+    this.riskAssessment = riskEvaluator.evaluate(this);
+  }
 
   /**
    * 添加领域事件

@@ -10,7 +10,7 @@
 
 ---
 
-## 完成的5个阶段
+## 完成的6个阶段
 
 ### ✅ 阶段1: CustomerProfile充血化改造（2天计划）
 
@@ -80,6 +80,20 @@
 
 ---
 
+### ✅ 阶段4: Task上下文前端链路（3天计划）
+
+**目标**: 让前端 Task 功能完整对接后端 API，构建 TaskRepository/应用服务/控制器，并通过事件订阅告知 UI。
+
+**完成内容**:
+- ✅ 创建 TaskRepository，与 `/tasks` 相关端点交互（create/list/assign/update/complete）
+- ✅ 实现 `TaskApplicationService`，封装 Command/Query、聚合同步与事件发布
+- ✅ 编写 4 条命令类（Create/Assign/UpdateStatus/Complete）、2 条查询类（Get/List）并由 `TaskController` 调用
+- ✅ 用 `taskController` 驱动 `assets/js/tasks/index.js` 的任务创建、事件通知与进度模拟
+- ✅ 新增 4 个 Task 领域事件处理器并注册至 `EventSubscriptionManager`，确保通知与 DOM 事件触发
+- ✅ 事件驱动通知弥补 UI 反馈，提供任务状态变更提示
+
+**DDD成熟度**: 8.5/10 → 8.6/10
+
 ### ✅ 阶段5: 代码质量治理（2天计划）
 
 **目标**: 修复所有ESLint错误，建立代码质量标准
@@ -100,7 +114,7 @@
 
 ---
 
-### ⏸️ 阶段4: 后端Conversation端到端（5天计划）
+### ⏸️ 阶段6: 后端Conversation端到端（5天计划）
 
 **状态**: 未执行（优先级调整）
 

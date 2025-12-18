@@ -43,6 +43,14 @@ export class CustomerProfileMapper {
       progress: Number(commitment.progress ?? 0),
     }));
 
+    const lastReviewedAtRaw = entity.slaInfo?.lastReviewedAt;
+    const lastReviewedAt =
+      typeof lastReviewedAtRaw === 'string'
+        ? new Date(lastReviewedAtRaw)
+        : lastReviewedAtRaw instanceof Date
+        ? lastReviewedAtRaw
+        : undefined;
+
     return CustomerProfile.rehydrate(
       {
         customerId: entity.customerId,
@@ -57,7 +65,7 @@ export class CustomerProfileMapper {
           serviceLevel: entity.slaInfo.serviceLevel as any || 'bronze',
           responseTimeTargetMinutes: Number(entity.slaInfo.responseTimeTargetMinutes ?? 30),
           resolutionTimeTargetMinutes: Number(entity.slaInfo.resolutionTimeTargetMinutes ?? 120),
-          lastReviewedAt: entity.slaInfo?.lastReviewedAt ? new Date(entity.slaInfo.lastReviewedAt) : undefined,
+          lastReviewedAt,
         }),
         metrics: Metrics.create({
           satisfactionScore: Number(entity.metrics.satisfactionScore ?? 0),

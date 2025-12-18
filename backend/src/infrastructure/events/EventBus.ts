@@ -1,15 +1,11 @@
+import { DomainEvent } from '@domain/shared/DomainEvent';
+
 /**
  * EventBus - 简单的事件总线实现
  * 用于发布和订阅领域事件
  */
 
-export interface DomainEvent {
-  eventType: string;
-  occurredOn: Date;
-  [key: string]: any;
-}
-
-type EventHandler = (event: DomainEvent) => void | Promise<void>;
+type EventHandler = (event: DomainEvent<object>) => void | Promise<void>;
 
 export class EventBus {
   private handlers: Map<string, EventHandler[]> = new Map();
@@ -40,7 +36,7 @@ export class EventBus {
   /**
    * 发布事件
    */
-  async publish(event: DomainEvent): Promise<void> {
+  async publish(event: DomainEvent<object>): Promise<void> {
     const handlers = this.handlers.get(event.eventType);
     if (handlers) {
       for (const handler of handlers) {
@@ -52,7 +48,7 @@ export class EventBus {
   /**
    * 批量发布事件
    */
-  async publishAll(events: DomainEvent[]): Promise<void> {
+  async publishAll(events: DomainEvent<object>[]): Promise<void> {
     for (const event of events) {
       await this.publish(event);
     }

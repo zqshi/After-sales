@@ -6,7 +6,7 @@ export interface TaskCancelledPayload {
   reason?: string;
 }
 
-export class TaskCancelledEvent extends DomainEvent {
+export class TaskCancelledEvent extends DomainEvent<TaskCancelledPayload> {
   constructor(props: DomainEventProps, payload: TaskCancelledPayload) {
     super('TaskCancelled', props, payload);
   }

@@ -5,7 +5,7 @@ import { DomainEvent } from './DomainEvent';
 export abstract class AggregateRoot<T> {
   protected readonly _id: string;
   protected props: T;
-  private domainEvents: DomainEvent[] = [];
+  private domainEvents: DomainEvent<object>[] = [];
 
   protected constructor(props: T, id?: string) {
     this._id = id || uuidv4();
@@ -16,11 +16,11 @@ export abstract class AggregateRoot<T> {
     return this._id;
   }
 
-  protected addDomainEvent(event: DomainEvent): void {
+  protected addDomainEvent(event: DomainEvent<object>): void {
     this.domainEvents.push(event);
   }
 
-  public getUncommittedEvents(): DomainEvent[] {
+  public getUncommittedEvents(): DomainEvent<object>[] {
     return [...this.domainEvents];
   }
 

@@ -28,21 +28,23 @@ describe('Conversation Aggregate', () => {
     expect(events.some((e) => e.eventType === 'ConversationCreated')).toBe(true);
   });
 
-  it('should add a message and emit event', () => {
-    conversation.sendMessage({
-      senderId: 'agent-001',
-      senderType: 'agent',
-      content: 'Hello from agent',
-    });
+    it('should add a message and emit event', () => {
+      conversation.assignAgent('agent-001');
+      conversation.clearEvents();
+      conversation.sendMessage({
+        senderId: 'agent-001',
+        senderType: 'agent',
+        content: 'Hello from agent',
+      });
 
-    expect(conversation.messages).toHaveLength(1);
+      expect(conversation.messages).toHaveLength(1);
     expect(conversation.messages[0].content).toBe('Hello from agent');
 
     const events = conversation.getUncommittedEvents();
     expect(events.some((event) => event.eventType === 'MessageSent')).toBe(true);
   });
 
-  it('should emit assignment event when agent is assigned', () => {
+    it('should emit assignment event when agent is assigned', () => {
     conversation.assignAgent('agent-002');
 
     expect(conversation.agentId).toBe('agent-002');

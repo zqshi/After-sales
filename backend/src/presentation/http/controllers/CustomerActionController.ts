@@ -13,20 +13,17 @@ export class CustomerActionController {
   ) {}
 
   async addServiceRecord(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const { title, description, ownerId, outcome } = request.body as {
         title: string;
         description: string;
         ownerId?: string;
         outcome?: string;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const { id } = request.params;
-      const { title, description, ownerId, outcome } = request.body;
       const result = await this.addServiceRecordUseCase.execute({
         customerId: id,
         title,
@@ -41,17 +38,12 @@ export class CustomerActionController {
   }
 
   async updateCommitment(
-    request: FastifyRequest<{
-      Params: { id: string; commitmentId: string };
-      Body: {
-        progress: number;
-      };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const { id, commitmentId } = request.params;
-      const { progress } = request.body;
+      const { id, commitmentId } = request.params as { id: string; commitmentId: string };
+      const { progress } = request.body as { progress: number };
       const result = await this.updateCommitmentProgressUseCase.execute({
         customerId: id,
         commitmentId,
@@ -64,20 +56,17 @@ export class CustomerActionController {
   }
 
   async addInteraction(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const { interactionType, occurredAt, notes, channel } = request.body as {
         interactionType: 'call' | 'chat' | 'email' | 'meeting';
         occurredAt?: string;
         notes?: string;
         channel?: string;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const { id } = request.params;
-      const { interactionType, occurredAt, notes, channel } = request.body;
       const result = await this.addInteractionUseCase.execute({
         customerId: id,
         interactionType,
@@ -92,17 +81,12 @@ export class CustomerActionController {
   }
 
   async markAsVIP(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
-        reason?: string;
-      };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const { id } = request.params;
-      const { reason } = request.body;
+      const { id } = request.params as { id: string };
+      const { reason } = request.body as { reason?: string };
       const result = await this.markCustomerAsVIPUseCase.execute({
         customerId: id,
         reason,

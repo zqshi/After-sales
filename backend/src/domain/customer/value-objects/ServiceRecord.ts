@@ -1,4 +1,5 @@
 import { ValueObject } from '@domain/shared/ValueObject';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ServiceRecordProps {
   title: string;
@@ -9,8 +10,11 @@ interface ServiceRecordProps {
 }
 
 export class ServiceRecord extends ValueObject<ServiceRecordProps> {
+  public readonly id: string;
+
   private constructor(props: ServiceRecordProps) {
     super(props);
+    this.id = uuidv4();
   }
 
   static create(data: Omit<ServiceRecordProps, 'recordedAt'> & { recordedAt?: Date }): ServiceRecord {

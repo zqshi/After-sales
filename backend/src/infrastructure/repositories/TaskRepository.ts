@@ -78,4 +78,8 @@ export class TaskRepository implements ITaskRepository {
     const result = await qb.getRawOne();
     return Number(result.count ?? 0);
   }
+
+  async findByConversationId(conversationId: string): Promise<Task[]> {
+    return this.findByFilters({ conversationId });
+  }
 }

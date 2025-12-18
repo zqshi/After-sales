@@ -1,43 +1,50 @@
-import Fastify from 'fastify';
+/**
+ * 后端服务入口
+ *
+ * 初始化数据库连接，创建Fastify应用实例，注册所有路由
+ */
+
+import { createApp } from './app.js';
+import { AppDataSource } from './infrastructure/database/data-source.js';
 import { config } from './config/app.config.js';
 
-const fastify = Fastify({
-  logger: {
-    level: config.logLevel
-  }
-});
-
-// 健康检查端点
-fastify.get('/health', async () => {
-  return {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: config.env
-  };
-});
-
-// 根路径
-fastify.get('/', async () => {
-  return {
-    message: 'After-Sales Backend API',
-    version: '0.1.0',
-    environment: config.env
-  };
-});
-
-// 启动服务器
 const start = async () => {
   try {
+    // 1. 初始化数据库连接
+    console.log('📦 正在连接数据库...');
+    await AppDataSource.initialize();
+    console.log('✅ 数据库连接成功');
+
+    // 2. 创建Fastify应用（包含所有路由）
+    console.log('🚀 正在初始化应用...');
+    const app = await createApp(AppDataSource);
+
+    // 3. 启动服务器
     const port = config.port;
-    await fastify.listen({ port, host: '0.0.0.0' });
-    fastify.log.info(`🚀 服务器启动成功！`);
-    fastify.log.info(`📊 环境: ${config.env}`);
-    fastify.log.info(`🌐 监听端口: ${port}`);
-    fastify.log.info(`📝 日志级别: ${config.logLevel}`);
+    await app.listen({ port, host: '0.0.0.0' });
+
+    app.log.info('========================================');
+    app.log.info('🚀 服务器启动成功！');
+    app.log.info(`📊 环境: ${config.env}`);
+    app.log.info(`🌐 监听端口: ${port}`);
+    app.log.info(`📝 日志级别: ${config.logLevel}`);
+    app.log.info(`🗄️  数据库: ${config.database.host}:${config.database.port}/${config.database.name}`);
+    app.log.info('========================================');
+
   } catch (err) {
-    fastify.log.error(err);
+    console.error('❌ 服务器启动失败:', err);
     process.exit(1);
   }
 };
+
+// 优雅关闭
+process.on('SIGINT', async () => {
+  console.log('\n⏳ 正在关闭服务器...');
+  if (AppDataSource.isInitialized) {
+    await AppDataSource.destroy();
+  }
+  console.log('✅ 服务器已关闭');
+  process.exit(0);
+});
 
 start();

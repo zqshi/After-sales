@@ -30,11 +30,20 @@ describe('GetConversation Integration Test', () => {
     );
 
     // 3. 创建测试数据
+    const slaDeadline = new Date(Date.now() + 60 * 60 * 1000);
+
     testConversation = Conversation.create({
       customerId: 'CUST-001',
       channel: Channel.fromString('web'),
       agentId: 'AGENT-001',
+      metadata: { title: '测试对话' },
+      slaDeadline,
     });
+
+    (testConversation as { participants?: unknown }).participants = [
+      { id: 'CUST-001', name: 'Customer', role: 'customer' },
+      { id: 'AGENT-001', name: 'Agent', role: 'agent' },
+    ];
 
     testConversation.sendMessage({
       senderId: 'CUST-001',

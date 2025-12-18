@@ -25,6 +25,7 @@ export class RequirementApplicationService {
     try {
       // 1. 创建聚合根
       const requirementId = `REQ-${generateId()}`;
+      const createdAt = command.timestamp || new Date().toISOString();
       const requirement = new Requirement({
         id: requirementId,
         content: command.content,
@@ -34,7 +35,8 @@ export class RequirementApplicationService {
         priority: command.priority,
         confidence: command.confidence,
         status: 'pending',
-        createdAt: command.timestamp,
+        createdAt,
+        isNew: true,
       });
 
       // 2. 保存聚合根

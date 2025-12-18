@@ -1,16 +1,5 @@
-/**
- * 需求识别领域服务
- *
- * 职责：
- * - 从对话消息中识别客户需求
- * - 提取需求的类别、优先级和描述
- * - 计算识别的置信度
- *
- * 这是一个无状态的领域服务
- * 注意：这里是简化的规则引擎，实际项目中应该对接AI服务
- */
-
 import { RequirementCategory } from '../models/Requirement.js';
+import { generateId } from '../../../core/utils.js';
 
 /**
  * 需求识别规则
@@ -106,10 +95,30 @@ export class RequirementDetectorService {
       category,
       title,
       description: content,
+      content,
       priority,
       confidence,
       sourceMessageId: message.id,
     };
+  }
+
+  /**
+   * 从纯文本中检测需求（供事件处理器调用）
+   * @param {string} text
+   * @returns {Array}
+   */
+  detectFromText(text) {
+    if (!text) {
+      return [];
+    }
+
+    const requirement = this.detectRequirement({
+      id: `msg-${generateId('req')}`,
+      content: text,
+      senderType: 'customer',
+    });
+
+    return requirement ? [requirement] : [];
   }
 
   /**

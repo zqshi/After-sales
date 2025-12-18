@@ -57,11 +57,13 @@ export class SendMessageUseCase {
       content: request.content,
     });
 
-    // 4. 保存聚合根
+    // 4. 发布领域事件（先抓取后保存）
+    const events = conversation.getUncommittedEvents();
+
+    // 5. 保存聚合根
     await this.conversationRepository.save(conversation);
 
-    // 5. 发布领域事件
-    const events = conversation.getUncommittedEvents();
+    // 6. 发布领域事件
     for (const event of events) {
       await this.eventBus.publish(event);
     }

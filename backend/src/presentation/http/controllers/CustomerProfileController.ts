@@ -11,13 +11,11 @@ export class CustomerProfileController {
   ) {}
 
   async getProfile(
-    request: FastifyRequest<{
-      Params: { id: string };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const { id } = request.params;
+      const { id } = request.params as { id: string };
       const result = await this.getCustomerProfileUseCase.execute({
         customerId: id,
       });
@@ -28,9 +26,12 @@ export class CustomerProfileController {
   }
 
   async refreshProfile(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const payload = request.body as {
         source: string;
         metrics?: {
           satisfactionScore: number;
@@ -57,12 +58,6 @@ export class CustomerProfileController {
           outcome?: string;
         }[];
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const { id } = request.params;
-      const payload = request.body;
       const result = await this.refreshCustomerProfileUseCase.execute({
         customerId: id,
         source: payload.source,
@@ -78,13 +73,11 @@ export class CustomerProfileController {
   }
 
   async getInteractions(
-    request: FastifyRequest<{
-      Params: { id: string };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const { id } = request.params;
+      const { id } = request.params as { id: string };
       const result = await this.getCustomerInteractionsUseCase.execute({
         customerId: id,
       });

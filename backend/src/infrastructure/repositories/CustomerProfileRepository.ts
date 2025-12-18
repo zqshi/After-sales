@@ -8,7 +8,7 @@ import { CustomerProfileMapper } from './mappers/CustomerProfileMapper';
 export class CustomerProfileRepository implements ICustomerProfileRepository {
   private repository: Repository<CustomerProfileEntity>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(dataSource: DataSource) {
     this.repository = dataSource.getRepository(CustomerProfileEntity);
   }
 

@@ -5,6 +5,7 @@ import { ListTasksUseCase } from '../../../application/use-cases/task/ListTasksU
 import { AssignTaskUseCase } from '../../../application/use-cases/task/AssignTaskUseCase';
 import { UpdateTaskStatusUseCase } from '../../../application/use-cases/task/UpdateTaskStatusUseCase';
 import { CompleteTaskUseCase } from '../../../application/use-cases/task/CompleteTaskUseCase';
+import { CreateTaskRequestDTO } from '../../../application/dto/task/CreateTaskRequestDTO';
 
 export class TaskController {
   constructor(
@@ -17,23 +18,12 @@ export class TaskController {
   ) {}
 
   async createTask(
-    request: FastifyRequest<{
-      Body: {
-        title: string;
-        description?: string;
-        type?: string;
-        assigneeId?: string;
-        conversationId?: string;
-        requirementId?: string;
-        priority?: string;
-        dueDate?: string;
-        metadata?: Record<string, unknown>;
-      };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const result = await this.createTaskUseCase.execute(request.body);
+      const payload = request.body as CreateTaskRequestDTO;
+      const result = await this.createTaskUseCase.execute(payload);
       reply.code(201).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
@@ -41,12 +31,13 @@ export class TaskController {
   }
 
   async getTask(
-    request: FastifyRequest<{ Params: { id: string } }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
+      const { id } = request.params as { id: string };
       const result = await this.getTaskUseCase.execute({
-        taskId: request.params.id,
+        taskId: id,
       });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
@@ -55,8 +46,11 @@ export class TaskController {
   }
 
   async listTasks(
-    request: FastifyRequest<{
-      Querystring: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const query = request.query as {
         assigneeId?: string;
         conversationId?: string;
         requirementId?: string;
@@ -65,11 +59,6 @@ export class TaskController {
         page?: string;
         limit?: string;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const query = request.query;
       const dto = {
         assigneeId: query.assigneeId,
         conversationId: query.conversationId,
@@ -87,16 +76,15 @@ export class TaskController {
   }
 
   async assignTask(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: { assigneeId: string };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
+      const { id } = request.params as { id: string };
+      const { assigneeId } = request.body as { assigneeId: string };
       const result = await this.assignTaskUseCase.execute({
-        taskId: request.params.id,
-        assigneeId: request.body.assigneeId,
+        taskId: id,
+        assigneeId,
       });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
@@ -105,17 +93,13 @@ export class TaskController {
   }
 
   async updateStatus(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: { status: 'pending' | 'in_progress' | 'completed' | 'cancelled' };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const result = await this.updateTaskStatusUseCase.execute(
-        request.params.id,
-        request.body,
-      );
+      const { id } = request.params as { id: string };
+      const body = request.body as { status: 'pending' | 'in_progress' | 'completed' | 'cancelled' };
+      const result = await this.updateTaskStatusUseCase.execute(id, body);
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
@@ -123,23 +107,19 @@ export class TaskController {
   }
 
   async completeTask(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const body = request.body as {
         qualityScore?: {
           timeliness: number;
           completeness: number;
           satisfaction: number;
         };
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const result = await this.completeTaskUseCase.execute(
-        request.params.id,
-        { qualityScore: request.body.qualityScore },
-      );
+      const result = await this.completeTaskUseCase.execute(id, { qualityScore: body.qualityScore });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);

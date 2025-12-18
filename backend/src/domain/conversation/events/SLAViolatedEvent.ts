@@ -6,7 +6,7 @@ export interface SLAViolatedPayload {
   details?: string;
 }
 
-export class SLAViolatedEvent extends DomainEvent {
+export class SLAViolatedEvent extends DomainEvent<SLAViolatedPayload> {
   constructor(props: DomainEventProps, payload: SLAViolatedPayload) {
     super('SLAViolated', props, payload);
   }

@@ -6,7 +6,7 @@ export interface ConversationCreatedPayload {
   priority: string;
 }
 
-export class ConversationCreatedEvent extends DomainEvent {
+export class ConversationCreatedEvent extends DomainEvent<ConversationCreatedPayload> {
   constructor(props: DomainEventProps, payload: ConversationCreatedPayload) {
     super('ConversationCreated', props, payload);
   }

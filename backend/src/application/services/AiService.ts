@@ -48,6 +48,8 @@ export interface AnalyzeConversationResult {
   analyzedAt: string;
 }
 
+type AiAnalysisResultPayload = AnalyzeConversationResult['result'];
+
 export interface ApplySolutionRequest {
   conversationId: string;
   solutionType: string;
@@ -103,7 +105,7 @@ export class AiService {
       },
     ];
 
-    const payload = {
+    const payload: AiAnalysisResultPayload = {
       overallSentiment: 'positive',
       score: 0.82,
       confidence: 0.91,

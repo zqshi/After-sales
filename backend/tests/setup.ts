@@ -6,6 +6,8 @@ import Redis from 'ioredis';
 // 加载测试环境变量
 dotenv.config({ path: '.env.test' });
 
+const shouldInitializeEnv = process.env.SKIP_TEST_ENV_SETUP !== 'true';
+
 // ============================================
 // 全局测试设置
 // ============================================
@@ -15,6 +17,11 @@ let redisClient: Redis;
 
 // 测试前初始化
 beforeAll(async () => {
+  if (!shouldInitializeEnv) {
+    console.log('⚠️ SKIP_TEST_ENV_SETUP=true - bypassing test environment initialization');
+    return;
+  }
+
   console.log('🔧 Initializing test environment...');
 
   // 初始化数据库连接
@@ -68,6 +75,10 @@ beforeAll(async () => {
 
 // 每个测试后清理数据
 afterEach(async () => {
+  if (!shouldInitializeEnv) {
+    return;
+  }
+
   if (dataSource && dataSource.isInitialized) {
     // 清理所有表数据（使用CASCADE处理外键约束）
     try {
@@ -95,6 +106,10 @@ afterEach(async () => {
 
 // 测试完成后断开连接
 afterAll(async () => {
+  if (!shouldInitializeEnv) {
+    return;
+  }
+
   console.log('🧹 Cleaning up test environment...');
 
   if (dataSource && dataSource.isInitialized) {

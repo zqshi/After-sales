@@ -6,7 +6,7 @@ export interface CustomerMarkedAsVIPPayload {
   reason?: string;
 }
 
-export class CustomerMarkedAsVIPEvent extends DomainEvent {
+export class CustomerMarkedAsVIPEvent extends DomainEvent<CustomerMarkedAsVIPPayload> {
   constructor(props: DomainEventProps, payload: CustomerMarkedAsVIPPayload) {
     super('CustomerMarkedAsVIP', props, payload);
   }

@@ -1,0 +1,6 @@
+fastapi>=0.115.1
+uvicorn[standard]>=0.23.0
+agentscope==1.0.10
+python-dotenv>=1.0.0
+httpx>=0.25.0
+prometheus_client>=0.16.0

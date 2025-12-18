@@ -6,7 +6,7 @@ export interface ProfileRefreshedPayload {
   source: string;
 }
 
-export class ProfileRefreshedEvent extends DomainEvent {
+export class ProfileRefreshedEvent extends DomainEvent<ProfileRefreshedPayload> {
   constructor(props: DomainEventProps, payload: ProfileRefreshedPayload) {
     super('ProfileRefreshed', props, payload);
   }

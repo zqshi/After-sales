@@ -74,6 +74,10 @@ export class EventBus {
       return;
     }
 
+    if (event && !event.occurredAt) {
+      event.occurredAt = new Date().toISOString();
+    }
+
     // 验证事件
     this._validateEvent(event);
 

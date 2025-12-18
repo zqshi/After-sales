@@ -5,6 +5,18 @@ export async function knowledgeRoutes(
   fastify: FastifyInstance,
   controller: KnowledgeController,
 ): Promise<void> {
+  fastify.post('/api/knowledge/search', async (request, reply) => {
+    await controller.search(request, reply);
+  });
+
+  fastify.post('/api/knowledge/upload', async (request, reply) => {
+    await controller.upload(request, reply);
+  });
+
+  fastify.get('/api/knowledge/:id/progress', async (request, reply) => {
+    await controller.getProgress(request, reply);
+  });
+
   fastify.post('/api/knowledge', async (request, reply) => {
     await controller.create(request, reply);
   });

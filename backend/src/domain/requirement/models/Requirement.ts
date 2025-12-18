@@ -4,7 +4,6 @@ import { Priority } from '../value-objects/Priority';
 import { RequirementCreatedEvent } from '../events/RequirementCreatedEvent';
 import { RequirementStatusChangedEvent } from '../events/RequirementStatusChangedEvent';
 import { RequirementPriorityChangedEvent } from '../events/RequirementPriorityChangedEvent';
-import { RequirementDetectorService } from '../services/RequirementDetectorService';
 
 export type RequirementStatus = 'pending' | 'approved' | 'resolved' | 'ignored' | 'cancelled';
 
@@ -66,8 +65,10 @@ export class Requirement extends AggregateRoot<RequirementProps> {
         {
           requirementId: requirement.id,
           customerId: requirement.props.customerId,
+          conversationId: requirement.props.conversationId,  // 包含conversationId
           title: requirement.props.title,
           category: requirement.props.category,
+          priority: requirement.props.priority.value,  // 包含priority用于决策
           source: requirement.props.source.value,
         },
       ),

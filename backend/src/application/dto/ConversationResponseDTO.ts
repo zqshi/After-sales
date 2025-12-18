@@ -51,9 +51,31 @@ export class ConversationResponseDTO {
     dto.status = conversation.status;
     dto.channel = conversation.channel.value;
 
-    const participants =
-      (conversation as { participants?: ParticipantDTO[] }).participants ?? [];
-    dto.participants = participants.map((p) => ({
+    const declaredParticipants =
+      (conversation as { participants?: ParticipantDTO[] }).participants;
+    const derivedParticipants: ParticipantDTO[] =
+      declaredParticipants && declaredParticipants.length
+        ? declaredParticipants
+        : [
+          {
+            id: conversation.customerId,
+            name: 'Customer',
+            role: 'customer',
+          },
+          ...(
+            conversation.agentId
+              ? [
+                {
+                  id: conversation.agentId,
+                  name: 'Agent',
+                  role: 'agent',
+                },
+              ]
+              : []
+          ),
+        ];
+
+    dto.participants = derivedParticipants.map((p) => ({
       id: p.id,
       name: p.name,
       role: p.role,

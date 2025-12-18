@@ -7,7 +7,7 @@ export interface RequirementPriorityChangedPayload {
   changedAt: Date;
 }
 
-export class RequirementPriorityChangedEvent extends DomainEvent {
+export class RequirementPriorityChangedEvent extends DomainEvent<RequirementPriorityChangedPayload> {
   constructor(props: DomainEventProps, payload: RequirementPriorityChangedPayload) {
     super('RequirementPriorityChanged', props, payload);
   }

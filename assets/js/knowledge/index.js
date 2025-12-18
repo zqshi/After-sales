@@ -1,6 +1,7 @@
 import { qs, qsa, on } from '../core/dom.js';
 import { addToSuggestion } from '../chat/index.js';
-import { fetchKnowledge, isApiEnabled } from '../api.js';
+import { isApiEnabled } from '../api.js';
+import { knowledgeController } from '../presentation/knowledge/KnowledgeController.js';
 
 let activeKnowledgeCard = null;
 
@@ -8,6 +9,9 @@ export function initKnowledgeBase() {
   bindKnowledgeClicks();
   bindPreviewButtons();
   loadKnowledgeCards();
+  document.addEventListener('knowledge-item-created', () => {
+    loadKnowledgeCards();
+  });
 }
 
 function bindKnowledgeClicks() {
@@ -16,7 +20,7 @@ function bindKnowledgeClicks() {
     return;
   }
 
-  on(knowledgeTab, 'click', (event) => {
+  on(knowledgeTab, 'click', async (event) => {
     const target = event.target.closest('[data-click]');
     if (!target) {
       return;
@@ -25,7 +29,7 @@ function bindKnowledgeClicks() {
     const action = target.getAttribute('data-click');
     if (action === 'knowledge-detail' || action === 'knowledge-video') {
       event.preventDefault();
-      openKnowledgePreview(
+      await openKnowledgePreview(
         {
           title: target.getAttribute('data-label') || '知识原文',
           url: target.getAttribute('data-url') || '#',
@@ -34,6 +38,7 @@ function bindKnowledgeClicks() {
           type: target.getAttribute('data-type') || '文档',
           updated: target.getAttribute('data-updated') || '',
           tags: parseKnowledgeTags(target.getAttribute('data-tags')),
+          id: target.getAttribute('data-id'),
         },
         target,
       );
@@ -76,9 +81,8 @@ async function loadKnowledgeCards() {
   }
 
   try {
-    const response = await fetchKnowledge({ page: 1, pageSize: 4 });
-    const payload = response?.data ?? response;
-    const items = payload?.items ?? payload?.knowledge ?? [];
+    const payload = await knowledgeController.list({ page: 1, pageSize: 4 });
+    const items = payload?.items ?? [];
     if (!items.length) {
       return;
     }
@@ -112,6 +116,7 @@ function renderKnowledgeCard(item, index) {
             <span>${updated}</span>
             <button class="text-xs text-primary hover:underline" data-click="knowledge-detail"
               data-label="${label}"
+              data-id="${item.id}"
               data-url="${url}"
               data-preview="${preview}"
               data-full="${full}"
@@ -148,7 +153,7 @@ export function parseKnowledgeTags(tagStr = '') {
     .filter(Boolean);
 }
 
-export function openKnowledgePreview(options = {}, triggerBtn = null) {
+export async function openKnowledgePreview(options = {}, triggerBtn = null) {
   const wrapper = qs('#knowledge-preview');
   const titleEl = qs('#knowledge-preview-title');
   const typeEl = qs('#knowledge-preview-type');
@@ -162,11 +167,23 @@ export function openKnowledgePreview(options = {}, triggerBtn = null) {
     return;
   }
 
+  let detail = null;
+  if (options.id) {
+    try {
+      detail = await knowledgeController.detail(options.id);
+    } catch (error) {
+      console.warn('[knowledge] failed to load detail', error);
+    }
+  }
+
+  const previewText = detail?.summary || options.preview || '';
+  const fullText = detail?.content || options.full || previewText;
+
   activeKnowledgeCard = {
     title: options.title,
     url: options.url,
-    full: options.full,
-    preview: options.preview,
+    full: fullText,
+    preview: previewText,
   };
 
   titleEl.textContent = options.title || '知识原文预览';
@@ -174,9 +191,9 @@ export function openKnowledgePreview(options = {}, triggerBtn = null) {
   updatedEl.textContent = options.updated ? `更新于：${options.updated}` : '更新于：-';
   sourceEl.textContent = `来源：${options.url ? options.url : '内部知识库'}`;
 
-  bodyEl.textContent = options.preview || '暂无预览内容';
+  bodyEl.textContent = previewText || '暂无预览内容';
   tagWrap.innerHTML = '';
-  options.tags?.forEach((tag) => {
+  (detail?.tags || options.tags || []).forEach((tag) => {
     const badge = document.createElement('span');
     badge.className = 'px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full';
     badge.textContent = tag;

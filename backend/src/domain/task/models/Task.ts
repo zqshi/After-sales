@@ -112,6 +112,10 @@ export class Task extends AggregateRoot<TaskProps> {
     return this.props.dueDate;
   }
 
+  get qualityScore(): QualityScore | undefined {
+    return this.props.qualityScore;
+  }
+
   start(executorId?: string): void {
     if (this.props.status !== 'pending') {
       throw new Error('Only pending tasks can be started');
@@ -147,6 +151,7 @@ export class Task extends AggregateRoot<TaskProps> {
         { aggregateId: this.id },
         {
           taskId: this.id,
+          conversationId: this.props.conversationId,  // 包含conversationId用于跨域协调
           completedAt: this.props.completedAt,
           qualityScore: score?.overall,
         },

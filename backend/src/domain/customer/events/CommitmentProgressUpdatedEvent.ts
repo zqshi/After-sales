@@ -8,7 +8,7 @@ export interface CommitmentProgressUpdatedPayload {
   updatedAt: Date;
 }
 
-export class CommitmentProgressUpdatedEvent extends DomainEvent {
+export class CommitmentProgressUpdatedEvent extends DomainEvent<CommitmentProgressUpdatedPayload> {
   constructor(props: DomainEventProps, payload: CommitmentProgressUpdatedPayload) {
     super('CommitmentProgressUpdated', props, payload);
   }

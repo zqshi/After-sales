@@ -7,7 +7,7 @@ export interface TaskCreatedPayload {
   priority: string;
 }
 
-export class TaskCreatedEvent extends DomainEvent {
+export class TaskCreatedEvent extends DomainEvent<TaskCreatedPayload> {
   constructor(props: DomainEventProps, payload: TaskCreatedPayload) {
     super('TaskCreated', props, payload);
   }

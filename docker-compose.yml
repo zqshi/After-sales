@@ -55,6 +55,7 @@ services:
       LOG_LEVEL: debug
       DATABASE_URL: postgresql://admin:admin123@postgres:5432/aftersales
       REDIS_URL: redis://:redis123@redis:6379
+      AGENTSCOPE_URL: http://agentscope-service:5000
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,6 +69,25 @@ services:
       - aftersales-network
     restart: unless-stopped
     command: npm run dev
+
+  agentscope-service:
+    build:
+      context: ./agentscope-service
+      dockerfile: Dockerfile
+    container_name: aftersales-agentscope
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_BACKEND_URL: http://backend:8080
+      MCP_API_KEY:
+    depends_on:
+      backend:
+        condition: service_started
+    volumes:
+      - ./agentscope-service:/app
+    networks:
+      - aftersales-network
+    restart: unless-stopped
 
   # 前端服务
   frontend:

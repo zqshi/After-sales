@@ -1,4 +1,6 @@
 import { generateId } from '../../../core/utils.js';
+import { Channel } from './Channel.js';
+import { Participant } from './Participant.js';
 
 /**
  * Conversation聚合根
@@ -77,47 +79,6 @@ export class Message {
    */
   isFromAgent() {
     return this.senderType === 'agent';
-  }
-}
-
-/**
- * Channel值对象
- */
-export class Channel {
-  constructor(type) {
-    this.type = type; // 'chat' | 'email' | 'phone' | 'feishu' | 'wechat'
-    this._validate();
-  }
-
-  _validate() {
-    const validTypes = ['chat', 'email', 'phone', 'feishu', 'wechat', 'qq'];
-    if (!validTypes.includes(this.type)) {
-      throw new Error(`Invalid channel type: ${this.type}`);
-    }
-  }
-
-  equals(other) {
-    return other instanceof Channel && this.type === other.type;
-  }
-
-  toString() {
-    return this.type;
-  }
-}
-
-/**
- * Participant值对象
- */
-export class Participant {
-  constructor(data) {
-    this.id = data.id;
-    this.name = data.name;
-    this.type = data.type; // 'customer' | 'agent'
-    this.avatar = data.avatar || '';
-  }
-
-  equals(other) {
-    return other instanceof Participant && this.id === other.id;
   }
 }
 
@@ -443,4 +404,3 @@ export class Conversation {
     this._domainEvents = [];
   }
 }
-

@@ -4,10 +4,10 @@ import { toggleRightSidebar } from '../ui/layout.js';
 import {
   isApiEnabled,
   fetchTasks,
-  createTask,
   actionTask,
   fetchQualityProfile,
 } from '../api.js';
+import { taskController } from '../presentation/task/TaskController.js';
 
 const qualityProfiles = {
   'conv-001': {
@@ -132,19 +132,20 @@ async function loadTasksFromApi() {
   }
 
   try {
-    const response = await fetchTasks({
-      agentId: window.config?.userId,
+    const response = await taskController.listTasks({
+      assigneeId: window.config?.userId,
       status: 'all',
+      limit: 12,
     });
     const payload = response?.data ?? response;
-    const items = payload?.items ?? payload?.tasks ?? [];
+    const items = normalizeTasks(payload);
     const tasksList = qs('#tasks-list');
     if (tasksList) {
       tasksList.innerHTML = '';
     }
     items.forEach((task) => addTaskFromApi(task));
   } catch (err) {
-    console.warn('[tasks] fetch failed', err);
+    console.warn('[tasks] list failed', err);
   }
 }
 
@@ -390,6 +391,28 @@ export function addTaskToList(taskId, name, description, priority, agent, status
   tasksList.prepend(taskEl);
 }
 
+function normalizeTasks(payload) {
+  if (!payload) {
+    return [];
+  }
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (Array.isArray(payload.items)) {
+    return payload.items;
+  }
+  if (Array.isArray(payload.tasks)) {
+    return payload.tasks;
+  }
+  if (Array.isArray(payload.data?.items)) {
+    return payload.data.items;
+  }
+  if (Array.isArray(payload.data)) {
+    return payload.data;
+  }
+  return [];
+}
+
 function startTaskProgress(card, taskId, triggerBtn) {
   const statusBadge = card.querySelector('.rounded-full');
   if (statusBadge) {
@@ -468,7 +491,7 @@ export async function createRelatedTask(solutionType, solutionName, taskDraft = 
 
   if (isApiEnabled()) {
     try {
-      const response = await createTask({
+      const response = await taskController.createTask({
         ...payload,
         relatedEntity: payload.relatedEntity || { conversationId: getActiveConversationId() },
       });
@@ -513,8 +536,51 @@ function buildTaskPayload(solutionType, solutionName) {
   };
 }
 
-function showTaskDetails(taskId) {
-  showNotification(`任务 ${taskId} 的详情查看功能待对接`, 'info');
+async function showTaskDetails(taskId) {
+  if (!taskId) {
+    showNotification('任务ID无效', 'warning');
+    return;
+  }
+
+  try {
+    const detail = await taskController.getTask(taskId);
+    if (!detail) {
+      showNotification(`未找到任务 ${taskId}`, 'warning');
+      return;
+    }
+
+    renderTaskDetail(detail);
+    showNotification(`任务 ${detail.title || taskId} 详情已加载`, 'success');
+  } catch (error) {
+    console.error('[tasks] showTaskDetails failed', error);
+    showNotification('任务详情加载失败，请稍后重试', 'error');
+  }
+}
+
+function renderTaskDetail(detail) {
+  const wrapper = qs('#task-detail-wrapper');
+  if (!wrapper) {
+    return;
+  }
+
+  const dueText = detail.dueDate ? `截止时间：${new Date(detail.dueDate).toLocaleString()}` : '截止时间未设定';
+  const statusLabel = detail.status ? detail.status.replace('_', ' ') : '未知状态';
+
+  wrapper.innerHTML = `
+    <div class="bg-white border border-gray-200 rounded-lg p-4 space-y-2">
+      <div class="flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-800">${detail.title || '任务详情'}</h3>
+        <span class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full">${statusLabel}</span>
+      </div>
+      <p class="text-sm text-gray-600">${detail.description || detail.summary || '暂无描述'}</p>
+      <div class="text-xs text-gray-500 space-y-1">
+        <p>优先级：${(detail.priority || 'medium').replace('_', ' ')}</p>
+        <p>负责人：${detail.assignedToName || detail.assigneeName || '未指定'}</p>
+        <p>${dueText}</p>
+        <p>关联对话：${detail.conversationId || '无'}</p>
+      </div>
+    </div>
+  `;
 }
 
 function getCurrentTime() {
@@ -590,7 +656,7 @@ function setupCustomTaskEditor(config) {
       let created = false;
       if (isApiEnabled()) {
         try {
-          const response = await createTask(payload);
+          const response = await taskController.createTask(payload);
           const taskData = response?.data ?? response;
           addTaskFromApi(taskData);
           created = true;

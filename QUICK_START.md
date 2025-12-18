@@ -38,6 +38,7 @@
 - Dockerfile（多阶段构建）
 - 开发/生产环境配置
 - 监控服务（Prometheus + Grafana）
+- AgentScope FastAPI 服务与 MCP/事件桥接容器
 
 ### ✅ CI/CD 流程
 - GitHub Actions 配置
@@ -83,6 +84,7 @@ docker-compose logs -f backend
 # 前端: http://localhost:3000
 # 后端: http://localhost:8080
 # Grafana: http://localhost:3001
+# AgentScope FastAPI: http://localhost:5000/health
 ```
 
 **遇到镜像拉取问题？** 查看 [Docker 故障排查指南](docs/DOCKER_GUIDE.md#拉取镜像故障排查)
@@ -369,6 +371,7 @@ JWT_SECRET=your-secret-key-change-in-production
 | Redis | 6379 | 6379 | 缓存/消息队列 |
 | Prometheus | 9090 | 9090 | 监控指标 |
 | Grafana | 3000 | 3001 | 可视化面板 |
+| AgentScope | 5000 | 5000 | FastAPI AgentScope 服务 |
 
 ---
 

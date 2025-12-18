@@ -12,13 +12,17 @@ import { ApiClient } from '../../infrastructure/api/ApiClient.js';
 
 // 仓储
 import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository.js';
-import { ProfileRepository } from '../../domains/customer/repositories/ProfileRepository.js';
+import { CustomerProfileRepository } from '../../infrastructure/repositories/CustomerProfileRepository.js';
 import { RequirementRepository } from '../../infrastructure/repositories/RequirementRepository.js';
+import { TaskRepository } from '../../infrastructure/repositories/TaskRepository.js';
+import { KnowledgeRepository } from '../../infrastructure/repositories/KnowledgeRepository.js';
 
 // 应用服务
 import { ConversationApplicationService } from '../conversation/ConversationApplicationService.js';
 import { CustomerProfileApplicationService } from '../customer/CustomerProfileApplicationService.js';
 import { RequirementApplicationService } from '../requirement/RequirementApplicationService.js';
+import { TaskApplicationService } from '../task/TaskApplicationService.js';
+import { KnowledgeApplicationService } from '../knowledge/KnowledgeApplicationService.js';
 
 /**
  * 创建并配置DI容器
@@ -47,16 +51,27 @@ export function createContainer() {
     return new ConversationRepository(apiClient);
   }, true);
 
-  // ProfileRepository - 客户画像仓储（单例）
-  container.register('profileRepository', (c) => {
-    const apiClient = c.resolve('apiClient');
-    return new ProfileRepository(apiClient);
+  // CustomerProfileRepository - 客户画像仓储（单例）
+  container.register('profileRepository', () => {
+    return new CustomerProfileRepository();
   }, true);
 
   // RequirementRepository - 需求仓储（单例）
   container.register('requirementRepository', (c) => {
     const apiClient = c.resolve('apiClient');
     return new RequirementRepository(apiClient);
+  }, true);
+
+  // TaskRepository - 任务仓储（单例）
+  container.register('taskRepository', (c) => {
+    const apiClient = c.resolve('apiClient');
+    return new TaskRepository(apiClient);
+  }, true);
+
+  // KnowledgeRepository - 知识仓储（单例）
+  container.register('knowledgeRepository', (c) => {
+    const apiClient = c.resolve('apiClient');
+    return new KnowledgeRepository(apiClient);
   }, true);
 
   // ==================== 应用服务层 ====================
@@ -81,6 +96,21 @@ export function createContainer() {
   container.register('requirementApplicationService', (c) => {
     return new RequirementApplicationService({
       requirementRepository: c.resolve('requirementRepository'),
+      eventBus: c.resolve('eventBus'),
+    });
+  }, true);
+
+  // TaskApplicationService - 任务应用服务（单例）
+  container.register('taskApplicationService', (c) => {
+    return new TaskApplicationService({
+      taskRepository: c.resolve('taskRepository'),
+      eventBus: c.resolve('eventBus'),
+    });
+  }, true);
+
+  container.register('knowledgeApplicationService', (c) => {
+    return new KnowledgeApplicationService({
+      knowledgeRepository: c.resolve('knowledgeRepository'),
       eventBus: c.resolve('eventBus'),
     });
   }, true);

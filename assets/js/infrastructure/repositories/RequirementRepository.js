@@ -66,4 +66,13 @@ export class RequirementRepository extends BaseRepository {
   async updateStatus(id, status) {
     return this.patch(`/${id}`, { status });
   }
+
+  /**
+   * 保存需求（接口契约）
+   * @param {Requirement} requirement
+   * @returns {Promise<Requirement>}
+   */
+  async save(requirement) {
+    return requirement;
+  }
 }

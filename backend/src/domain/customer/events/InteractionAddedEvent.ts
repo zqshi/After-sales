@@ -7,7 +7,7 @@ export interface InteractionAddedPayload {
   occurredAt: Date;
 }
 
-export class InteractionAddedEvent extends DomainEvent {
+export class InteractionAddedEvent extends DomainEvent<InteractionAddedPayload> {
   constructor(props: DomainEventProps, payload: InteractionAddedPayload) {
     super('InteractionAdded', props, payload);
   }

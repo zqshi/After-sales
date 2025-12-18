@@ -5,7 +5,7 @@ export interface KnowledgeItemDeletedPayload {
   deletedAt: Date;
 }
 
-export class KnowledgeItemDeletedEvent extends DomainEvent {
+export class KnowledgeItemDeletedEvent extends DomainEvent<KnowledgeItemDeletedPayload> {
   constructor(props: DomainEventProps, payload: KnowledgeItemDeletedPayload) {
     super('KnowledgeItemDeleted', props, payload);
   }

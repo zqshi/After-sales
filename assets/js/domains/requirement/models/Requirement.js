@@ -16,6 +16,9 @@ import { generateId } from '../../../core/utils.js';
 
 import { RequirementStatusChangedEvent } from '../events/RequirementStatusChangedEvent.js';
 import { RequirementPriorityChangedEvent } from '../events/RequirementPriorityChangedEvent.js';
+import { RequirementCreatedEvent } from '../events/RequirementCreatedEvent.js';
+import { RequirementSource } from './RequirementSource.js';
+import { RequirementPriority } from './RequirementPriority.js';
 
 /**
  * 需求状态
@@ -54,9 +57,16 @@ export class Requirement {
     // 需求内容
     this.category = data.category || RequirementCategory.FEATURE;
     this.title = data.title || '';
-    this.description = data.description || '';
-    this.priority = data.priority || 'medium'; // 'low' | 'medium' | 'high' | 'urgent'
+    this.description = data.description || data.content || '';
+    this.content = data.content || this.description || this.title;
     this.status = data.status || RequirementStatus.PENDING;
+
+    const priorityValue = new RequirementPriority(data.priority);
+    this.priority = priorityValue.value;
+    this.priorityDetail = priorityValue;
+    const sourceValue = new RequirementSource(data.source);
+    this.source = sourceValue.value;
+    this.sourceDetail = sourceValue;
 
     // AI提取信息
     this.confidence = data.confidence || 1.0; // 0-1,AI提取的置信度
@@ -78,6 +88,20 @@ export class Requirement {
 
     // 领域事件
     this._domainEvents = [];
+
+    if (data.isNew) {
+      this._addDomainEvent(new RequirementCreatedEvent({
+        requirementId: this.id,
+        conversationId: this.conversationId,
+        customerId: this.customerId,
+        content: this.content,
+        source: this.source,
+        priority: this.priority,
+        confidence: this.confidence,
+        assignedTo: this.assignedTo,
+        createdAt: this.createdAt,
+      }));
+    }
   }
 
   // ============ 命令方法 ============
@@ -178,23 +202,20 @@ export class Requirement {
    * 更新优先级
    */
   updatePriority(priority) {
-    const validPriorities = ['low', 'medium', 'high', 'urgent'];
-    if (!validPriorities.includes(priority)) {
-      throw new Error(`Invalid priority: ${priority}`);
-    }
-
+    const normalized = new RequirementPriority(priority);
     const oldPriority = this.priority;
-    this.priority = priority;
+    this.priority = normalized.value;
+    this.priorityDetail = normalized;
     this.updatedAt = new Date().toISOString();
 
-    if (oldPriority !== priority) {
+    if (oldPriority !== this.priority) {
       this._addDomainEvent(
         new RequirementPriorityChangedEvent({
           requirementId: this.id,
           conversationId: this.conversationId,
           customerId: this.customerId,
           oldPriority,
-          newPriority: priority,
+          newPriority: this.priority,
           title: this.title,
           category: this.category,
           status: this.status,

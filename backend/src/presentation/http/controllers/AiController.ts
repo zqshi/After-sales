@@ -9,18 +9,17 @@ export class AiController {
   ) {}
 
   async analyze(
-    request: FastifyRequest<{
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const payload = request.body as {
         conversationId: string;
         context?: string;
         model?: string;
         options?: Record<string, unknown>;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const result = await this.analyzeUseCase.execute(request.body);
+      const result = await this.analyzeUseCase.execute(payload);
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
@@ -28,19 +27,18 @@ export class AiController {
   }
 
   async applySolution(
-    request: FastifyRequest<{
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const payload = request.body as {
         conversationId: string;
         solutionType: string;
         solutionId?: string;
         messageTemplate?: string;
         customization?: Record<string, unknown>;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const result = await this.applySolutionUseCase.execute(request.body);
+      const result = await this.applySolutionUseCase.execute(payload);
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);

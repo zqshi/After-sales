@@ -1,0 +1,20 @@
+[project]
+name = "agentscope-service"
+version = "0.1.0"
+description = "FastAPI service scaffolding for the AgentScope-based after-sales system"
+readme = "README.md"
+authors = [
+  { name = "After-Sales Team" },
+]
+requires-python = ">=3.11"
+
+[project.dependencies]
+fastapi = ">=0.115.1"
+uvicorn = { extras = ["standard"], version = ">=0.23.0" }
+agentscope = "==1.0.10"
+python-dotenv = ">=1.0.0"
+httpx = ">=0.25.0"
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"

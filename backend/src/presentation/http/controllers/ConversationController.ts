@@ -33,13 +33,11 @@ export class ConversationController {
    * 创建对话
    */
   async createConversation(
-    request: FastifyRequest<{
-      Body: CreateConversationRequestDTO;
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const payload: CreateConversationRequestDTO = request.body;
+      const payload = request.body as CreateConversationRequestDTO;
       const result = await this.createConversationUseCase.execute(payload);
 
       reply.code(201).send({
@@ -56,8 +54,11 @@ export class ConversationController {
    * 查询对话列表
    */
   async listConversations(
-    request: FastifyRequest<{
-      Querystring: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const query = request.query as {
         status?: string;
         agentId?: string;
         customerId?: string;
@@ -66,11 +67,6 @@ export class ConversationController {
         page?: string;
         limit?: string;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const query = request.query;
       const dto: ConversationListQueryDTO = {
         status: query.status as ConversationListStatus,
         agentId: query.agentId,
@@ -97,19 +93,16 @@ export class ConversationController {
    * 分配客服
    */
   async assignAgent(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const { agentId, assignedBy, reason } = request.body as {
         agentId: string;
         assignedBy?: string;
         reason?: 'manual' | 'auto' | 'reassign';
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const { id } = request.params;
-      const { agentId, assignedBy, reason } = request.body;
 
       const result = await this.assignAgentUseCase.execute({
         conversationId: id,
@@ -132,19 +125,16 @@ export class ConversationController {
    * 发送消息
    */
   async sendMessage(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id: conversationId } = request.params as { id: string };
+      const { senderId, senderType, content } = request.body as {
         senderId: string;
         senderType: 'internal' | 'external';
         content: string;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const { id: conversationId } = request.params;
-      const { senderId, senderType, content } = request.body;
 
       const result = await this.sendMessageUseCase.execute({
         conversationId,
@@ -167,18 +157,15 @@ export class ConversationController {
    * 关闭对话
    */
   async closeConversation(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
-        closedBy: string;
-        reason?: string;
-      };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const { id: conversationId } = request.params;
-      const { closedBy, reason } = request.body;
+      const { id: conversationId } = request.params as { id: string };
+      const { closedBy, reason } = request.body as {
+        closedBy: string;
+        reason?: string;
+      };
 
       const result = await this.closeConversationUseCase.execute({
         conversationId,
@@ -200,15 +187,13 @@ export class ConversationController {
    * 获取对话详情
    */
   async getConversation(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Querystring: { includeMessages?: string };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const { id: conversationId } = request.params;
-      const includeMessages = request.query.includeMessages !== 'false';
+      const { id: conversationId } = request.params as { id: string };
+      const query = request.query as { includeMessages?: string };
+      const includeMessages = query.includeMessages !== 'false';
 
       const result = await this.getConversationUseCase.execute({
         conversationId,

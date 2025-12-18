@@ -44,11 +44,16 @@ import { AssignTaskUseCase } from './application/use-cases/task/AssignTaskUseCas
 import { UpdateTaskStatusUseCase } from './application/use-cases/task/UpdateTaskStatusUseCase';
 import { CompleteTaskUseCase } from './application/use-cases/task/CompleteTaskUseCase';
 import { TaskRepository } from './infrastructure/repositories/TaskRepository';
+import multipart from '@fastify/multipart';
 import { KnowledgeController } from './presentation/http/controllers/KnowledgeController';
 import { AiController } from './presentation/http/controllers/AiController';
 import { knowledgeRoutes } from './presentation/http/routes/knowledgeRoutes';
 import { aiRoutes } from './presentation/http/routes/aiRoutes';
 import { KnowledgeRepository } from './infrastructure/repositories/KnowledgeRepository';
+import { TaxKBAdapter } from './infrastructure/adapters/TaxKBAdapter';
+import { TaxKBKnowledgeRepository } from './infrastructure/repositories/TaxKBKnowledgeRepository';
+import { SearchKnowledgeUseCase } from './application/use-cases/knowledge/SearchKnowledgeUseCase';
+import { UploadDocumentUseCase } from './application/use-cases/knowledge/UploadDocumentUseCase';
 import { CreateKnowledgeItemUseCase } from './application/use-cases/knowledge/CreateKnowledgeItemUseCase';
 import { GetKnowledgeItemUseCase } from './application/use-cases/knowledge/GetKnowledgeItemUseCase';
 import { ListKnowledgeItemsUseCase } from './application/use-cases/knowledge/ListKnowledgeItemsUseCase';
@@ -57,7 +62,8 @@ import { DeleteKnowledgeItemUseCase } from './application/use-cases/knowledge/De
 import { AiService } from './application/services/AiService';
 import { AnalyzeConversationUseCase } from './application/use-cases/ai/AnalyzeConversationUseCase';
 import { ApplySolutionUseCase } from './application/use-cases/ai/ApplySolutionUseCase';
-import { KnowledgeRecommender } from './domain/knowledge/services/KnowledgeRecommender';
+import { KnowledgeRecommender } from '@domain/knowledge/services/KnowledgeRecommender';
+import { AgentScopeGateway } from './infrastructure/agentscope/AgentScopeGateway';
 
 export async function createApp(
   dataSource: DataSource,
@@ -68,10 +74,18 @@ export async function createApp(
 
   // 注册CORS（如果需要）
   if (process.env.NODE_ENV !== 'production') {
-    await app.register(require('@fastify/cors'), {
+    const cors = await import('@fastify/cors');
+    await app.register(cors.default, {
       origin: true,
     });
   }
+
+  await app.register(multipart, {
+    attachFieldsToBody: true,
+    limits: {
+      fileSize: 50 * 1024 * 1024,
+    },
+  });
 
   // 创建依赖
   const conversationRepository = new ConversationRepository(dataSource);
@@ -80,6 +94,8 @@ export async function createApp(
   const taskRepository = new TaskRepository(dataSource);
   const knowledgeRepository = new KnowledgeRepository(dataSource);
   const eventBus = new EventBus();
+  const taxkbAdapter = new TaxKBAdapter();
+  const taxkbKnowledgeRepository = new TaxKBKnowledgeRepository(taxkbAdapter);
 
   const createConversationUseCase = new CreateConversationUseCase(
     conversationRepository,
@@ -163,6 +179,13 @@ export async function createApp(
   const deleteKnowledgeItemUseCase = new DeleteKnowledgeItemUseCase(
     knowledgeRepository,
   );
+  const searchKnowledgeUseCase = new SearchKnowledgeUseCase(
+    taxkbKnowledgeRepository,
+  );
+  const uploadDocumentUseCase = new UploadDocumentUseCase(
+    taxkbAdapter,
+    eventBus,
+  );
 
   // 创建Controller
   const conversationController = new ConversationController(
@@ -206,6 +229,9 @@ export async function createApp(
     listKnowledgeItemsUseCase,
     updateKnowledgeItemUseCase,
     deleteKnowledgeItemUseCase,
+    searchKnowledgeUseCase,
+    uploadDocumentUseCase,
+    taxkbAdapter,
   );
   const knowledgeRecommender = new KnowledgeRecommender();
   const aiService = new AiService(knowledgeRepository, knowledgeRecommender);
@@ -224,6 +250,29 @@ export async function createApp(
   await taskRoutes(app, taskController);
   await knowledgeRoutes(app, knowledgeController);
   await aiRoutes(app, aiController);
+
+  const agentScopeDependencies = {
+    createConversationUseCase,
+    sendMessageUseCase,
+    getConversationUseCase,
+    closeConversationUseCase,
+    getCustomerProfileUseCase,
+    refreshCustomerProfileUseCase,
+    addServiceRecordUseCase,
+    searchKnowledgeUseCase,
+    uploadDocumentUseCase,
+    getKnowledgeItemUseCase,
+    createRequirementUseCase,
+    listRequirementsUseCase,
+    updateRequirementStatusUseCase,
+    createTaskUseCase,
+    updateTaskStatusUseCase,
+    analyzeConversationUseCase,
+    knowledgeRepository,
+    knowledgeRecommender,
+  };
+  const agentScopeGateway = new AgentScopeGateway(app, agentScopeDependencies, eventBus);
+  await agentScopeGateway.initialize();
 
   // 健康检查端点
   app.get('/health', async () => {

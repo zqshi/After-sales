@@ -1,6 +1,7 @@
 import { qs, qsa, on } from '../core/dom.js';
 import { scrollToBottom } from '../core/scroll.js';
 import { showNotification } from '../core/notifications.js';
+import { UnifiedChatController } from '../presentation/chat/UnifiedChatController.js';
 import {
   analyzeRequirementText,
   loadRequirementsData,
@@ -8,15 +9,16 @@ import {
 import { updateCustomerContext } from '../customer/index.js';
 import {
   fetchConversations,
-  sendChatMessage,
-  postAuditEvent,
   isApiEnabled,
 } from '../api.js';
 
 const outboundEnabled = false;
 let currentConversationId = 'conv-001';
+let chatController = null;
 
 export function initChat() {
+  chatController = new UnifiedChatController();
+  chatController.init();
   initConversationList();
   initInputEvents();
   initConversationEndDetection();
@@ -74,6 +76,7 @@ function bindConversationEvents() {
   if (active) {
     const activeId = active.getAttribute('data-id') || 'conv-001';
     currentConversationId = activeId;
+    updateChatContent(activeId);
     updateCustomerContext(activeId);
   }
 }
@@ -132,55 +135,19 @@ function createConversationMarkup(conv, isActive) {
 }
 
 function updateChatContent(conversationId) {
-  const chatMessages = qs('#chat-messages');
-  if (!chatMessages) {
-    return;
-  }
-
-  if (conversationId !== 'conv-001') {
-    const anchorLabelMap = {
-      'conv-002': '账单核对咨询',
-      'conv-003': '新功能使用反馈',
-      'conv-004': 'API密钥申请指引',
-      'conv-005': '数据同步异常',
-    };
-    const anchorLabel = anchorLabelMap[conversationId] || '会话记录';
-
-    chatMessages.innerHTML = `
-      <div class="flex justify-center">
-        <span class="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">加载对话中...</span>
-      </div>
-    `;
-
-    setTimeout(() => {
-      chatMessages.innerHTML = `
-        <div class="flex justify-center">
-          <span class="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">今天 09:45</span>
-        </div>
-        <div class="message customer-message flex" data-history-label="${anchorLabel}">
-          <div class="avatar w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-semibold">
-            ${conversationId === 'conv-002' ? '李' : conversationId === 'conv-003' ? '王' : '赵'}
-          </div>
-          <div class="ml-2 max-w-[70%]">
-            <div class="message-bubble bg-blue-100 p-3 message-bubble-customer">
-              <p>${
-  conversationId === 'conv-002'
-    ? '关于上个月的账单有一些疑问，想咨询一下'
-    : conversationId === 'conv-003'
-      ? '新功能使用很流畅，感谢你们的支持！'
-      : '需要申请新的API密钥，请问如何操作？'
-}</p>
-            </div>
-            <div class="message-meta flex justify-between items-center mt-1">
-              <span class="text-xs text-gray-500">09:45</span>
-              <span class="emotion-neutral text-xs px-2 py-0.5 rounded-full">😊 满意</span>
-            </div>
-          </div>
-        </div>
-      `;
-      scrollToBottom();
-    }, 500);
-  }
+  currentConversationId = conversationId;
+  const card = qs(`.conversation-item[data-id="${conversationId}"]`);
+  const customerName = card?.querySelector('.customer-name')?.textContent?.trim();
+  const summary = card?.querySelector('.conv-preview')?.textContent?.trim();
+  const slaNode = card?.querySelector('.px-2');
+  const sla = slaNode?.textContent?.trim();
+  chatController?.setConversation(conversationId, {
+    customerName,
+    summary,
+    sla,
+    customerId: card?.getAttribute('data-customer-id'),
+  });
+  updateCustomerContext(conversationId);
 }
 
 function initInputEvents() {
@@ -222,54 +189,11 @@ function initInputEvents() {
 }
 
 export function sendMessage() {
-  const messageInput = qs('#message-input');
-  if (!messageInput) {
+  if (!chatController) {
+    showNotification('AgentScope正在启动中，请稍候', 'warning');
     return;
   }
-
-  const message = messageInput.value.trim();
-  if (!message) {
-    return;
-  }
-
-  if (!outboundEnabled) {
-    addMessage('internal', message);
-    showNotification('已记录为内部备注，未对外发送', 'info');
-  }
-
-  messageInput.value = '';
-  qs('#low-confidence-warning')?.classList.add('hidden');
-  qs('#emoji-panel')?.classList.add('hidden');
-
-  analyzeConversationEnd(message);
-  scrollToBottom();
-
-  const conversationId = currentConversationId || 'conv-001';
-  if (!isApiEnabled()) {
-    return;
-  }
-
-  const payload = {
-    type: outboundEnabled ? 'response' : 'internal',
-    content: message,
-    channel: 'web',
-    traceId: `msg-${Date.now()}`,
-  };
-
-  sendChatMessage(conversationId, payload)
-    .then(() => {
-      postAuditEvent({
-        userId: window.config?.userId || 'unknown',
-        action: 'send_message',
-        entity: conversationId,
-        result: 'success',
-        traceId: payload.traceId,
-        metadata: { type: payload.type },
-      }).catch(() => {});
-    })
-    .catch(() => {
-      showNotification('消息同步接口异常，已记录为本地内容', 'warning');
-    });
+  chatController.sendInput();
 }
 
 export function addMessage(type, content) {

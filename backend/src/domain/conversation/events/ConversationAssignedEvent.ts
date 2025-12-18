@@ -9,7 +9,7 @@ export interface ConversationAssignedPayload {
   metadata?: Record<string, unknown>;
 }
 
-export class ConversationAssignedEvent extends DomainEvent {
+export class ConversationAssignedEvent extends DomainEvent<ConversationAssignedPayload> {
   constructor(props: DomainEventProps, payload: ConversationAssignedPayload) {
     super('ConversationAssigned', props, payload);
   }

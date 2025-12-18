@@ -54,9 +54,9 @@ export class CreateConversationUseCase {
       });
     }
 
+    const events = conversation.getUncommittedEvents();
     await this.conversationRepository.save(conversation);
 
-    const events = conversation.getUncommittedEvents();
     await this.eventBus.publishAll(events);
     conversation.clearEvents();
 

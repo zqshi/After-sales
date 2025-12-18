@@ -7,7 +7,7 @@ export interface RiskLevelChangedPayload {
   evaluatedAt: Date;
 }
 
-export class RiskLevelChangedEvent extends DomainEvent {
+export class RiskLevelChangedEvent extends DomainEvent<RiskLevelChangedPayload> {
   constructor(props: DomainEventProps, payload: RiskLevelChangedPayload) {
     super('RiskLevelChanged', props, payload);
   }

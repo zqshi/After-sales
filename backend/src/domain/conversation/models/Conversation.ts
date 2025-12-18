@@ -137,6 +137,15 @@ export class Conversation extends AggregateRoot<ConversationProps> {
       throw new Error('无法向已关闭的对话发送消息');
     }
 
+    const participants = new Set<string>([this.customerId]);
+    if (this.agentId) {
+      participants.add(this.agentId);
+    }
+
+    if (!participants.has(data.senderId)) {
+      throw new Error('Sender is not a participant');
+    }
+
     const message = Message.create({
       conversationId: this.id,
       senderId: data.senderId,

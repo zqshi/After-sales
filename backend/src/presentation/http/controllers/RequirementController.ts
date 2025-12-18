@@ -4,6 +4,7 @@ import { GetRequirementUseCase } from '../../../application/use-cases/requiremen
 import { ListRequirementsUseCase } from '../../../application/use-cases/requirement/ListRequirementsUseCase';
 import { UpdateRequirementStatusUseCase } from '../../../application/use-cases/requirement/UpdateRequirementStatusUseCase';
 import { DeleteRequirementUseCase } from '../../../application/use-cases/requirement/DeleteRequirementUseCase';
+import { CreateRequirementRequestDTO } from '../../../application/dto/requirement/CreateRequirementRequestDTO';
 
 export class RequirementController {
   constructor(
@@ -15,23 +16,12 @@ export class RequirementController {
   ) {}
 
   async createRequirement(
-    request: FastifyRequest<{
-      Body: {
-        customerId: string;
-        conversationId?: string;
-        title: string;
-        description?: string;
-        category: string;
-        priority?: string;
-        source?: string;
-        createdBy?: string;
-        metadata?: Record<string, unknown>;
-      };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const result = await this.createRequirementUseCase.execute(request.body);
+      const payload = request.body as CreateRequirementRequestDTO;
+      const result = await this.createRequirementUseCase.execute(payload);
       reply.code(201).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
@@ -39,14 +29,13 @@ export class RequirementController {
   }
 
   async getRequirement(
-    request: FastifyRequest<{
-      Params: { id: string };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
+      const { id } = request.params as { id: string };
       const result = await this.getRequirementUseCase.execute({
-        requirementId: request.params.id,
+        requirementId: id,
       });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
@@ -55,8 +44,11 @@ export class RequirementController {
   }
 
   async listRequirements(
-    request: FastifyRequest<{
-      Querystring: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const query = request.query as {
         customerId?: string;
         conversationId?: string;
         status?: string;
@@ -65,11 +57,6 @@ export class RequirementController {
         page?: string;
         limit?: string;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const query = request.query;
       const dto = {
         customerId: query.customerId,
         conversationId: query.conversationId,
@@ -87,17 +74,14 @@ export class RequirementController {
   }
 
   async updateStatus(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
-        status: 'pending' | 'approved' | 'resolved' | 'ignored' | 'cancelled';
-      };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const { id } = request.params;
-      const { status } = request.body;
+      const { id } = request.params as { id: string };
+      const { status } = request.body as {
+        status: 'pending' | 'approved' | 'resolved' | 'ignored' | 'cancelled';
+      };
       const result = await this.updateRequirementStatusUseCase.execute({
         requirementId: id,
         status,
@@ -109,14 +93,13 @@ export class RequirementController {
   }
 
   async deleteRequirement(
-    request: FastifyRequest<{
-      Params: { id: string };
-    }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
+      const { id } = request.params as { id: string };
       await this.deleteRequirementUseCase.execute({
-        requirementId: request.params.id,
+        requirementId: id,
       });
       reply.code(204).send();
     } catch (error) {

@@ -7,7 +7,7 @@ export interface TaskReassignedPayload {
   reassignedAt: Date;
 }
 
-export class TaskReassignedEvent extends DomainEvent {
+export class TaskReassignedEvent extends DomainEvent<TaskReassignedPayload> {
   constructor(props: DomainEventProps, payload: TaskReassignedPayload) {
     super('TaskReassigned', props, payload);
   }

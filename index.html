@@ -14,6 +14,7 @@
 
   <!-- 自定义CSS -->
   <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/unified-chat.css">
 
   <!-- Tailwind 配置 -->
   <script>
@@ -47,6 +48,19 @@
         }
       }
     }
+  </script>
+
+  <!-- API配置 -->
+  <script>
+    // 全局配置对象 - 用于配置API地址和用户信息
+    window.config = {
+      apiBaseUrl: 'http://localhost:8080',  // 后端API基础地址
+      authToken: null,  // 认证令牌（登录后设置）
+      userId: 'agent-001',  // 当前用户ID（示例）
+      analysisContext: '',  // AI分析上下文
+      agentScopeUrl: 'http://localhost:5000', // AgentScope 服务地址
+      agentScopeWebSocketUrl: 'ws://localhost:5000/api/chat/ws' // AgentScope WebSocket 地址
+    };
   </script>
 </head>
 
@@ -431,15 +445,24 @@
         data-tab-group="workspace">
         <div
           class="chat-header p-4 border-b border-gray-200 flex justify-between items-center glass-effect sticky top-0 z-10">
-          <div class="flex items-center space-x-3">
-            <div class="flex items-center">
-              <h2 class="text-lg font-semibold">张三 - ABC科技有限公司</h2>
-              <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">SLA-金牌</span>
+          <div class="flex-1 flex flex-col gap-2">
+            <div class="flex items-center space-x-3">
+              <div class="flex items-center">
+                <h2 id="chat-header-title" class="text-lg font-semibold">张三 - ABC科技有限公司</h2>
+                <span id="chat-header-sla" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">SLA-金牌</span>
+              </div>
+              <div id="chat-mode-control" class="chat-mode-control flex items-center gap-2">
+                <button data-chat-mode="agent_auto" class="chat-mode-pill active">Agent自动</button>
+                <button data-chat-mode="agent_supervised" class="chat-mode-pill">Agent监督</button>
+                <button data-chat-mode="human_first" class="chat-mode-pill">人工优先</button>
+              </div>
             </div>
-
-            <div class="text-sm text-gray-500 mt-1">
+            <div id="chat-header-summary" class="text-sm text-gray-500 mt-1">
               <span>智能摘要：</span>
               <span>客户反馈系统登录失败，影响业务运营，需要紧急处理。</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="agent-status-pill" class="agent-status-pill agent-status-offline">Agent 未连接</span>
             </div>
           </div>
 
@@ -451,6 +474,11 @@
               <span>打开分析面板</span>
             </button>
           </div>
+        </div>
+
+        <div id="escalation-banner" class="escalation-banner hidden">
+          <span class="escalation-text">Agent建议人工介入中...</span>
+          <button type="button" class="escalation-action">立即交付人工</button>
         </div>
 
         <!-- 消息区域 -->

@@ -8,7 +8,7 @@ import { RequirementMapper } from './mappers/RequirementMapper';
 export class RequirementRepository implements IRequirementRepository {
   private repository: Repository<RequirementEntity>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(dataSource: DataSource) {
     this.repository = dataSource.getRepository(RequirementEntity);
   }
 

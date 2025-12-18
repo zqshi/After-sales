@@ -7,7 +7,7 @@ export interface KnowledgeItemCreatedPayload {
   source: string;
 }
 
-export class KnowledgeItemCreatedEvent extends DomainEvent {
+export class KnowledgeItemCreatedEvent extends DomainEvent<KnowledgeItemCreatedPayload> {
   constructor(props: DomainEventProps, payload: KnowledgeItemCreatedPayload) {
     super('KnowledgeItemCreated', props, payload);
   }

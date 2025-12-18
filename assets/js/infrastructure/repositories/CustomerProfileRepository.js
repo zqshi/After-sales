@@ -5,11 +5,13 @@
  * DDD: Repository - 负责数据持久化和检索
  */
 
-import { CustomerProfile } from '../models/Profile.js';
-import { fetchProfile, fetchProfileInteractions, refreshProfile, isApiEnabled } from '../../../api.js';
+import { CustomerProfile } from '../../domains/customer/models/Profile.js';
+import { IProfileRepository } from '../../domains/customer/repositories/IProfileRepository.js';
+import { fetchProfile, fetchProfileInteractions, refreshProfile, isApiEnabled } from '../../api.js';
 
-export class ProfileRepository {
+export class CustomerProfileRepository extends IProfileRepository {
   constructor(mockDataProvider = null) {
+    super();
     this.mockDataProvider = mockDataProvider;
     this.cache = new Map();
   }
@@ -33,7 +35,7 @@ export class ProfileRepository {
         const response = await fetchProfile(conversationId);
         profileData = response?.data ?? response;
       } catch (err) {
-        console.warn(`[ProfileRepository] Failed to fetch profile from API: ${err.message}`);
+        console.warn(`[CustomerProfileRepository] Failed to fetch profile from API: ${err.message}`);
         // API失败，回退到Mock数据
         profileData = this._getMockProfile(conversationId);
       }
@@ -43,7 +45,7 @@ export class ProfileRepository {
     }
 
     if (!profileData) {
-      throw new Error(`Profile not found for conversation: ${conversationId}`);
+      profileData = this._buildFallbackProfile(conversationId);
     }
 
     // 添加conversationId到数据中
@@ -74,7 +76,7 @@ export class ProfileRepository {
         const interactions = response?.data ?? response?.items ?? response;
         return Array.isArray(interactions) ? interactions : [];
       } catch (err) {
-        console.warn(`[ProfileRepository] Failed to fetch interactions: ${err.message}`);
+        console.warn(`[CustomerProfileRepository] Failed to fetch interactions: ${err.message}`);
         // 回退到画像中的互动数据
         const profile = await this.getByConversationId(conversationId);
         return profile.interactions.filter(i => {
@@ -123,7 +125,7 @@ export class ProfileRepository {
       try {
         await refreshProfile(conversationId);
       } catch (err) {
-        console.warn(`[ProfileRepository] Failed to refresh profile: ${err.message}`);
+        console.warn(`[CustomerProfileRepository] Failed to refresh profile: ${err.message}`);
       }
     }
 
@@ -139,6 +141,26 @@ export class ProfileRepository {
   }
 
   /**
+   * 持久化客户画像（当前仅缓存）
+   * @param {CustomerProfile} profile
+   */
+  async save(profile) {
+    if (!profile || !profile.conversationId) {
+      throw new Error('Invalid profile for save');
+    }
+    this.cache.set(profile.conversationId, profile);
+    return profile;
+  }
+
+  /**
+   * 根据客户ID加载画像（接口契约）
+   * @param {string} customerId
+   */
+  async findById(customerId) {
+    return this.getByConversationId(customerId);
+  }
+
+  /**
    * 从Mock数据提供者获取数据
    * @private
    */
@@ -149,5 +171,30 @@ export class ProfileRepository {
 
     const mockData = this.mockDataProvider.getProfile(conversationId);
     return mockData;
+  }
+
+  /**
+   * 构建默认画像（用于测试或API不可用场景）
+   * @private
+   */
+  _buildFallbackProfile(conversationId) {
+    return {
+      conversationId,
+      name: '测试客户',
+      title: '未知账户',
+      contacts: {
+        phone: '未知',
+        email: 'unknown@example.com',
+      },
+      sla: {},
+      metrics: {},
+      insights: [],
+      interactions: [],
+      conversationHistory: [],
+      serviceRecords: [],
+      commitments: [],
+      history: [],
+      contractRange: '',
+    };
   }
 }

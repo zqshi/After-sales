@@ -34,8 +34,13 @@ export const config = {
   },
 
   ai: {
+    provider: process.env.AI_SERVICE_PROVIDER || 'ksyun',
     serviceUrl: process.env.AI_SERVICE_URL || '',
     apiKey: process.env.AI_SERVICE_API_KEY || '',
+    model: process.env.AI_MODEL || 'deepseek-v3.1',
+    timeout: parseInt(process.env.AI_SERVICE_TIMEOUT || '30000', 10),
+    maxRetries: parseInt(process.env.AI_SERVICE_MAX_RETRIES || '3', 10),
+    enabled: !!process.env.AI_SERVICE_URL && !!process.env.AI_SERVICE_API_KEY,
   },
 
   monitoring: {

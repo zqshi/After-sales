@@ -1,0 +1,604 @@
+
+> aftersales-backend@0.1.0 test:coverage
+> vitest run --coverage
+
+
+ RUN  v1.6.1 /Users/zqs/Downloads/project/After-sales/backend
+      Coverage enabled with v8
+
+stdout | tests/e2e/conversation.e2e.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/e2e/conversation.e2e.spec.ts
+✅ Test database connected
+
+stdout | tests/e2e/conversation.e2e.spec.ts
+✅ Test Redis connected
+
+stdout | tests/e2e/conversation.e2e.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+stdout | tests/e2e/conversation.e2e.spec.ts
+✅ Test Redis disconnected
+
+ ❯ tests/e2e/conversation.e2e.spec.ts  (14 tests) 146ms
+stdout | tests/integration/use-cases/SendMessage.integration.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/integration/use-cases/SendMessage.integration.spec.ts
+✅ Test database connected
+
+stdout | tests/integration/use-cases/SendMessage.integration.spec.ts
+✅ Test Redis connected
+
+stdout | tests/integration/use-cases/SendMessage.integration.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/integration/use-cases/SendMessage.integration.spec.ts  (6 tests) 650ms
+stdout | tests/integration/use-cases/GetConversation.integration.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/integration/use-cases/GetConversation.integration.spec.ts
+✅ Test database connected
+
+stdout | tests/integration/use-cases/GetConversation.integration.spec.ts
+✅ Test Redis connected
+
+stdout | tests/integration/use-cases/GetConversation.integration.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/integration/use-cases/GetConversation.integration.spec.ts  (6 tests) 601ms
+stdout | tests/e2e/customerProfile.e2e.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/e2e/customerProfile.e2e.spec.ts
+✅ Test database connected
+
+stdout | tests/e2e/customerProfile.e2e.spec.ts
+✅ Test Redis connected
+
+stdout | tests/e2e/customerProfile.e2e.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ❯ tests/e2e/customerProfile.e2e.spec.ts  (6 tests) 82ms
+stdout | tests/unit/domain/customer/CustomerProfile.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/customer/CustomerProfile.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/customer/CustomerProfile.spec.ts
+✅ Test Redis connected
+
+ ✓ tests/unit/domain/customer/CustomerProfile.spec.ts  (5 tests) 142ms
+stdout | tests/unit/domain/customer/CustomerProfile.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+stdout | tests/integration/use-cases/CloseConversation.integration.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/integration/use-cases/CloseConversation.integration.spec.ts
+✅ Test database connected
+
+stdout | tests/integration/use-cases/CloseConversation.integration.spec.ts
+✅ Test Redis connected
+
+stdout | tests/integration/use-cases/CloseConversation.integration.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/integration/use-cases/CloseConversation.integration.spec.ts  (5 tests) 561ms
+stdout | tests/integration/use-cases/TaskUseCases.integration.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/integration/use-cases/TaskUseCases.integration.spec.ts
+✅ Test database connected
+
+stdout | tests/integration/use-cases/TaskUseCases.integration.spec.ts
+✅ Test Redis connected
+
+stdout | tests/integration/use-cases/TaskUseCases.integration.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+stdout | tests/integration/use-cases/TaskUseCases.integration.spec.ts
+✅ Test Redis disconnected
+
+ ✓ tests/integration/use-cases/TaskUseCases.integration.spec.ts  (2 tests) 212ms
+stdout | tests/integration/use-cases/KnowledgeUseCases.integration.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/integration/use-cases/KnowledgeUseCases.integration.spec.ts
+✅ Test database connected
+
+stdout | tests/integration/use-cases/KnowledgeUseCases.integration.spec.ts
+✅ Test Redis connected
+
+stdout | tests/integration/use-cases/KnowledgeUseCases.integration.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/integration/use-cases/KnowledgeUseCases.integration.spec.ts  (2 tests) 206ms
+stdout | tests/e2e/requirement.e2e.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/e2e/requirement.e2e.spec.ts
+✅ Test database connected
+
+stdout | tests/e2e/requirement.e2e.spec.ts
+✅ Test Redis connected
+
+stdout | tests/e2e/requirement.e2e.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ❯ tests/e2e/requirement.e2e.spec.ts  (4 tests) 108ms
+stdout | tests/unit/domain/conversation/Conversation.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/conversation/Conversation.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/conversation/Conversation.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/conversation/Conversation.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/conversation/Conversation.spec.ts  (7 tests) 178ms
+stdout | tests/integration/use-cases/RequirementUseCases.integration.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/integration/use-cases/RequirementUseCases.integration.spec.ts
+✅ Test database connected
+
+stdout | tests/integration/use-cases/RequirementUseCases.integration.spec.ts
+✅ Test Redis connected
+
+stdout | tests/integration/use-cases/RequirementUseCases.integration.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/integration/use-cases/RequirementUseCases.integration.spec.ts  (2 tests) 210ms
+stdout | tests/integration/repositories/RequirementRepository.integration.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/integration/repositories/RequirementRepository.integration.spec.ts
+✅ Test database connected
+
+stdout | tests/integration/repositories/RequirementRepository.integration.spec.ts
+✅ Test Redis connected
+
+stdout | tests/integration/repositories/RequirementRepository.integration.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+stdout | tests/integration/repositories/RequirementRepository.integration.spec.ts
+✅ Test Redis disconnected
+
+ ✓ tests/integration/repositories/RequirementRepository.integration.spec.ts  (3 tests) 268ms
+stdout | tests/e2e/task.e2e.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/e2e/task.e2e.spec.ts
+✅ Test database connected
+
+stdout | tests/e2e/task.e2e.spec.ts
+✅ Test Redis connected
+
+ ❯ tests/e2e/task.e2e.spec.ts  (5 tests) 87ms
+stdout | tests/e2e/task.e2e.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+stdout | tests/e2e/knowledge.e2e.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/e2e/knowledge.e2e.spec.ts
+✅ Test database connected
+
+stdout | tests/e2e/knowledge.e2e.spec.ts
+✅ Test Redis connected
+
+stdout | tests/e2e/knowledge.e2e.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ❯ tests/e2e/knowledge.e2e.spec.ts  (4 tests) 87ms
+stdout | tests/e2e/ai.e2e.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/e2e/ai.e2e.spec.ts
+✅ Test database connected
+
+stdout | tests/e2e/ai.e2e.spec.ts
+✅ Test Redis connected
+
+stdout | tests/e2e/ai.e2e.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+ ❯ tests/e2e/ai.e2e.spec.ts  (2 tests) 88ms
+stdout | tests/e2e/ai.e2e.spec.ts
+✅ Test Redis disconnected
+
+stdout | tests/integration/repositories/KnowledgeRepository.integration.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/integration/repositories/KnowledgeRepository.integration.spec.ts
+✅ Test database connected
+
+stdout | tests/integration/repositories/KnowledgeRepository.integration.spec.ts
+✅ Test Redis connected
+
+stdout | tests/integration/repositories/KnowledgeRepository.integration.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/integration/repositories/KnowledgeRepository.integration.spec.ts  (3 tests) 235ms
+stdout | tests/unit/domain/requirement/Requirement.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/requirement/Requirement.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/requirement/Requirement.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/requirement/Requirement.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+stdout | tests/unit/domain/requirement/Requirement.spec.ts
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/requirement/Requirement.spec.ts  (5 tests) 99ms
+stdout | tests/unit/domain/task/Task.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/task/Task.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/task/Task.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/task/Task.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+stdout | tests/unit/domain/task/Task.spec.ts
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/task/Task.spec.ts  (5 tests) 89ms
+stdout | tests/integration/repositories/TaskRepository.integration.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/integration/repositories/TaskRepository.integration.spec.ts
+✅ Test database connected
+
+stdout | tests/integration/repositories/TaskRepository.integration.spec.ts
+✅ Test Redis connected
+
+stdout | tests/integration/repositories/TaskRepository.integration.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/integration/repositories/TaskRepository.integration.spec.ts  (2 tests) 188ms
+stdout | tests/unit/domain/customer/services/RiskEvaluator.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/customer/services/RiskEvaluator.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/customer/services/RiskEvaluator.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/customer/services/RiskEvaluator.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+stdout | tests/unit/domain/customer/services/RiskEvaluator.spec.ts
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/customer/services/RiskEvaluator.spec.ts  (3 tests) 85ms
+stdout | tests/unit/domain/knowledge/KnowledgeItem.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/knowledge/KnowledgeItem.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/knowledge/KnowledgeItem.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/knowledge/KnowledgeItem.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/knowledge/KnowledgeItem.spec.ts  (2 tests) 67ms
+stdout | tests/unit/domain/conversation/SLACalculatorService.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/conversation/SLACalculatorService.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/conversation/SLACalculatorService.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/conversation/SLACalculatorService.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/conversation/SLACalculatorService.spec.ts  (4 tests) 85ms
+stdout | tests/unit/domain/customer/services/HealthScoreCalculator.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/customer/services/HealthScoreCalculator.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/customer/services/HealthScoreCalculator.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/customer/services/HealthScoreCalculator.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+stdout | tests/unit/domain/customer/services/HealthScoreCalculator.spec.ts
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/customer/services/HealthScoreCalculator.spec.ts  (2 tests) 68ms
+stdout | tests/unit/domain/task/services/QualityEvaluator.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/task/services/QualityEvaluator.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/task/services/QualityEvaluator.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/task/services/QualityEvaluator.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/task/services/QualityEvaluator.spec.ts  (3 tests) 73ms
+stdout | tests/unit/domain/knowledge/services/KnowledgeRecommender.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/knowledge/services/KnowledgeRecommender.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/knowledge/services/KnowledgeRecommender.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/knowledge/services/KnowledgeRecommender.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+ ✓ tests/unit/domain/knowledge/services/KnowledgeRecommender.spec.ts  (2 tests) 63ms
+stdout | tests/unit/domain/knowledge/services/KnowledgeRecommender.spec.ts
+✅ Test Redis disconnected
+
+stdout | tests/unit/domain/conversation/Message.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/conversation/Message.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/conversation/Message.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/conversation/Message.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/conversation/Message.spec.ts  (2 tests) 64ms
+stdout | tests/unit/domain/requirement/services/RequirementDetectorService.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/requirement/services/RequirementDetectorService.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/requirement/services/RequirementDetectorService.spec.ts
+✅ Test Redis connected
+
+ ✓ tests/unit/domain/requirement/services/RequirementDetectorService.spec.ts  (2 tests) 63ms
+stdout | tests/unit/domain/requirement/services/RequirementDetectorService.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+stdout | tests/unit/infrastructure/agentscope/EventFilter.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/infrastructure/agentscope/EventFilter.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/infrastructure/agentscope/EventFilter.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/infrastructure/agentscope/EventFilter.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+
+stdout | tests/unit/infrastructure/agentscope/EventFilter.spec.ts
+✅ Test Redis disconnected
+
+ ✓ tests/unit/infrastructure/agentscope/EventFilter.spec.ts  (2 tests) 66ms
+stdout | tests/unit/domain/task/services/TaskAssignmentService.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/task/services/TaskAssignmentService.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/task/services/TaskAssignmentService.spec.ts
+✅ Test Redis connected
+
+ ✓ tests/unit/domain/task/services/TaskAssignmentService.spec.ts  (2 tests) 65ms
+stdout | tests/unit/domain/task/services/TaskAssignmentService.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+stdout | tests/unit/domain/conversation/Channel.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/conversation/Channel.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/conversation/Channel.spec.ts
+✅ Test Redis connected
+
+ ✓ tests/unit/domain/conversation/Channel.spec.ts  (3 tests) 79ms
+stdout | tests/unit/domain/conversation/Channel.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+stdout | tests/unit/domain/task/value-objects/QualityScore.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/task/value-objects/QualityScore.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/task/value-objects/QualityScore.spec.ts
+✅ Test Redis connected
+
+ ✓ tests/unit/domain/task/value-objects/QualityScore.spec.ts  (1 test) 57ms
+stdout | tests/unit/domain/task/value-objects/QualityScore.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+stdout | tests/unit/domain/task/value-objects/TaskPriority.spec.ts
+🔧 Initializing test environment...
+
+stdout | tests/unit/domain/task/value-objects/TaskPriority.spec.ts
+✅ Test database connected
+
+stdout | tests/unit/domain/task/value-objects/TaskPriority.spec.ts
+✅ Test Redis connected
+
+stdout | tests/unit/domain/task/value-objects/TaskPriority.spec.ts
+🧹 Cleaning up test environment...
+✅ Test database disconnected
+✅ Test Redis disconnected
+
+ ✓ tests/unit/domain/task/value-objects/TaskPriority.spec.ts  (2 tests) 69ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/e2e/ai.e2e.spec.ts > AI API E2E Tests
+ FAIL  tests/e2e/conversation.e2e.spec.ts > Conversation API E2E Tests
+ FAIL  tests/e2e/customerProfile.e2e.spec.ts > Customer Profile API E2E Tests
+ FAIL  tests/e2e/knowledge.e2e.spec.ts > Knowledge API E2E Tests
+ FAIL  tests/e2e/requirement.e2e.spec.ts > Requirement API E2E Tests
+ FAIL  tests/e2e/task.e2e.spec.ts > Task API E2E Tests
+FastifyError: fastify-plugin: @fastify/multipart - expected '5.x' fastify version, '4.29.1' is installed
+ ❯ Object.checkVersion node_modules/fastify/lib/pluginUtils.js:125:11
+ ❯ Object.registerPlugin node_modules/fastify/lib/pluginUtils.js:148:16
+ ❯ Boot.override node_modules/fastify/lib/pluginOverride.js:28:57
+ ❯ Boot._loadPlugin node_modules/avvio/boot.js:425:25
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: 'FST_ERR_PLUGIN_VERSION_MISMATCH', statusCode: 500 }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/12]⎯
+
+ FAIL  tests/e2e/ai.e2e.spec.ts > AI API E2E Tests
+TypeError: Cannot read properties of undefined (reading 'close')
+ ❯ tests/e2e/ai.e2e.spec.ts:37:15
+     35| 
+     36|   afterAll(async () => {
+     37|     await app.close();
+       |               ^
+     38|     await closeTestDataSource();
+     39|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/12]⎯
+
+ FAIL  tests/e2e/conversation.e2e.spec.ts > Conversation API E2E Tests
+TypeError: Cannot read properties of undefined (reading 'close')
+ ❯ tests/e2e/conversation.e2e.spec.ts:49:15
+     47| 
+     48|   afterAll(async () => {
+     49|     await app.close();
+       |               ^
+     50|     await closeTestDataSource();
+     51|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/12]⎯
+
+ FAIL  tests/e2e/customerProfile.e2e.spec.ts > Customer Profile API E2E Tests
+TypeError: Cannot read properties of undefined (reading 'close')
+ ❯ tests/e2e/customerProfile.e2e.spec.ts:57:15
+     55| 
+     56|   afterAll(async () => {
+     57|     await app.close();
+       |               ^
+     58|     await closeTestDataSource();
+     59|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/12]⎯
+
+ FAIL  tests/e2e/knowledge.e2e.spec.ts > Knowledge API E2E Tests
+TypeError: Cannot read properties of undefined (reading 'close')
+ ❯ tests/e2e/knowledge.e2e.spec.ts:37:15
+     35| 
+     36|   afterAll(async () => {
+     37|     await app.close();
+       |               ^
+     38|     await closeTestDataSource();
+     39|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/12]⎯
+
+ FAIL  tests/e2e/requirement.e2e.spec.ts > Requirement API E2E Tests
+TypeError: Cannot read properties of undefined (reading 'close')
+ ❯ tests/e2e/requirement.e2e.spec.ts:40:15
+     38| 
+     39|   afterAll(async () => {
+     40|     await app.close();
+       |               ^
+     41|     await closeTestDataSource();
+     42|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/12]⎯
+
+ FAIL  tests/e2e/task.e2e.spec.ts > Task API E2E Tests
+TypeError: Cannot read properties of undefined (reading 'close')
+ ❯ tests/e2e/task.e2e.spec.ts:34:15
+     32| 
+     33|   afterAll(async () => {
+     34|     await app.close();
+       |               ^
+     35|     await closeTestDataSource();
+     36|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/12]⎯
+
+ Test Files  6 failed | 26 passed (32)
+      Tests  83 passed (118)
+   Start at  16:43:57
+   Duration  6.65s (transform 248ms, setup 174ms, collect 701ms, tests 5.14s, environment 0ms, prepare 36ms)
+

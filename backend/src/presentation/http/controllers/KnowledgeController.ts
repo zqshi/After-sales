@@ -2,8 +2,14 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { CreateKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/CreateKnowledgeItemUseCase';
 import { GetKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/GetKnowledgeItemUseCase';
 import { ListKnowledgeItemsUseCase } from '../../../application/use-cases/knowledge/ListKnowledgeItemsUseCase';
+import {
+  SearchKnowledgeRequest,
+  SearchKnowledgeUseCase,
+} from '../../../application/use-cases/knowledge/SearchKnowledgeUseCase';
+import { UploadDocumentUseCase } from '../../../application/use-cases/knowledge/UploadDocumentUseCase';
 import { UpdateKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/UpdateKnowledgeItemUseCase';
 import { DeleteKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/DeleteKnowledgeItemUseCase';
+import { TaxKBAdapter } from '../../../infrastructure/adapters/TaxKBAdapter';
 
 export class KnowledgeController {
   constructor(
@@ -12,11 +18,17 @@ export class KnowledgeController {
     private readonly listUseCase: ListKnowledgeItemsUseCase,
     private readonly updateUseCase: UpdateKnowledgeItemUseCase,
     private readonly deleteUseCase: DeleteKnowledgeItemUseCase,
+    private readonly searchKnowledgeUseCase: SearchKnowledgeUseCase,
+    private readonly uploadDocumentUseCase: UploadDocumentUseCase,
+    private readonly taxkbAdapter: TaxKBAdapter,
   ) {}
 
   async create(
-    request: FastifyRequest<{
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const payload = request.body as {
         title: string;
         content: string;
         category: string;
@@ -24,11 +36,7 @@ export class KnowledgeController {
         source: string;
         metadata?: Record<string, unknown>;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const result = await this.createUseCase.execute(request.body);
+      const result = await this.createUseCase.execute(payload);
       reply.code(201).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
@@ -36,11 +44,12 @@ export class KnowledgeController {
   }
 
   async get(
-    request: FastifyRequest<{ Params: { id: string } }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const result = await this.getUseCase.execute({ knowledgeId: request.params.id });
+      const { id } = request.params as { id: string };
+      const result = await this.getUseCase.execute({ knowledgeId: id });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
@@ -48,8 +57,11 @@ export class KnowledgeController {
   }
 
   async list(
-    request: FastifyRequest<{
-      Querystring: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const query = request.query as {
         category?: string;
         source?: string;
         tags?: string;
@@ -57,11 +69,6 @@ export class KnowledgeController {
         page?: string;
         limit?: string;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const query = request.query;
       const dto = {
         category: query.category,
         source: query.source,
@@ -78,22 +85,21 @@ export class KnowledgeController {
   }
 
   async update(
-    request: FastifyRequest<{
-      Params: { id: string };
-      Body: {
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const payload = request.body as {
         title?: string;
         content?: string;
         category?: string;
         tags?: string[];
         metadata?: Record<string, unknown>;
       };
-    }>,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
       const result = await this.updateUseCase.execute({
-        knowledgeId: request.params.id,
-        ...request.body,
+        knowledgeId: id,
+        ...payload,
       });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
@@ -102,12 +108,69 @@ export class KnowledgeController {
   }
 
   async delete(
-    request: FastifyRequest<{ Params: { id: string } }>,
+    request: FastifyRequest,
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      await this.deleteUseCase.execute({ knowledgeId: request.params.id });
+      const { id } = request.params as { id: string };
+      await this.deleteUseCase.execute({ knowledgeId: id });
       reply.code(204).send();
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  async search(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const payload = request.body as SearchKnowledgeRequest;
+      const results = await this.searchKnowledgeUseCase.execute(payload);
+      reply.code(200).send({ success: true, data: results });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  async upload(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const file = await request.file();
+      if (!file) {
+        throw new Error('No file uploaded');
+      }
+
+      const buffer = await file.toBuffer();
+      const body = request.body as Record<string, unknown>;
+      const category = typeof body?.category === 'string' ? body.category : undefined;
+      const companyEntity =
+        typeof body?.companyEntity === 'string' ? body.companyEntity : undefined;
+
+      const docId = await this.uploadDocumentUseCase.execute({
+        file: buffer,
+        title: file.filename,
+        category,
+        companyEntity,
+      });
+
+      reply.code(201).send({
+        success: true,
+        data: { docId },
+        message: '文档上传成功，正在处理中',
+      });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  async getProgress(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const progress = await this.taxkbAdapter.getProcessingProgress(id);
+      reply.code(200).send({ success: true, data: progress });
     } catch (error) {
       this.handleError(error, reply);
     }
