@@ -5,16 +5,51 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>智能售后工作台</title>
+
+  <!-- 关键CSS内联 - 防止样式闪现 -->
+  <style>
+    /* 预设基础样式，防止FOUC */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #f8fafc;
+      opacity: 0;
+      transition: opacity 0.2s ease-in;
+    }
+    body.loaded {
+      opacity: 1;
+    }
+    .hidden {
+      display: none !important;
+    }
+    /* AI辅助面板基础样式 */
+    #ai-assistant-panel {
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+    #ai-assistant-panel.hidden {
+      display: none;
+    }
+  </style>
+
   <!-- Tailwind CSS v3 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome -->
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <link rel="preload" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet"></noscript>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
 
-  <!-- 自定义CSS -->
-  <link rel="stylesheet" href="assets/css/main.css">
-  <link rel="stylesheet" href="assets/css/unified-chat.css">
+  <!-- 自定义CSS - 使用preload优化加载 -->
+  <link rel="preload" href="assets/css/main.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="assets/css/unified-chat.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="assets/css/im-enhancements.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/unified-chat.css">
+    <link rel="stylesheet" href="assets/css/im-enhancements.css">
+  </noscript>
 
   <!-- Tailwind 配置 -->
   <script>
@@ -54,12 +89,12 @@
   <script>
     // 全局配置对象 - 用于配置API地址和用户信息
     window.config = {
-      apiBaseUrl: 'http://localhost:8080',  // 后端API基础地址
+      apiBaseUrl: 'http://localhost:8080/api/v1',  // 后端API基础地址
       authToken: null,  // 认证令牌（登录后设置）
       userId: 'agent-001',  // 当前用户ID（示例）
       analysisContext: '',  // AI分析上下文
       agentScopeUrl: 'http://localhost:5000', // AgentScope 服务地址
-      agentScopeWebSocketUrl: 'ws://localhost:5000/api/chat/ws' // AgentScope WebSocket 地址
+      agentScopeWebSocketUrl: '' // WebSocket暂未实现，留空禁用
     };
   </script>
 </head>
@@ -92,7 +127,7 @@
         <!-- 搜索栏 -->
         <div class="p-3 border-b border-gray-200">
           <div class="relative">
-            <input type="text" placeholder="搜索客户或对话..."
+            <input id="conversation-search-input" type="text" placeholder="搜索客户或对话..."
               class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
             <i class="fa fa-search absolute left-3 top-3 text-gray-400"></i>
           </div>
@@ -101,29 +136,29 @@
         <!-- 筛选面板 -->
         <div class="p-3 border-b border-gray-200">
           <div class="flex flex-wrap gap-2">
-            <button class="px-3 py-1 bg-primary text-white rounded-full text-sm flex items-center">
+            <button id="filter-status-all" class="px-3 py-1 bg-primary text-white rounded-full text-sm flex items-center" data-status="all">
               <span>全部</span>
               <span
-                class="ml-1 bg-white text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs">8</span>
+                class="ml-1 bg-white text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="all">8</span>
             </button>
-            <button class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm flex items-center">
+            <button id="filter-status-pending" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm flex items-center" data-status="pending">
               <span>待处理</span>
               <span
-                class="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
+                class="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="pending">3</span>
             </button>
-            <button class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm">进行中</button>
-            <button class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm">已完成</button>
+            <button id="filter-status-active" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm" data-status="active">进行中</button>
+            <button id="filter-status-completed" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm" data-status="completed">已完成</button>
           </div>
 
           <!-- 高级筛选 -->
           <div class="mt-2 flex flex-wrap gap-2">
             <div class="relative">
-              <select
+              <select id="filter-channel"
                 class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
-                <option>所有渠道</option>
-                <option>飞书</option>
-                <option>企业QQ</option>
-                <option>微信</option>
+                <option value="">所有渠道</option>
+                <option value="feishu">飞书</option>
+                <option value="qq">企业QQ</option>
+                <option value="wechat">微信</option>
               </select>
               <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                 <i class="fa fa-chevron-down text-xs"></i>
@@ -131,12 +166,12 @@
             </div>
 
             <div class="relative">
-              <select
+              <select id="filter-urgency"
                 class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
-                <option>所有紧急度</option>
-                <option>紧急</option>
-                <option>普通</option>
-                <option>已解决</option>
+                <option value="">所有紧急度</option>
+                <option value="high">紧急</option>
+                <option value="normal">普通</option>
+                <option value="low">已解决</option>
               </select>
               <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                 <i class="fa fa-chevron-down text-xs"></i>
@@ -144,12 +179,12 @@
             </div>
 
             <div class="relative">
-              <select
+              <select id="filter-sla"
                 class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
-                <option>所有SLA</option>
-                <option>SLA-金牌</option>
-                <option>SLA-银牌</option>
-                <option>SLA-铜牌</option>
+                <option value="">所有SLA</option>
+                <option value="gold">SLA-金牌</option>
+                <option value="silver">SLA-银牌</option>
+                <option value="bronze">SLA-铜牌</option>
               </select>
               <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                 <i class="fa fa-chevron-down text-xs"></i>
@@ -669,6 +704,85 @@
           </div>
         </div>
 
+        <!-- AI辅助面板 -->
+        <div id="ai-assistant-panel" class="ai-assistant-panel border-t border-gray-200 bg-gray-50 hidden">
+          <div class="p-4">
+            <!-- 情感分析 -->
+            <div id="sentiment-analysis" class="sentiment-section mb-3 hidden">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-700 flex items-center">
+                  <span class="mr-2">😊</span>
+                  <span>情感分析</span>
+                </h4>
+              </div>
+              <div id="sentiment-content" class="text-sm text-gray-600">
+                <!-- 动态填充情感分析内容 -->
+              </div>
+            </div>
+
+            <!-- 回复建议 -->
+            <div id="reply-suggestion" class="reply-section mb-3 hidden">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-700 flex items-center">
+                  <span class="mr-2">💡</span>
+                  <span>AI回复建议</span>
+                </h4>
+                <button id="use-suggestion-btn" class="text-xs px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                  使用建议
+                </button>
+              </div>
+              <div id="reply-content" class="text-sm bg-white p-3 rounded border border-gray-200">
+                <!-- 动态填充回复建议 -->
+              </div>
+            </div>
+
+            <!-- 解决方案区块 -->
+            <div id="solution-steps" class="solution-section mb-4 hidden">
+              <div class="section-header">
+                <h4 class="section-title">
+                  <span class="section-icon">🔧</span>
+                  <span>解决步骤</span>
+                </h4>
+              </div>
+              <div id="solution-content" class="section-content space-y-2">
+                <!-- 动态填充解决步骤 -->
+              </div>
+            </div>
+
+            <!-- 参考资料区块 -->
+            <div id="reference-materials" class="reference-section mb-3 hidden">
+              <div class="section-header section-header-secondary">
+                <h4 class="section-title section-title-small">
+                  <span class="section-icon">📖</span>
+                  <span>参考资料</span>
+                </h4>
+              </div>
+
+              <!-- 知识库子区块 -->
+              <div id="knowledge-base" class="knowledge-section mt-3 hidden">
+                <h5 class="subsection-title">
+                  <span class="mr-1.5">📚</span>
+                  <span>知识库文档</span>
+                </h5>
+                <div id="knowledge-content" class="space-y-2 mt-2">
+                  <!-- 动态填充知识库推荐 -->
+                </div>
+              </div>
+
+              <!-- 历史工单子区块 -->
+              <div id="related-tasks" class="tasks-section mt-3 hidden">
+                <h5 class="subsection-title">
+                  <span class="mr-1.5">📋</span>
+                  <span>相似工单</span>
+                </h5>
+                <div id="tasks-content" class="space-y-2 mt-2">
+                  <!-- 动态填充关联工单 -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 输入区域 -->
         <div class="chat-input p-4 border-t border-gray-200">
           <!-- 低置信度警告 -->
@@ -842,11 +956,11 @@
                       </div>
                       <div class="flex items-center gap-3">
                         <div class="text-xs text-gray-500">质检 92 分 · 待公告</div>
-                        <div class="hover-actions hidden md:flex items-center gap-2">
+                        <div class="flex items-center gap-2">
                           <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                             data-open-qc data-conv-id="conv-001">对话质检</button>
                           <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                            onclick="openAnalysisPanelClassic()">客户预览</button>
+                            onclick="openAnalysisPanelClassic()">客户详情</button>
                         </div>
                       </div>
                     </div>
@@ -859,11 +973,11 @@
                       </div>
                       <div class="flex items-center gap-3">
                         <div class="text-xs text-gray-500">质检 86 分 · 账单核验</div>
-                        <div class="hover-actions hidden md:flex items-center gap-2">
+                        <div class="flex items-center gap-2">
                           <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                             data-open-qc data-conv-id="conv-002">对话质检</button>
                           <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                            onclick="openAnalysisPanelClassic()">客户预览</button>
+                            onclick="openAnalysisPanelClassic()">客户详情</button>
                         </div>
                       </div>
                     </div>
@@ -876,11 +990,11 @@
                       </div>
                       <div class="flex items-center gap-3">
                         <div class="text-xs text-gray-500">质检 90 分 · 待回访</div>
-                        <div class="hover-actions hidden md:flex items-center gap-2">
+                        <div class="flex items-center gap-2">
                           <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                             data-open-qc data-conv-id="conv-003">对话质检</button>
                           <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                            onclick="openAnalysisPanelClassic()">客户预览</button>
+                            onclick="openAnalysisPanelClassic()">客户详情</button>
                         </div>
                       </div>
                     </div>
@@ -1563,22 +1677,22 @@
                 <div class="panel-card">
                   <div class="relative mb-4">
                     <div class="flex">
-                      <input type="text" placeholder="搜索知识库..."
+                      <input id="knowledge-search-input" type="text" placeholder="搜索知识库..."
                         class="flex-1 pl-10 pr-4 py-2 rounded-l-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                      <button class="bg-primary text-white px-3 py-2 rounded-r-lg hover:bg-primary-dark">
+                      <button id="knowledge-search-btn" class="bg-primary text-white px-3 py-2 rounded-r-lg hover:bg-primary-dark">
                         <i class="fa fa-search"></i>
                       </button>
                     </div>
                     <i class="fa fa-search absolute left-3 top-3 text-gray-400"></i>
                     <div class="flex flex-wrap gap-1 mt-2">
                       <span
-                        class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200">认证失败</span>
+                        class="knowledge-quick-tag text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200" data-keyword="认证失败">认证失败</span>
                       <span
-                        class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200">ERP系统</span>
+                        class="knowledge-quick-tag text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200" data-keyword="ERP系统">ERP系统</span>
                       <span
-                        class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200">登录问题</span>
+                        class="knowledge-quick-tag text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200" data-keyword="登录问题">登录问题</span>
                       <span
-                        class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200">服务中断</span>
+                        class="knowledge-quick-tag text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200" data-keyword="服务中断">服务中断</span>
                     </div>
                   </div>
                 </div>
@@ -2013,6 +2127,19 @@
 
     <!-- JavaScript -->
     <script type="module" src="assets/js/main.js"></script>
+
+    <!-- 页面加载完成标记 - 防止样式闪现 -->
+    <script>
+      window.addEventListener('DOMContentLoaded', function() {
+        // 标记DOM加载完成
+        document.body.classList.add('loaded');
+      });
+
+      window.addEventListener('load', function() {
+        // 确保所有资源加载完成后再显示
+        document.body.classList.add('loaded');
+      });
+    </script>
 </body>
 
 </html>

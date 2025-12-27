@@ -16,7 +16,6 @@ class AgentScopeSettings:
             "model_name": "deepseek-v3.1",
             "api_key": os.getenv("AI_SERVICE_API_KEY", ""),
             "base_url": os.getenv("AI_SERVICE_URL", "https://kspmas.ksyun.com"),
-            "max_retries": 3,
             "timeout": 30,
             "stream": True,
         }
@@ -32,7 +31,6 @@ class AgentScopeSettings:
             logging_level="INFO",
             tracing_url=os.getenv("TRACING_URL"),
         )
-        agentscope.models.read_model_configs([self.deepseek_config])
 
 
 settings = AgentScopeSettings()

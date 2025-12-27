@@ -46,11 +46,11 @@ async function loadCustomerProfile(conversationId) {
       const interactionResponse = await fetchProfileInteractions(conversationId, {
         range: interactionFilter.range,
       });
-      const interactions = interactionResponse?.data ?? interactionResponse;
+      const data = interactionResponse?.data ?? interactionResponse;
+      // API返回 {success, data: {interactions: [...], total, customerId, range}}
+      const interactions = data?.interactions ?? data?.list ?? data?.items ?? data;
       if (Array.isArray(interactions) && interactions.length) {
         profile.interactions = interactions;
-      } else if (interactions) {
-        profile.interactions = interactions.list || interactions.items || interactions;
       }
     } catch (err) {
       console.warn('[customer] fetch interactions failed', err);

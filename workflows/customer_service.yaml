@@ -1,0 +1,114 @@
+# 客户服务工作流
+# 完整流程：接收消息 → 分析 → 检测需求 → 生成回复 → 人工审核 → 发送
+
+name: customer_service_workflow
+description: 客户咨询完整流程
+version: "1.0"
+
+trigger:
+  type: im_message
+  channel: feishu
+
+steps:
+    # Step 1: 接收和分类消息
+    - name: receive_message
+      agent: orchestrator
+      action: classify
+      input: $message
+      output: classification
+      timeout: 5000
+
+    # Step 2: 并行分析（情感分析 + 需求检测 + 知识检索）
+    - name: parallel_analysis
+      type: parallel
+      steps:
+        # 2.1 情感分析
+        - name: sentiment_analysis
+          agent: sentiment_analyzer
+          action: classify
+          input: $message.content
+          output: sentiment
+          timeout: 3000
+
+        # 2.2 需求检测
+        - name: requirement_detection
+          agent: requirement_collector
+          action: classify
+          input: $message.content
+          output: requirements
+          timeout: 5000
+
+        # 2.3 知识库检索
+        - name: knowledge_search
+          agent: knowledge_manager
+          action: classify
+          input: $message.content
+          output: knowledge
+          timeout: 5000
+
+    # Step 3: 生成回复（基于并行分析结果）
+    - name: generate_reply
+      agent: customer_service
+      action: classify
+      input:
+        message: $message
+        sentiment: $parallel_analysis.sentiment_analysis
+        requirements: $parallel_analysis.requirement_detection
+        knowledge: $parallel_analysis.knowledge_search
+      output: suggested_reply
+      timeout: 8000
+      condition: $classification.message_type != 'urgent'
+
+    # Step 4: 创建需求（如果检测到）
+    - name: create_requirements
+      action: create_requirement
+      loop: $parallel_analysis.requirement_detection.requirements
+      condition: $parallel_analysis.requirement_detection.requirements.length > 0
+      input:
+        title: $item.title
+        category: $item.category
+        priority: $item.priority
+        conversationId: $conversation.id
+      timeout: 3000
+
+    # Step 5: 人工审核（置信度低于0.9时需要）
+    - name: human_review
+      type: human_in_loop
+      timeout: 300000  # 5分钟
+      fallback: auto_approve
+      condition: $suggested_reply.confidence < 0.9
+      input:
+        conversationId: $conversation.id
+        suggestedReply: $suggested_reply.reply
+        detectedRequirements: $parallel_analysis.requirement_detection.requirements
+        confidence: $suggested_reply.confidence
+
+    # Step 6: 发送回复
+    - name: send_reply
+      action: send_message
+      channel: $trigger.channel
+      content: $human_review.data.suggestedReply
+      condition: $human_review.approved == true
+      timeout: 3000
+
+    # Step 7: 记录反馈
+    - name: record_feedback
+      action: log
+      input:
+        conversationId: $conversation.id
+        approved: $human_review.approved
+        modified: $human_review.modified
+        sentAt: $send_reply.sentAt
+      timeout: 1000
+
+# 错误处理
+onError:
+  - name: error_notification
+    action: log
+    content: "Workflow failed for conversation $conversation.id"
+
+# 完成后操作
+onComplete:
+  - name: completion_log
+    action: log
+    content: "Customer service workflow completed for conversation $conversation.id"

@@ -1,0 +1,218 @@
+/**
+ * IM增强样式
+ * 用于情绪标记、知识卡片等UI组件
+ */
+
+/* ========== 情绪标记 ========== */
+.sentiment-badge {
+  display: inline-block;
+  font-size: 16px;
+  margin-left: 8px;
+  vertical-align: middle;
+  cursor: help;
+  transition: transform 0.2s ease;
+}
+
+.sentiment-badge:hover {
+  transform: scale(1.2);
+}
+
+/* 不同情绪的颜色调整（通过滤镜） */
+.sentiment-badge.sentiment-positive {
+  filter: hue-rotate(90deg) brightness(1.1);
+}
+
+.sentiment-badge.sentiment-negative {
+  filter: hue-rotate(-30deg) brightness(0.9);
+}
+
+.sentiment-badge.sentiment-neutral {
+  opacity: 0.8;
+}
+
+/* ========== 知识卡片 ========== */
+.knowledge-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  max-width: 600px;
+}
+
+.knowledge-card:hover {
+  background: #ffffff;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+.knowledge-card .card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.knowledge-card .card-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.knowledge-card .card-category {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.knowledge-card .card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0;
+  color: #111827;
+  line-height: 1.4;
+}
+
+.knowledge-card .card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.knowledge-card .card-score {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.knowledge-card .card-link {
+  font-size: 13px;
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.knowledge-card .card-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+/* ========== 分析面板样式 ========== */
+.requirement-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  background: #f9fafb;
+}
+
+.requirement-item .req-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.requirement-item .req-badge.urgent {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.requirement-item .req-badge.high {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
+.requirement-item .req-badge.medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.requirement-item .req-badge.low {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.requirement-item .req-title {
+  font-size: 13px;
+  color: #374151;
+  flex: 1;
+}
+
+.recommendation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  background: #f9fafb;
+}
+
+.recommendation-item a {
+  font-size: 13px;
+  color: #3b82f6;
+  text-decoration: none;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recommendation-item a:hover {
+  text-decoration: underline;
+}
+
+.recommendation-item .score {
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 500;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.task-item {
+  padding: 8px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  background: #f9fafb;
+}
+
+.task-item a {
+  font-size: 13px;
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.task-item a:hover {
+  text-decoration: underline;
+}
+
+/* ========== 响应式调整 ========== */
+@media (max-width: 768px) {
+  .knowledge-card {
+    max-width: 100%;
+  }
+
+  .knowledge-card .card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

@@ -1,0 +1,155 @@
+# 故障处理工作流
+# 完整流程：故障报告 → 严重性评估 → 知识库搜索 → 诊断分析 → 创建工单 → 通知客户
+
+name: fault_handling_workflow
+description: 故障处理完整流程（P0-P4分级）
+version: "1.0"
+
+trigger:
+  type: im_message
+  channel: feishu
+
+steps:
+    # Step 1: 提取故障信息
+    - name: extract_fault_info
+      agent: fault_agent
+      action: classify
+      input: $message
+      output: fault_info
+      timeout: 5000
+
+    # Step 2: 检查信息完整性
+    - name: check_completeness
+      agent: fault_agent
+      action: classify
+      input: $fault_info
+      output: completeness_check
+      timeout: 3000
+
+    # Step 3: 如果信息不完整，询问补充（人工干预）
+    - name: request_more_info
+      type: human_in_loop
+      condition: $completeness_check.is_complete == false
+      timeout: 600000  # 10分钟
+      fallback: proceed_with_partial
+      input:
+        missing_fields: $completeness_check.missing_fields
+        questions: $completeness_check.questions
+
+    # Step 4: 评估严重性
+    - name: assess_severity
+      agent: fault_agent
+      action: classify
+      input:
+        fault_info: $fault_info
+        additional_info: $request_more_info.data
+      output: severity_assessment
+      timeout: 5000
+
+    # Step 5: 并行操作（知识库搜索 + 相似案例查找）
+    - name: parallel_search
+      type: parallel
+      steps:
+        # 5.1 知识库搜索
+        - name: knowledge_search
+          agent: knowledge_manager
+          action: classify
+          input:
+            query: $fault_info.error_message
+            fault_type: $fault_info.fault_type
+          output: knowledge_results
+          timeout: 5000
+
+        # 5.2 相似案例查找
+        - name: similar_cases
+          agent: knowledge_manager
+          action: classify
+          input:
+            fault_signature: $fault_info.signature
+          output: similar_cases
+          timeout: 5000
+
+    # Step 6: 诊断分析
+    - name: diagnose
+      agent: fault_agent
+      action: classify
+      input:
+        fault_info: $fault_info
+        severity: $severity_assessment.severity
+        knowledge: $parallel_search.knowledge_search
+        similar_cases: $parallel_search.similar_cases
+      output: diagnosis
+      timeout: 8000
+
+    # Step 7: 生成解决方案
+    - name: generate_solution
+      agent: fault_agent
+      action: classify
+      input:
+        diagnosis: $diagnosis
+        fault_info: $fault_info
+      output: solution
+      timeout: 8000
+
+    # Step 8: 人工审核（P0/P1故障必须审核）
+    - name: human_review_solution
+      type: human_in_loop
+      condition: $severity_assessment.severity == 'P0' || $severity_assessment.severity == 'P1'
+      timeout: 180000  # 3分钟（紧急）
+      fallback: auto_approve
+      input:
+        fault_info: $fault_info
+        diagnosis: $diagnosis
+        solution: $solution
+        severity: $severity_assessment.severity
+
+    # Step 9: 创建Task
+    - name: create_task
+      action: create_task
+      condition: $severity_assessment.should_create_task == true
+      input:
+        title: "故障处理: $fault_info.title"
+        priority: $severity_assessment.priority
+        conversationId: $conversation.id
+        description: $diagnosis.summary
+      timeout: 3000
+
+    # Step 10: 发送回复给客户
+    - name: send_reply
+      action: send_message
+      channel: $trigger.channel
+      content: $solution.customer_reply
+      timeout: 3000
+
+    # Step 11: 如果是P0/P1，发送告警通知
+    - name: send_alert
+      action: send_message
+      channel: internal_alert
+      condition: $severity_assessment.severity == 'P0' || $severity_assessment.severity == 'P1'
+      content: |
+        🚨 $severity_assessment.severity 故障告警
+
+        故障标题: $fault_info.title
+        影响范围: $fault_info.impact_scope
+        客户: $conversation.customerId
+        诊断: $diagnosis.summary
+
+        已创建工单: $create_task.taskId
+      timeout: 3000
+
+# 错误处理
+onError:
+  - name: error_notification
+    action: send_message
+    channel: internal_alert
+    content: "故障处理工作流异常: $conversation.id"
+
+# 完成后操作
+onComplete:
+  - name: record_metrics
+    action: log
+    content: |
+      Fault handling completed:
+      - Severity: $severity_assessment.severity
+      - Task created: $create_task.taskId
+      - Duration: $workflow.duration ms

@@ -28,6 +28,9 @@ export class ConversationEntity {
   @Column({ name: 'sla_deadline', type: 'timestamp', nullable: true })
   slaDeadline!: Date | null;
 
+  @Column({ type: 'varchar', length: 20, default: 'agent_auto', nullable: true })
+  mode!: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt!: Date;
 

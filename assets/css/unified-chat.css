@@ -1,3 +1,31 @@
+/* CSS变量 - 统一管理颜色和尺寸 */
+:root {
+  /* AI辅助面板颜色 */
+  --ai-panel-bg: #f9fafb;
+  --ai-panel-border: #e5e7eb;
+  --ai-panel-max-height: 300px;
+
+  /* 情感分析颜色 */
+  --sentiment-positive-bg: #dcfce7;
+  --sentiment-positive-text: #166534;
+  --sentiment-neutral-bg: #f3f4f6;
+  --sentiment-neutral-text: #4b5563;
+  --sentiment-negative-bg: #fee2e2;
+  --sentiment-negative-text: #991b1b;
+
+  /* 卡片样式 */
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --card-hover-border: #3b82f6;
+  --card-hover-shadow: rgba(59, 130, 246, 0.15);
+  --card-border-radius: 8px;
+  --card-padding: 10px 12px;
+
+  /* 动画 */
+  --animation-duration: 0.3s;
+  --animation-timing: ease;
+}
+
 #chat-mode-control {
   flex-wrap: wrap;
 }
@@ -114,4 +142,423 @@
   font-size: 11px;
   color: #94a3b8;
   margin-top: 0.35rem;
+}
+
+/* AI辅助面板样式 */
+.ai-assistant-panel {
+  max-height: var(--ai-panel-max-height);
+  overflow-y: auto;
+  transition: all var(--animation-duration) var(--animation-timing);
+}
+
+.ai-assistant-panel.hidden {
+  max-height: 0;
+  padding: 0 !important;
+  border: none;
+  overflow: hidden;
+}
+
+.sentiment-section,
+.reply-section,
+.solution-section,
+.reference-section,
+.knowledge-section,
+.tasks-section {
+  animation: fadeIn var(--animation-duration) var(--animation-timing);
+}
+
+/* 区块标题样式 */
+.section-header {
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 2px solid #3b82f6;
+}
+
+.section-header-secondary {
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.05), transparent);
+  padding: 8px 10px;
+  margin: 0 -10px 12px -10px;
+  border-radius: 6px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-title-small {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.section-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.section-content {
+  padding-left: 4px;
+}
+
+/* 子区块标题 */
+.subsection-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+  letter-spacing: 0.3px;
+}
+
+/* 参考资料区块样式 */
+.reference-section {
+  background: #fafbfc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+.reference-section .knowledge-section,
+.reference-section .tasks-section {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 情感标签样式 */
+.sentiment-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sentiment-positive {
+  background-color: var(--sentiment-positive-bg);
+  color: var(--sentiment-positive-text);
+}
+
+.sentiment-neutral {
+  background-color: var(--sentiment-neutral-bg);
+  color: var(--sentiment-neutral-text);
+}
+
+.sentiment-negative {
+  background-color: var(--sentiment-negative-bg);
+  color: var(--sentiment-negative-text);
+}
+
+/* 知识库卡片样式 */
+.knowledge-item {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-border-radius);
+  padding: var(--card-padding);
+  transition: all 0.2s var(--animation-timing);
+  cursor: pointer;
+}
+
+.knowledge-item:hover {
+  border-color: var(--card-hover-border);
+  box-shadow: 0 2px 8px var(--card-hover-shadow);
+}
+
+.knowledge-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.knowledge-item-meta {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.knowledge-score {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* 解决步骤样式 */
+.solution-step-item {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-border-radius);
+  padding: 12px;
+  transition: all 0.2s var(--animation-timing);
+}
+
+.solution-step-item:hover {
+  border-color: var(--card-hover-border);
+  box-shadow: 0 2px 8px var(--card-hover-shadow);
+}
+
+.solution-step-item h5 {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.solution-step-item p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.solution-step-item a {
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.solution-step-item a:hover {
+  text-decoration: underline;
+}
+
+/* 工单卡片样式 */
+.task-item {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--card-hover-border);
+  border-radius: 6px;
+  padding: var(--card-padding);
+  transition: all 0.2s var(--animation-timing);
+  cursor: pointer;
+}
+
+.task-item:hover {
+  box-shadow: 0 2px 8px var(--card-hover-shadow);
+}
+
+.task-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.task-priority {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.task-priority-high {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.task-priority-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.task-priority-low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* AI辅助面板折叠按钮 */
+.ai-panel-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s var(--animation-timing);
+  z-index: 10;
+}
+
+.ai-panel-toggle:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.ai-panel-toggle svg {
+  transform: rotate(90deg);
+  transition: transform 0.3s var(--animation-timing);
+}
+
+.ai-panel-toggle.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+/* AI辅助面板折叠状态 */
+.ai-assistant-panel.collapsed {
+  max-height: 40px !important;
+  overflow: hidden;
+  padding: 8px 16px !important;
+  border-bottom: 2px solid #3b82f6;
+}
+
+.ai-assistant-panel.collapsed > .p-4 > *:not(.ai-panel-toggle) {
+  display: none;
+}
+
+/* 客户消息容器 */
+.message-content-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* AI辅助icon（hover显示） */
+.ai-assist-icon {
+  position: absolute;
+  top: 50%;
+  right: -40px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.2s var(--animation-timing);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.ai-assist-icon:hover {
+  background: #2563eb;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.ai-assist-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* 当AI面板折叠时，hover到客户消息显示icon */
+.ai-assistant-panel.collapsed ~ * .message-row[data-sender-role="customer"]:hover .ai-assist-icon,
+.ai-assistant-panel.hidden ~ * .message-row[data-sender-role="customer"]:hover .ai-assist-icon {
+  display: flex;
+}
+
+/* 或者，总是在hover时显示（根据需求选择） */
+.message-row[data-sender-role="customer"]:hover .ai-assist-icon {
+  display: flex;
+  animation: slideInRight 0.2s var(--animation-timing);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    right: -50px;
+  }
+  to {
+    opacity: 1;
+    right: -40px;
+  }
+}
+
+/* 面板展开/折叠过渡 */
+.ai-assistant-panel {
+  transition: max-height 0.3s var(--animation-timing),
+              padding 0.3s var(--animation-timing);
+}
+
+/* 响应式支持 */
+@media (max-width: 768px) {
+  :root {
+    --ai-panel-max-height: 200px;
+    --card-padding: 8px 10px;
+  }
+
+  .knowledge-item-title,
+  .task-item-title {
+    font-size: 12px;
+  }
+
+  .knowledge-item-meta {
+    font-size: 10px;
+  }
+
+  /* 移动端AI辅助icon位置调整 */
+  .ai-assist-icon {
+    right: -36px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .ai-assist-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* 情绪识别icon样式 */
+.sentiment-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  cursor: help;
+  transition: transform 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.sentiment-icon:hover {
+  transform: scale(1.2);
+}
+
+/* 对话列表项中的情绪icon容器 */
+.conversation-item .sentiment-icon {
+  margin-left: 4px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

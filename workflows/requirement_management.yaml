@@ -1,0 +1,131 @@
+# 需求管理工作流
+# 完整流程：需求创建 → 优先级评估 → 可行性分析 → 任务拆分 → 分配
+
+name: requirement_management_workflow
+description: 需求管理完整流程
+version: "1.0"
+
+trigger:
+  type: manual
+  event: RequirementCreated
+
+steps:
+    # Step 1: 获取需求详情
+    - name: get_requirement
+      action: log
+      input: $trigger.requirement
+      output: requirement
+      timeout: 1000
+
+    # Step 2: 优先级智能评估
+    - name: assess_priority
+      agent: requirement_agent
+      action: classify
+      input:
+        requirement: $requirement
+        customer_profile: $trigger.customer
+      output: priority_assessment
+      timeout: 5000
+
+    # Step 3: 可行性分析（需要技术评估时）
+    - name: feasibility_analysis
+      agent: requirement_agent
+      action: classify
+      condition: $requirement.category == 'product' || $requirement.category == 'technical'
+      input:
+        requirement: $requirement
+        priority: $priority_assessment
+      output: feasibility
+      timeout: 8000
+
+    # Step 4: 人工确认（高优先级或不可行时）
+    - name: human_confirmation
+      type: human_in_loop
+      condition: $priority_assessment.priority == 'urgent' || $feasibility.is_feasible == false
+      timeout: 86400000  # 24小时
+      fallback: auto_approve
+      input:
+        requirement: $requirement
+        priority_assessment: $priority_assessment
+        feasibility: $feasibility
+
+    # Step 5: 任务拆分（需求被批准后）
+    - name: task_breakdown
+      agent: requirement_agent
+      action: classify
+      condition: $human_confirmation.approved == true || $priority_assessment.priority != 'urgent'
+      input:
+        requirement: $requirement
+        feasibility: $feasibility
+      output: tasks
+      timeout: 10000
+
+    # Step 6: 批量创建Task
+    - name: create_tasks
+      action: create_task
+      loop: $tasks.task_list
+      condition: $tasks.task_list.length > 0
+      input:
+        title: $item.title
+        priority: $item.priority
+        requirementId: $requirement.id
+        conversationId: $requirement.conversationId
+        description: $item.description
+        estimatedHours: $item.estimatedHours
+      timeout: 3000
+
+    # Step 7: 智能分配（根据工程师技能和负载）
+    - name: smart_assignment
+      agent: requirement_agent
+      action: classify
+      input:
+        tasks: $create_tasks
+        requirement: $requirement
+      output: assignments
+      timeout: 5000
+
+    # Step 8: 通知相关人员
+    - name: notify_stakeholders
+      action: send_message
+      channel: internal
+      content: |
+        📋 新需求已拆分为 $tasks.task_list.length 个任务
+
+        需求: $requirement.title
+        优先级: $priority_assessment.priority
+        任务: $create_tasks
+
+        请及时认领或分配。
+      timeout: 3000
+
+    # Step 9: 如果有对话，通知客户
+    - name: notify_customer
+      action: send_message
+      channel: $trigger.channel
+      condition: $requirement.conversationId != null
+      content: |
+        您的需求已收到！
+
+        需求: $requirement.title
+        评估优先级: $priority_assessment.priority
+        预计任务数: $tasks.task_list.length
+
+        我们会尽快处理并反馈进度。
+      timeout: 3000
+
+# 错误处理
+onError:
+  - name: error_notification
+    action: send_message
+    channel: internal_alert
+    content: "需求管理工作流异常: $requirement.id"
+
+# 完成后操作
+onComplete:
+  - name: record_completion
+    action: log
+    content: |
+      Requirement workflow completed:
+      - Requirement ID: $requirement.id
+      - Tasks created: $create_tasks.length
+      - Duration: $workflow.duration ms

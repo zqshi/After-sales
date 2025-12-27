@@ -174,6 +174,23 @@ export async function sendChatMessage(conversationId, payload) {
   });
 }
 
+export async function sendIncomingMessage(payload) {
+  return safeRequest('/im/incoming-message', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * 设置会话Agent模式
+ */
+export async function setConversationMode(conversationId, mode) {
+  return safeRequest(`/im/conversations/${conversationId}/mode`, {
+    method: 'PATCH',
+    body: JSON.stringify({ mode }),
+  });
+}
+
 export async function updateConversationStatus(conversationId, payload) {
   return safeRequest(`/im/conversations/${conversationId}/status`, {
     method: 'PATCH',
@@ -191,6 +208,10 @@ export async function fetchProfileInteractions(customerId, params) {
 
 export async function refreshProfile(customerId) {
   return safeRequest(`/profiles/${customerId}/refresh`, { method: 'POST', body: JSON.stringify({}) });
+}
+
+export async function fetchConversationAiAnalysis(conversationId) {
+  return safeRequest(`/im/conversations/${conversationId}/ai-analysis`);
 }
 
 export async function fetchRequirementData(params) {
@@ -242,6 +263,15 @@ export async function analyzeConversation(conversationId, context, model = 'gpt-
     method: 'POST',
     body: JSON.stringify({ conversationId, context, model }),
   });
+}
+
+/**
+ * 获取对话情绪分析
+ * @param {string} conversationId - 对话ID
+ * @returns {Promise<Object>} 情绪分析结果
+ */
+export async function fetchSentimentAnalysis(conversationId) {
+  return safeRequest(`/im/conversations/${conversationId}/sentiment`);
 }
 
 export async function applySolution(solution) {

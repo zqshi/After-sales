@@ -7,6 +7,10 @@ export const config = {
   port: parseInt(process.env.PORT || '8080', 10),
   logLevel: process.env.LOG_LEVEL || 'info',
 
+  app: {
+    baseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
+  },
+
   database: {
     host: process.env.DATABASE_HOST || 'localhost',
     port: parseInt(process.env.DATABASE_PORT || '5432', 10),
@@ -41,6 +45,11 @@ export const config = {
     timeout: parseInt(process.env.AI_SERVICE_TIMEOUT || '30000', 10),
     maxRetries: parseInt(process.env.AI_SERVICE_MAX_RETRIES || '3', 10),
     enabled: !!process.env.AI_SERVICE_URL && !!process.env.AI_SERVICE_API_KEY,
+  },
+
+  agentscope: {
+    serviceUrl: process.env.AGENTSCOPE_URL || 'http://localhost:5000',
+    timeout: parseInt(process.env.AGENTSCOPE_TIMEOUT || '30000', 10),
   },
 
   monitoring: {

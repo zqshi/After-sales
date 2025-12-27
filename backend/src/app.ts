@@ -8,6 +8,8 @@ import fastify, { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
 import { ConversationController } from './presentation/http/controllers/ConversationController';
 import { conversationRoutes } from './presentation/http/routes/conversationRoutes';
+import { ImController } from './presentation/http/controllers/ImController';
+import { imRoutes } from './presentation/http/routes/imRoutes';
 import { CreateConversationUseCase } from './application/use-cases/CreateConversationUseCase';
 import { ListConversationsUseCase } from './application/use-cases/ListConversationsUseCase';
 import { AssignAgentUseCase } from './application/use-cases/AssignAgentUseCase';
@@ -64,6 +66,12 @@ import { AnalyzeConversationUseCase } from './application/use-cases/ai/AnalyzeCo
 import { ApplySolutionUseCase } from './application/use-cases/ai/ApplySolutionUseCase';
 import { KnowledgeRecommender } from '@domain/knowledge/services/KnowledgeRecommender';
 import { AgentScopeGateway } from './infrastructure/agentscope/AgentScopeGateway';
+import { TaskCompletedEventHandler } from './application/event-handlers/TaskCompletedEventHandler';
+import { ConversationReadyToCloseEventHandler } from './application/event-handlers/ConversationReadyToCloseEventHandler';
+import { RequirementCreatedEventHandler } from './application/event-handlers/RequirementCreatedEventHandler';
+import { ConversationTaskCoordinator } from './application/services/ConversationTaskCoordinator';
+import { metricsMiddleware, metricsResponseHook } from './presentation/http/middleware/metricsMiddleware';
+import metricsRoutes from './presentation/http/routes/metricsRoutes';
 
 export async function createApp(
   dataSource: DataSource,
@@ -79,6 +87,10 @@ export async function createApp(
       origin: true,
     });
   }
+
+  // 注册Metrics中间件（自动收集HTTP请求指标）
+  app.addHook('onRequest', metricsMiddleware);
+  app.addHook('onResponse', metricsResponseHook);
 
   await app.register(multipart, {
     attachFieldsToBody: true,
@@ -145,6 +157,7 @@ export async function createApp(
   );
   const createRequirementUseCase = new CreateRequirementUseCase(
     requirementRepository,
+    eventBus,
   );
   const getRequirementUseCase = new GetRequirementUseCase(
     requirementRepository,
@@ -163,7 +176,7 @@ export async function createApp(
   const listTasksUseCase = new ListTasksUseCase(taskRepository);
   const assignTaskUseCase = new AssignTaskUseCase(taskRepository);
   const updateTaskStatusUseCase = new UpdateTaskStatusUseCase(taskRepository);
-  const completeTaskUseCase = new CompleteTaskUseCase(taskRepository);
+  const completeTaskUseCase = new CompleteTaskUseCase(taskRepository, eventBus);
   const createKnowledgeItemUseCase = new CreateKnowledgeItemUseCase(
     knowledgeRepository,
   );
@@ -239,17 +252,69 @@ export async function createApp(
   const applySolutionUseCase = new ApplySolutionUseCase(aiService);
   const aiController = new AiController(analyzeConversationUseCase, applySolutionUseCase);
 
-  // 注册路由
-  await conversationRoutes(app, conversationController);
-  await customerRoutes(
-    app,
-    customerProfileController,
-    customerActionController,
+  // 创建ConversationTaskCoordinator应用层协调服务
+  // 用于Saga协调：客户消息→Conversation→Requirement→Task→完成→关闭
+  const conversationTaskCoordinator = new ConversationTaskCoordinator(
+    conversationRepository,
+    taskRepository,
+    requirementRepository,
+    createConversationUseCase,
+    createRequirementUseCase,
+    createTaskUseCase,
+    closeConversationUseCase,
+    aiService,
+    eventBus,
   );
-  await requirementRoutes(app, requirementController);
-  await taskRoutes(app, taskController);
-  await knowledgeRoutes(app, knowledgeController);
-  await aiRoutes(app, aiController);
+
+  // 创建ImController - IM消息接入
+  const imController = new ImController(
+    conversationTaskCoordinator,
+    aiService,
+    searchKnowledgeUseCase,
+    taskRepository,
+    conversationRepository,
+  );
+
+  // 创建并注册事件处理器
+  const taskCompletedEventHandler = new TaskCompletedEventHandler(
+    taskRepository,
+    conversationRepository,
+    eventBus,
+  );
+  const conversationReadyToCloseEventHandler = new ConversationReadyToCloseEventHandler(
+    conversationRepository,
+    aiService,
+  );
+  const requirementCreatedEventHandler = new RequirementCreatedEventHandler(
+    createTaskUseCase,
+  );
+
+  // 订阅事件
+  eventBus.subscribe('TaskCompleted', (event) => taskCompletedEventHandler.handle(event as any));
+  eventBus.subscribe('ConversationReadyToClose', (event) =>
+    conversationReadyToCloseEventHandler.handle(event as any),
+  );
+  eventBus.subscribe('RequirementCreated', (event) =>
+    requirementCreatedEventHandler.handle(event as any),
+  );
+
+  // 注册路由 - 所有业务路由添加 /api/v1 前缀
+  await app.register(async (apiApp) => {
+    await conversationRoutes(apiApp, conversationController);
+    await customerRoutes(
+      apiApp,
+      customerProfileController,
+      customerActionController,
+    );
+    await requirementRoutes(apiApp, requirementController);
+    await taskRoutes(apiApp, taskController);
+    await knowledgeRoutes(apiApp, knowledgeController);
+    await aiRoutes(apiApp, aiController);
+    await imRoutes(apiApp, imController); // IM消息接入路由
+  }, { prefix: '/api/v1' });
+
+  // Metrics路由不添加前缀（直接挂载在根路径）
+  await metricsRoutes(app);
 
   const agentScopeDependencies = {
     createConversationUseCase,
@@ -273,11 +338,6 @@ export async function createApp(
   };
   const agentScopeGateway = new AgentScopeGateway(app, agentScopeDependencies, eventBus);
   await agentScopeGateway.initialize();
-
-  // 健康检查端点
-  app.get('/health', async () => {
-    return { status: 'ok', timestamp: new Date().toISOString() };
-  });
 
   return app;
 }

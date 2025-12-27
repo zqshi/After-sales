@@ -53,7 +53,14 @@ services:
       NODE_ENV: development
       PORT: 8080
       LOG_LEVEL: debug
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: aftersales
+      DATABASE_USER: admin
+      DATABASE_PASSWORD: admin123
       DATABASE_URL: postgresql://admin:admin123@postgres:5432/aftersales
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       REDIS_URL: redis://:redis123@redis:6379
       AGENTSCOPE_URL: http://agentscope-service:5000
     depends_on:
@@ -96,7 +103,7 @@ services:
       dockerfile: Dockerfile.frontend
     container_name: aftersales-frontend
     ports:
-      - "3000:3000"
+      - "3000:5173"
     environment:
       VITE_API_BASE_URL: http://localhost:8080/api/v1
     volumes:

@@ -17,8 +17,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
-    open: true,
+    port: 5173,
+    host: '0.0.0.0',
+    open: false,
   },
   define: {
     __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),

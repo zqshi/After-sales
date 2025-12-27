@@ -13,13 +13,15 @@ from prometheus_client import (
     generate_latest,
 )
 
-from src.agents.customer_service_agent import CustomerServiceAgent
+from src.agents.assistant_agent import AssistantAgent
+from src.agents.engineer_agent import EngineerAgent
+from src.agents.inspector_agent import InspectorAgent
 from src.agents.human_agent_adapter import HumanAgentAdapter
 from src.api.routes import agents as agents_router, chat as chat_router, events as events_router
 from src.api.state import agent_manager
 from src.config.settings import settings
 from src.events.bridge import AgentEventPublisher, NodeEventLedger
-from src.router.adaptive_router import AdaptiveRouter
+from src.router.orchestrator_agent import OrchestratorAgent
 from src.tools.mcp_tools import setup_toolkit
 
 
@@ -57,21 +59,35 @@ async def lifespan(app: FastAPI):
     """Initialize AgentScope runtime and make routers available."""
     settings.initialize_agentscope()
     toolkit_bundle = await setup_toolkit()
-    customer_service_agent = await CustomerServiceAgent.create(
+
+    # 创建3个独立Agent
+    assistant_agent = await AssistantAgent.create(
+        toolkit_bundle.toolkit,
+        toolkit_bundle.backend_client,
+    )
+    engineer_agent = await EngineerAgent.create(
+        toolkit_bundle.toolkit,
+        toolkit_bundle.backend_client,
+    )
+    inspector_agent = await InspectorAgent.create(
         toolkit_bundle.toolkit,
         toolkit_bundle.backend_client,
     )
     human_agent = HumanAgentAdapter("HumanSupport", app.state.ws_manager)
 
-    router = AdaptiveRouter(
-        customer_service_agent=customer_service_agent,
+    # 使用OrchestratorAgent替换AdaptiveRouter
+    router = OrchestratorAgent(
+        assistant_agent=assistant_agent,
+        engineer_agent=engineer_agent,
         human_agent=human_agent,
         mcp_client=toolkit_bundle.backend_client,
         ws_manager=app.state.ws_manager,
     )
 
     agent_manager["router"] = router
-    agent_manager["cs_agent"] = customer_service_agent
+    agent_manager["assistant_agent"] = assistant_agent
+    agent_manager["engineer_agent"] = engineer_agent
+    agent_manager["inspector_agent"] = inspector_agent
     agent_manager["human_agent"] = human_agent
     agent_manager["toolkit_bundle"] = toolkit_bundle
     event_ledger = NodeEventLedger()
@@ -133,7 +149,7 @@ async def health_check() -> dict[str, Any]:
     return {
         "status": "healthy",
         "agentscope_version": agentscope.__version__,
-        "agents_ready": len(agent_manager.get("router", [])) > 0,
+        "agents_ready": "router" in agent_manager,
     }
 
 

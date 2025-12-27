@@ -5,11 +5,15 @@ import { CreateRequirementRequestDTO } from '../../dto/requirement/CreateRequire
 import { RequirementResponseDTO } from '../../dto/requirement/RequirementResponseDTO';
 import { Priority } from '@domain/requirement/value-objects/Priority';
 import { RequirementSource } from '@domain/requirement/value-objects/RequirementSource';
+import { EventBus } from '@infrastructure/events/EventBus';
 
 export class CreateRequirementUseCase {
   private detector: RequirementDetectorService;
 
-  constructor(private readonly requirementRepository: RequirementRepository) {
+  constructor(
+    private readonly requirementRepository: RequirementRepository,
+    private readonly eventBus: EventBus,
+  ) {
     this.detector = new RequirementDetectorService();
   }
 
@@ -38,7 +42,18 @@ export class CreateRequirementUseCase {
       metadata: request.metadata,
     });
 
+    // 获取未提交的事件
+    const events = requirement.getUncommittedEvents();
+
+    // 保存聚合根
     await this.requirementRepository.save(requirement);
+
+    // 发布领域事件
+    for (const event of events) {
+      await this.eventBus.publish(event);
+    }
+    requirement.clearEvents();
+
     return RequirementResponseDTO.fromDomain(requirement);
   }
 

@@ -1,0 +1,273 @@
+{
+  "dashboard": {
+    "title": "智能售后工作台 - 监控面板",
+    "tags": ["after-sales", "agent", "workflow"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Agent调用次数",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(agent_calls_total[5m])",
+            "legendFormat": "{{agent_name}} - {{status}}"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 2,
+        "title": "Agent响应时间 (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(agent_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{agent_name}}"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 3,
+        "title": "工作流执行次数",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(workflow_executions_total[5m])",
+            "legendFormat": "{{workflow_name}} - {{status}}"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "工作流平均执行时长",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(workflow_duration_seconds_sum[5m]) / rate(workflow_duration_seconds_count[5m])",
+            "legendFormat": "{{workflow_name}}"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 5,
+        "title": "Task状态分布",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "tasks_by_status",
+            "legendFormat": "{{status}}"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 6,
+          "h": 8
+        }
+      },
+      {
+        "id": 6,
+        "title": "Conversation状态分布",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "conversations_by_status",
+            "legendFormat": "{{status}}"
+          }
+        ],
+        "gridPos": {
+          "x": 6,
+          "y": 16,
+          "w": 6,
+          "h": 8
+        }
+      },
+      {
+        "id": 7,
+        "title": "Task完成时长 (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(task_completion_time_hours_bucket[1h]))",
+            "legendFormat": "{{priority}}"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 8,
+        "title": "HTTP请求QPS",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[1m])",
+            "legendFormat": "{{method}} {{route}}"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 9,
+        "title": "HTTP请求响应时间 (P95)",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{method}} {{route}}"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 10,
+        "title": "人工审核统计",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(workflow_human_reviews_total[1h])) by (action)",
+            "legendFormat": "{{action}}"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 32,
+          "w": 12,
+          "h": 4
+        }
+      },
+      {
+        "id": 11,
+        "title": "SLA违规次数",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(increase(sla_violations_total[1h])) by (severity)",
+            "legendFormat": "{{severity}}"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 32,
+          "w": 12,
+          "h": 4
+        }
+      },
+      {
+        "id": 12,
+        "title": "数据库查询时长",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{operation}}"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 36,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 13,
+        "title": "Node.js内存使用",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "nodejs_heap_size_used_bytes / 1024 / 1024",
+            "legendFormat": "Heap Used (MB)"
+          },
+          {
+            "expr": "nodejs_heap_size_total_bytes / 1024 / 1024",
+            "legendFormat": "Heap Total (MB)"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 36,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 14,
+        "title": "Agent置信度分布",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "rate(agent_confidence_bucket[5m])",
+            "legendFormat": "{{agent_name}}"
+          }
+        ],
+        "gridPos": {
+          "x": 0,
+          "y": 44,
+          "w": 12,
+          "h": 8
+        }
+      },
+      {
+        "id": 15,
+        "title": "客户满意度分布",
+        "type": "bargauge",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, rate(customer_satisfaction_score_bucket[1h]))",
+            "legendFormat": "{{channel}}"
+          }
+        ],
+        "gridPos": {
+          "x": 12,
+          "y": 44,
+          "w": 12,
+          "h": 8
+        }
+      }
+    ],
+    "refresh": "10s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    }
+  }
+}

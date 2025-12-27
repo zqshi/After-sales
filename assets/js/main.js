@@ -28,6 +28,7 @@ import {
 } from './requirements/index.js';
 import { initAiSolutions, analyzeConversation } from './ai/index.js';
 import { initAgentTasks, createRelatedTask, openAnalysisPanelClassic } from './tasks/index.js';
+import { initTools } from './tools/index.js';
 import { scrollToBottom } from './core/scroll.js';
 import { initCustomerProfile, updateCustomerContext, openHistoryDetail } from './customer/index.js';
 import { initRoleSwitcher } from './roles.js';
@@ -59,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initRightPanelActions();
     initAiSolutions();
     initAgentTasks();
+    initTools();
     scrollToBottom();
 
     const actionOverlay = document.getElementById('action-modal-overlay');

@@ -33,6 +33,41 @@ function initTabs() {
       content.classList.toggle('hidden', !shouldShow);
       content.classList.toggle('active', shouldShow);
     });
+
+    // 当切换到对话tab时，如果右侧面板是打开的且显示的是质检面板，自动切换到经典分析面板
+    if (group === 'default' && tabId === 'conversations') {
+      const drawer = qs('#right-sidebar');
+      const leanContainer = qs('#qc-lean-container');
+
+      // 检查侧边栏是否打开 且 质检面板是否显示
+      if (drawer && !drawer.classList.contains('translate-x-full') &&
+          leanContainer && !leanContainer.classList.contains('hidden')) {
+        console.log('[Layout] 切换到对话tab，检测到质检面板正在显示，自动切换到经典分析面板');
+
+        // 隐藏质检面板
+        leanContainer.classList.add('hidden');
+        leanContainer.style.display = 'none';
+
+        // 显示经典面板
+        const classicContainer = qs('#analysis-classic');
+        if (classicContainer) {
+          classicContainer.classList.remove('hidden');
+          classicContainer.style.display = '';
+        }
+
+        // 显示左侧栏区块
+        const railMetrics = qs('#rail-card-metrics');
+        const railHistory = qs('#rail-card-history');
+        if (railMetrics) {
+          railMetrics.classList.remove('hidden');
+          railMetrics.style.display = '';
+        }
+        if (railHistory) {
+          railHistory.classList.remove('hidden');
+          railHistory.style.display = '';
+        }
+      }
+    }
   };
 
   tabBtns.forEach((btn) => {
@@ -218,9 +253,89 @@ export function toggleRightSidebar(forceState) {
 }
 
 export function openFullAnalysisPanel() {
+  console.log('[Layout] ========== openFullAnalysisPanel 调用开始 ==========');
+
   const drawer = qs('#right-sidebar');
   if (drawer) {
+    const beforeClasses = drawer.className;
     drawer.classList.remove('analysis-restricted');
+    console.log('[Layout] 侧边栏类名变化:', beforeClasses, '->', drawer.className);
+  } else {
+    console.error('[Layout] ❌ 找不到 #right-sidebar 元素！');
   }
+
+  // 重置为经典分析面板模式,隐藏质检面板
+  const leanContainer = qs('#qc-lean-container');
+  const classicContainer = qs('#analysis-classic');
+  const railMetrics = qs('#rail-card-metrics');
+  const railHistory = qs('#rail-card-history');
+
+  console.log('[Layout] 查找DOM元素结果:', {
+    leanContainer: leanContainer ? `找到 (类名: ${leanContainer.className})` : '❌ 未找到',
+    classicContainer: classicContainer ? `找到 (类名: ${classicContainer.className})` : '❌ 未找到',
+    railMetrics: railMetrics ? `找到 (类名: ${railMetrics.className})` : '❌ 未找到',
+    railHistory: railHistory ? `找到 (类名: ${railHistory.className})` : '❌ 未找到'
+  });
+
+  // 强制隐藏质检面板
+  if (leanContainer) {
+    const wasHidden = leanContainer.classList.contains('hidden');
+    leanContainer.classList.add('hidden');
+    leanContainer.style.display = 'none';
+    leanContainer.style.visibility = 'hidden';
+    console.log('[Layout] 质检面板:', wasHidden ? '已经是隐藏状态' : '✓ 从显示改为隐藏', '| 当前类名:', leanContainer.className);
+  } else {
+    console.warn('[Layout] ⚠️ 找不到质检面板容器 #qc-lean-container');
+  }
+
+  // 强制显示经典面板
+  if (classicContainer) {
+    const wasHidden = classicContainer.classList.contains('hidden');
+    classicContainer.classList.remove('hidden');
+    classicContainer.style.display = '';
+    classicContainer.style.visibility = '';
+    console.log('[Layout] 经典面板:', wasHidden ? '✓ 从隐藏改为显示' : '已经是显示状态', '| 当前类名:', classicContainer.className);
+  } else {
+    console.warn('[Layout] ⚠️ 找不到经典分析面板 #analysis-classic');
+  }
+
+  // 显示左侧栏区块
+  if (railMetrics) {
+    railMetrics.classList.remove('hidden');
+    railMetrics.style.display = '';
+    console.log('[Layout] ✓ 显示关键指标');
+  }
+  if (railHistory) {
+    railHistory.classList.remove('hidden');
+    railHistory.style.display = '';
+    console.log('[Layout] ✓ 显示历史对话');
+  }
+
+  // 先打开侧边栏
   toggleRightSidebar(true);
+
+  // 在下一个事件循环中再次确保状态正确，防止被其他代码覆盖
+  setTimeout(() => {
+    // 再次确保质检面板隐藏，经典面板显示
+    const leanCheck = qs('#qc-lean-container');
+    const classicCheck = qs('#analysis-classic');
+
+    if (leanCheck && !leanCheck.classList.contains('hidden')) {
+      console.warn('[Layout] ⚠️ 检测到质检面板意外显示，再次隐藏');
+      leanCheck.classList.add('hidden');
+      leanCheck.style.display = 'none';
+    }
+
+    if (classicCheck && classicCheck.classList.contains('hidden')) {
+      console.warn('[Layout] ⚠️ 检测到经典面板意外隐藏，再次显示');
+      classicCheck.classList.remove('hidden');
+      classicCheck.style.display = '';
+    }
+
+    console.log('[Layout] 【最终状态验证】');
+    console.log('  质检面板显示状态:', leanCheck ? `hidden类:${leanCheck.classList.contains('hidden')}, display:${leanCheck.style.display}` : '元素不存在');
+    console.log('  经典面板显示状态:', classicCheck ? `hidden类:${classicCheck.classList.contains('hidden')}, display:${classicCheck.style.display}` : '元素不存在');
+  }, 50);
+
+  console.log('[Layout] ========== openFullAnalysisPanel 调用结束 ==========');
 }

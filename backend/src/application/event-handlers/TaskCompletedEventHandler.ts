@@ -1,4 +1,3 @@
-import { DomainEvent } from '@domain/shared/DomainEvent';
 import { TaskCompletedEvent } from '@domain/task/events/TaskCompletedEvent';
 import { ITaskRepository } from '@domain/task/repositories/ITaskRepository';
 import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';

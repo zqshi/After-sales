@@ -1,0 +1,271 @@
+"""
+AssistantAgent - 辅助Agent
+
+职责：
+- 情感分析（正面/中性/负面，风险等级）
+- 需求提取（产品/技术/服务类需求）
+- 需求澄清（通过追问明确意图）
+- 回复生成（友好、专业、简洁）
+
+触发时机：所有对话场景
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from agentscope.agent import ReActAgent
+from agentscope.formatter import OpenAIChatFormatter
+from agentscope.memory import InMemoryMemory
+from agentscope.message import Msg
+from agentscope.model import OpenAIChatModel
+from agentscope.tool import Toolkit
+
+from src.tools.mcp_tools import BackendMCPClient
+
+
+# AssistantAgent的系统Prompt
+ASSISTANT_AGENT_PROMPT = """你是专业的售后客服助手。
+
+核心职责：
+1. 分析客户情感（正面/中性/负面，风险等级）
+2. 提取客户需求（产品/技术/服务类需求）
+3. 澄清模糊需求（通过追问明确意图）
+4. 生成友好的回复建议
+
+工作原则：
+• 保持礼貌和温度
+• 回复简洁明了（避免技术术语）
+• 不确定时主动升级人工
+• 客户体验优先
+
+可用工具：
+- analyzeConversation: 深度情感分析（MCP）
+- getCustomerProfile: 查看客户画像（MCP）
+- searchKnowledge: 知识库检索（MCP）
+
+输出要求：
+你必须输出JSON格式的结构化结果，包含以下字段：
+
+{
+  "sentiment_analysis": {
+    "sentiment": "positive/neutral/negative",
+    "intensity": "calm/urgent/angry",
+    "score": 0.0-1.0,
+    "risk_level": "low/medium/high"
+  },
+  "requirement_extraction": [
+    {
+      "title": "需求名称",
+      "category": "product/technical/service",
+      "priority": "urgent/high/medium/low",
+      "confidence": 0.0-1.0,
+      "clarification_needed": true/false
+    }
+  ],
+  "clarification_questions": ["问题1", "问题2"],
+  "suggested_reply": "给客户的回复文本",
+  "confidence": 0.0-1.0
+}
+
+示例对话：
+
+用户："开票功能怎么用？"
+助手输出：
+{
+  "sentiment_analysis": {
+    "sentiment": "neutral",
+    "intensity": "calm",
+    "score": 0.8,
+    "risk_level": "low"
+  },
+  "requirement_extraction": [
+    {
+      "title": "了解开票功能使用方法",
+      "category": "product",
+      "priority": "medium",
+      "confidence": 0.9,
+      "clarification_needed": false
+    }
+  ],
+  "clarification_questions": [],
+  "suggested_reply": "您可以在【财务管理】→【开票申请】中使用开票功能。选择发票类型后，填写开票信息即可提交。",
+  "confidence": 0.92
+}
+
+用户："你们系统怎么这么烂！！！"
+助手输出：
+{
+  "sentiment_analysis": {
+    "sentiment": "negative",
+    "intensity": "angry",
+    "score": 0.2,
+    "risk_level": "high"
+  },
+  "requirement_extraction": [
+    {
+      "title": "投诉系统问题",
+      "category": "service",
+      "priority": "urgent",
+      "confidence": 0.8,
+      "clarification_needed": true
+    }
+  ],
+  "clarification_questions": [
+    "请问您具体遇到了什么问题？",
+    "是否可以描述一下错误提示或异常现象？"
+  ],
+  "suggested_reply": "非常抱歉给您带来不便！请问您具体遇到了什么问题？我会立即为您处理并上报。",
+  "confidence": 0.65
+}
+"""
+
+
+class AssistantAgent(ReActAgent):
+    """
+    辅助Agent - 通用客服助手
+
+    负责常规对话的情感分析、需求识别和回复生成
+    """
+
+    def __init__(
+        self,
+        name: str,
+        sys_prompt: str,
+        model: OpenAIChatModel,
+        formatter: OpenAIChatFormatter,
+        toolkit: Toolkit,
+        mcp_client: BackendMCPClient,
+        memory: InMemoryMemory | None = None,
+        max_iters: int = 6,
+    ) -> None:
+        super().__init__(
+            name=name,
+            sys_prompt=sys_prompt,
+            model=model,
+            formatter=formatter,
+            toolkit=toolkit,
+            memory=memory or InMemoryMemory(),
+            max_iters=max_iters,
+        )
+        self.mcp_client = mcp_client
+
+    @classmethod
+    async def create(
+        cls,
+        toolkit: Toolkit,
+        mcp_client: BackendMCPClient
+    ) -> "AssistantAgent":
+        """
+        创建AssistantAgent实例
+
+        Args:
+            toolkit: 工具集（包含MCP工具）
+            mcp_client: MCP客户端
+
+        Returns:
+            AssistantAgent实例
+        """
+        from src.config.settings import settings
+
+        cfg = settings.deepseek_config
+        model = OpenAIChatModel(
+            model_name=cfg["model_name"],
+            api_key=cfg["api_key"],
+            stream=cfg.get("stream", True),
+            client_kwargs={
+                "base_url": cfg["base_url"],
+                "timeout": cfg["timeout"]
+            },
+            generate_kwargs={"max_retries": 3}
+        )
+        formatter = OpenAIChatFormatter()
+
+        return cls(
+            name="AssistantAgent",
+            sys_prompt=ASSISTANT_AGENT_PROMPT,
+            model=model,
+            formatter=formatter,
+            toolkit=toolkit,
+            mcp_client=mcp_client,
+            memory=InMemoryMemory(),
+            max_iters=6,  # 最多6轮对话
+        )
+
+    async def analyze_sentiment(self, msg: Msg) -> dict[str, Any]:
+        """
+        情感分析（通过MCP调用后端）
+
+        Args:
+            msg: 用户消息
+
+        Returns:
+            情感分析结果
+        """
+        try:
+            conversation_id = msg.metadata.get("conversationId", msg.id)
+            result = await self.mcp_client.call_tool(
+                "analyzeConversation",
+                conversationId=conversation_id,
+                context="sentiment",
+                includeHistory=True,
+            )
+            return result
+        except Exception as e:
+            # 降级：返回中性情感
+            return {
+                "sentiment": "neutral",
+                "intensity": "calm",
+                "score": 0.7,
+                "risk_level": "low",
+                "error": str(e)
+            }
+
+    async def get_customer_profile(self, customer_id: str) -> dict[str, Any]:
+        """
+        获取客户画像
+
+        Args:
+            customer_id: 客户ID
+
+        Returns:
+            客户画像信息
+        """
+        try:
+            profile = await self.mcp_client.call_tool(
+                "getCustomerProfile",
+                customerId=customer_id
+            )
+            return profile
+        except Exception:
+            return {}
+
+    def should_escalate_to_human(self, analysis_result: dict[str, Any]) -> bool:
+        """
+        判断是否需要升级人工
+
+        Args:
+            analysis_result: 分析结果（包含情感、需求、置信度）
+
+        Returns:
+            是否需要升级人工
+        """
+        # 规则1: 高风险情感
+        sentiment = analysis_result.get("sentiment_analysis", {})
+        if sentiment.get("risk_level") == "high":
+            return True
+        if sentiment.get("sentiment") == "negative":
+            return True
+
+        # 规则2: 低置信度
+        confidence = analysis_result.get("confidence", 1.0)
+        if confidence < 0.7:
+            return True
+
+        # 规则3: 紧急需求
+        requirements = analysis_result.get("requirement_extraction", [])
+        for req in requirements:
+            if req.get("priority") == "urgent":
+                return True
+
+        return False

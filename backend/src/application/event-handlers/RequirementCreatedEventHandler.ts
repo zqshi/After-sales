@@ -1,6 +1,5 @@
 import { RequirementCreatedEvent } from '@domain/requirement/events/RequirementCreatedEvent';
 import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
-import { CreateConversationUseCase } from '@application/use-cases/CreateConversationUseCase';
 import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
 
 /**
@@ -13,20 +12,10 @@ import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
  * 3. 如果是客户需求但无Conversation → 可选创建Conversation（暂缓实现，需要IM集成）
  */
 export class RequirementCreatedEventHandler {
-  constructor(
-    private readonly createTaskUseCase: CreateTaskUseCase,
-    private readonly createConversationUseCase?: CreateConversationUseCase,  // 可选，Phase 2实现
-  ) {}
+  constructor(private readonly createTaskUseCase: CreateTaskUseCase) {}
 
   async handle(event: RequirementCreatedEvent): Promise<void> {
-    const {
-      requirementId,
-      customerId,
-      conversationId,
-      title,
-      priority,
-      source,
-    } = event.payload;
+    const { requirementId, conversationId, title, priority, source } = event.payload;
 
     console.log(
       `[RequirementCreatedEventHandler] Processing requirement creation: ${requirementId}`,

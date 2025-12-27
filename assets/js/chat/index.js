@@ -9,6 +9,7 @@ import {
 import { updateCustomerContext } from '../customer/index.js';
 import {
   fetchConversations,
+  fetchSentimentAnalysis,
   isApiEnabled,
 } from '../api.js';
 
@@ -16,12 +17,52 @@ const outboundEnabled = false;
 let currentConversationId = 'conv-001';
 let chatController = null;
 
+/**
+ * 根据情绪类型返回对应的emoji图标
+ * @param {Object|string|null} sentiment - 情绪对象或情绪字符串
+ * @returns {string} emoji图标
+ */
+function getSentimentIcon(sentiment) {
+  if (!sentiment) return '';
+
+  const sentimentType = typeof sentiment === 'string' ? sentiment : sentiment.type || sentiment.sentiment;
+
+  const iconMap = {
+    // 积极情绪
+    'positive': '😊',
+    'happy': '😊',
+    'satisfied': '😊',
+    'excited': '🤩',
+    'grateful': '🙏',
+
+    // 中性情绪
+    'neutral': '😐',
+    'calm': '😌',
+
+    // 消极情绪
+    'negative': '😟',
+    'unhappy': '😔',
+    'frustrated': '😤',
+    'angry': '😡',
+    'anxious': '😰',
+    'worried': '😟',
+    'confused': '😕',
+
+    // 紧急
+    'urgent': '⚠️',
+    'emergency': '🚨',
+  };
+
+  return iconMap[sentimentType?.toLowerCase()] || '';
+}
+
 export function initChat() {
   chatController = new UnifiedChatController();
   chatController.init();
   initConversationList();
   initInputEvents();
   initConversationEndDetection();
+  initConversationFilters();
   scrollToBottom();
 }
 
@@ -86,6 +127,67 @@ function renderConversationItems(container, conversations) {
     .map((conv, index) => createConversationMarkup(conv, index === 0))
     .join('');
   container.innerHTML = html;
+
+  // 自动获取情绪分析（异步，不阻塞渲染）
+  if (isApiEnabled()) {
+    conversations.forEach(conv => {
+      loadSentimentForConversation(conv.conversationId);
+    });
+  }
+}
+
+/**
+ * 加载对话的情绪分析并更新UI
+ * @param {string} conversationId - 对话ID
+ */
+async function loadSentimentForConversation(conversationId) {
+  try {
+    const result = await fetchSentimentAnalysis(conversationId);
+    const sentiment = result?.sentiment || result?.data?.sentiment;
+
+    if (sentiment) {
+      updateConversationSentiment(conversationId, sentiment);
+    }
+  } catch (err) {
+    console.warn(`[chat] Failed to load sentiment for ${conversationId}:`, err);
+  }
+}
+
+/**
+ * 更新对话列表中的情绪icon
+ * @param {string} conversationId - 对话ID
+ * @param {Object} sentiment - 情绪数据
+ */
+function updateConversationSentiment(conversationId, sentiment) {
+  const conversationItem = qs(`.conversation-item[data-id="${conversationId}"]`);
+  if (!conversationItem) return;
+
+  const sentimentIcon = getSentimentIcon(sentiment);
+  if (!sentimentIcon) return;
+
+  // 查找或创建情绪icon容器
+  const existingIcon = conversationItem.querySelector('.sentiment-icon');
+  if (existingIcon) {
+    existingIcon.textContent = sentimentIcon;
+    existingIcon.setAttribute('title', sentiment.label || sentiment.type || '情绪');
+  } else {
+    // 在SLA badge后面插入情绪icon
+    const badgeContainer = conversationItem.querySelector('.mt-2 .flex');
+    if (badgeContainer) {
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'sentiment-icon';
+      iconSpan.textContent = sentimentIcon;
+      iconSpan.setAttribute('title', sentiment.label || sentiment.type || '情绪');
+
+      // 插入到第一个子元素（SLA badge容器）之后
+      const firstChild = badgeContainer.firstElementChild;
+      if (firstChild?.nextSibling) {
+        badgeContainer.insertBefore(iconSpan, firstChild.nextSibling);
+      } else {
+        badgeContainer.appendChild(iconSpan);
+      }
+    }
+  }
 }
 
 function createConversationMarkup(conv, isActive) {
@@ -103,6 +205,10 @@ function createConversationMarkup(conv, isActive) {
       : severity === 'low'
         ? 'bg-green-100 text-green-700'
         : 'bg-gray-100 text-gray-700';
+
+  // 获取情绪信息
+  const sentiment = conv.sentiment || null;
+  const sentimentIcon = getSentimentIcon(sentiment);
 
   return `
     <div class="conversation-item p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer ${
@@ -123,7 +229,10 @@ function createConversationMarkup(conv, isActive) {
           </div>
           <p class="text-[13px] text-gray-600 mt-1 line-clamp-2">${lastMessage}</p>
           <div class="mt-2 flex items-center justify-between text-[11px] text-gray-500">
-            <span class="px-2 py-0.5 rounded-full ${badgeClass}">${conv.slaLevel || 'SLA 级别'}</span>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-full ${badgeClass}">${conv.slaLevel || 'SLA 级别'}</span>
+              ${sentimentIcon ? `<span class="sentiment-icon" title="${sentiment?.label || '情绪识别中'}">${sentimentIcon}</span>` : ''}
+            </div>
             <span class="text-xs ${conv.urgency === 'high' ? 'text-red-600' : 'text-gray-500'}">${
   conv.urgency || '正常'
 }</span>
@@ -137,15 +246,19 @@ function createConversationMarkup(conv, isActive) {
 function updateChatContent(conversationId) {
   currentConversationId = conversationId;
   const card = qs(`.conversation-item[data-id="${conversationId}"]`);
-  const customerName = card?.querySelector('.customer-name')?.textContent?.trim();
-  const summary = card?.querySelector('.conv-preview')?.textContent?.trim();
+
+  // 修复：使用正确的选择器获取客户名称和摘要
+  const customerName = card?.querySelector('.text-sm.font-medium')?.textContent?.trim() || '客户';
+  const summary = card?.querySelector('.line-clamp-2')?.textContent?.trim() || '正在加载...';
   const slaNode = card?.querySelector('.px-2');
-  const sla = slaNode?.textContent?.trim();
+  const sla = slaNode?.textContent?.trim() || 'SLA 未知';
+
   chatController?.setConversation(conversationId, {
     customerName,
     summary,
     sla,
-    customerId: card?.getAttribute('data-customer-id'),
+    customerId: card?.getAttribute('data-customer-id') || conversationId,
+    company: '未知公司', // 可以从card中提取或使用默认值
   });
   updateCustomerContext(conversationId);
 }
@@ -360,4 +473,250 @@ export function submitSatisfaction(score) {
   if (card) {
     card.classList.add('hidden');
   }
+}
+
+// 对话筛选功能
+let filterState = {
+  searchText: '',
+  status: 'all',
+  channel: '',
+  urgency: '',
+  sla: ''
+};
+
+function initConversationFilters() {
+  // 搜索框
+  const searchInput = qs('#conversation-search-input');
+  if (searchInput) {
+    on(searchInput, 'input', (e) => {
+      filterState.searchText = e.target.value.toLowerCase().trim();
+      applyFilters();
+    });
+  }
+
+  // 状态筛选按钮
+  const statusButtons = qsa('[data-status]');
+  statusButtons.forEach(button => {
+    on(button, 'click', () => {
+      filterState.status = button.getAttribute('data-status');
+      updateStatusButtonStyles(button);
+      applyFilters();
+    });
+  });
+
+  // 渠道筛选
+  const channelSelect = qs('#filter-channel');
+  if (channelSelect) {
+    on(channelSelect, 'change', (e) => {
+      filterState.channel = e.target.value.toLowerCase();
+      applyFilters();
+    });
+  }
+
+  // 紧急度筛选
+  const urgencySelect = qs('#filter-urgency');
+  if (urgencySelect) {
+    on(urgencySelect, 'change', (e) => {
+      filterState.urgency = e.target.value.toLowerCase();
+      applyFilters();
+    });
+  }
+
+  // SLA筛选
+  const slaSelect = qs('#filter-sla');
+  if (slaSelect) {
+    on(slaSelect, 'change', (e) => {
+      filterState.sla = e.target.value.toLowerCase();
+      applyFilters();
+    });
+  }
+}
+
+function updateStatusButtonStyles(activeButton) {
+  const buttons = qsa('[data-status]');
+  buttons.forEach(btn => {
+    if (btn === activeButton) {
+      btn.classList.remove('bg-white', 'border', 'border-gray-300');
+      btn.classList.add('bg-primary', 'text-white');
+      const badge = btn.querySelector('[data-count]');
+      if (badge) {
+        badge.classList.remove('bg-red-500', 'bg-gray-200', 'text-gray-700');
+        badge.classList.add('bg-white', 'text-primary');
+      }
+    } else {
+      btn.classList.remove('bg-primary', 'text-white');
+      btn.classList.add('bg-white', 'border', 'border-gray-300');
+      const badge = btn.querySelector('[data-count]');
+      if (badge) {
+        badge.classList.remove('bg-white', 'text-primary');
+        if (btn.getAttribute('data-status') === 'pending') {
+          badge.classList.add('bg-red-500', 'text-white');
+        } else {
+          badge.classList.add('bg-gray-200', 'text-gray-700');
+        }
+      }
+    }
+  });
+}
+
+function applyFilters() {
+  const conversationItems = qsa('.conversation-item');
+  let visibleCount = 0;
+  const statusCounts = { all: 0, pending: 0, active: 0, completed: 0 };
+
+  conversationItems.forEach(item => {
+    let shouldShow = true;
+
+    // 搜索文本筛选
+    if (filterState.searchText) {
+      const customerName = item.querySelector('.customer-name, .text-sm.font-medium')?.textContent?.toLowerCase() || '';
+      const preview = item.querySelector('.conv-preview, .line-clamp-2')?.textContent?.toLowerCase() || '';
+      if (!customerName.includes(filterState.searchText) && !preview.includes(filterState.searchText)) {
+        shouldShow = false;
+      }
+    }
+
+    // 状态筛选
+    const itemStatus = item.getAttribute('data-status') || getConversationStatus(item);
+    if (filterState.status !== 'all' && itemStatus !== filterState.status) {
+      shouldShow = false;
+    }
+
+    // 渠道筛选
+    if (filterState.channel) {
+      const itemChannel = (item.getAttribute('data-channel') || '').toLowerCase();
+      if (itemChannel !== filterState.channel) {
+        shouldShow = false;
+      }
+    }
+
+    // 紧急度筛选
+    if (filterState.urgency) {
+      const urgencyElement = item.querySelector('.text-xs.text-red-600, .text-xs.text-gray-500');
+      const urgencyText = urgencyElement?.textContent?.toLowerCase() || '';
+      let itemUrgency = 'normal';
+      if (urgencyText.includes('紧急') || urgencyText.includes('high')) {
+        itemUrgency = 'high';
+      } else if (urgencyText.includes('已解决') || urgencyText.includes('low')) {
+        itemUrgency = 'low';
+      }
+      if (itemUrgency !== filterState.urgency) {
+        shouldShow = false;
+      }
+    }
+
+    // SLA筛选
+    if (filterState.sla) {
+      const slaElement = item.querySelector('.px-2.py-0\\.5.rounded-full');
+      const slaText = slaElement?.textContent?.toLowerCase() || '';
+      let itemSla = '';
+      if (slaText.includes('金牌') || slaText.includes('gold')) {
+        itemSla = 'gold';
+      } else if (slaText.includes('银牌') || slaText.includes('silver')) {
+        itemSla = 'silver';
+      } else if (slaText.includes('铜牌') || slaText.includes('bronze')) {
+        itemSla = 'bronze';
+      }
+      if (itemSla !== filterState.sla) {
+        shouldShow = false;
+      }
+    }
+
+    // 应用显示/隐藏
+    if (shouldShow) {
+      item.style.display = '';
+      visibleCount++;
+      statusCounts.all++;
+      statusCounts[itemStatus] = (statusCounts[itemStatus] || 0) + 1;
+    } else {
+      item.style.display = 'none';
+    }
+  });
+
+  // 更新状态计数
+  updateStatusCounts(statusCounts);
+
+  // 显示无结果提示
+  showNoResultsMessage(visibleCount === 0);
+}
+
+function getConversationStatus(item) {
+  // 根据对话项的内容判断状态
+  const slaElement = item.querySelector('.px-2.py-0\\.5.rounded-full');
+  const urgencyElement = item.querySelector('.text-xs.text-red-600, .text-xs.text-gray-500');
+
+  const urgencyText = urgencyElement?.textContent?.toLowerCase() || '';
+  const hasUrgentFlag = urgencyText.includes('紧急') || item.querySelector('.text-red-600');
+
+  if (urgencyText.includes('已解决')) {
+    return 'completed';
+  } else if (hasUrgentFlag) {
+    return 'pending';
+  } else {
+    return 'active';
+  }
+}
+
+function updateStatusCounts(counts) {
+  const allBadge = qs('[data-count="all"]');
+  const pendingBadge = qs('[data-count="pending"]');
+
+  if (allBadge) {
+    allBadge.textContent = counts.all || 0;
+  }
+  if (pendingBadge) {
+    pendingBadge.textContent = counts.pending || 0;
+  }
+}
+
+function showNoResultsMessage(show) {
+  const container = qs('.conversation-list');
+  if (!container) return;
+
+  let noResultsDiv = container.querySelector('.no-results-message');
+
+  if (show) {
+    if (!noResultsDiv) {
+      noResultsDiv = document.createElement('div');
+      noResultsDiv.className = 'no-results-message p-8 text-center text-gray-500';
+      noResultsDiv.innerHTML = `
+        <i class="fa fa-search text-4xl mb-3 text-gray-300"></i>
+        <p>未找到匹配的对话</p>
+        <p class="text-sm mt-1">尝试调整筛选条件</p>
+      `;
+      container.appendChild(noResultsDiv);
+    }
+    noResultsDiv.style.display = 'block';
+  } else {
+    if (noResultsDiv) {
+      noResultsDiv.style.display = 'none';
+    }
+  }
+}
+
+export function resetFilters() {
+  filterState = {
+    searchText: '',
+    status: 'all',
+    channel: '',
+    urgency: '',
+    sla: ''
+  };
+
+  const searchInput = qs('#conversation-search-input');
+  if (searchInput) searchInput.value = '';
+
+  const channelSelect = qs('#filter-channel');
+  if (channelSelect) channelSelect.value = '';
+
+  const urgencySelect = qs('#filter-urgency');
+  if (urgencySelect) urgencySelect.value = '';
+
+  const slaSelect = qs('#filter-sla');
+  if (slaSelect) slaSelect.value = '';
+
+  const allButton = qs('#filter-status-all');
+  if (allButton) updateStatusButtonStyles(allButton);
+
+  applyFilters();
 }

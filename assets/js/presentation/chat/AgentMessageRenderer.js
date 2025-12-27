@@ -17,7 +17,7 @@ function formatTime(timestamp) {
   return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function buildMessageNode({ role, author = '客户', content, timestamp, metadata = {} }) {
+export function buildMessageNode({ role, author = '客户', content, timestamp, metadata = {}, messageId = null, sentiment = null }) {
   const wrapper = document.createElement('div');
   const normalizedRole = role === 'agent' ? 'agent' : role === 'human' ? 'human' : 'customer';
   const isAIAgent = metadata.fromAI || metadata.agentType === 'ai';
@@ -25,6 +25,7 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
   wrapper.className = `message-row ${normalizedRole === 'agent' ? 'justify-end' : 'justify-start'}`;
   wrapper.dataset.senderRole = normalizedRole;
   if (isAIAgent) wrapper.dataset.aiAgent = 'true';
+  if (messageId) wrapper.dataset.messageId = messageId;
 
   const avatar = document.createElement('div');
   avatar.className = `avatar ${isAIAgent ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`;
@@ -66,11 +67,120 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
   const meta = document.createElement('div');
   meta.className = 'message-meta flex justify-between items-center';
   const displayAuthor = isAIAgent ? 'AI助手' : author;
-  meta.innerHTML = `<span>${formatTime(timestamp)}</span><span>${escapeHtml(displayAuthor)}</span>`;
+
+  // 构建meta内容，为客户消息添加情绪icon
+  let metaContent = `<span>${formatTime(timestamp)}</span>`;
+
+  // 为客户消息添加情绪icon（在时间戳右侧）
+  if (sentiment && normalizedRole === 'customer') {
+    console.log('[buildMessageNode] 渲染情绪icon:', sentiment);
+
+    // 根据情绪类型选择图标和标签
+    let icon = '';
+    let label = '';
+    let bgColor = '';
+
+    switch (sentiment.emotion) {
+      case 'positive':
+        icon = '😊';
+        label = '积极';
+        bgColor = '#dcfce7'; // 浅绿色背景
+        break;
+      case 'negative':
+        icon = '😟';
+        label = '消极';
+        bgColor = '#fee2e2'; // 浅红色背景
+        break;
+      case 'angry':
+        icon = '😠';
+        label = '愤怒';
+        bgColor = '#fecaca'; // 红色背景
+        break;
+      case 'frustrated':
+        icon = '😤';
+        label = '沮丧';
+        bgColor = '#fed7aa'; // 橙色背景
+        break;
+      case 'anxious':
+        icon = '😰';
+        label = '焦虑';
+        bgColor = '#fed7aa'; // 橙色背景
+        break;
+      case 'neutral':
+      default:
+        icon = '😐';
+        label = '中性';
+        bgColor = '#f3f4f6'; // 灰色背景
+        break;
+    }
+
+    const confidencePercent = Math.round((sentiment.confidence || 0) * 100);
+    metaContent += `<span class="sentiment-badge" style="
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 8px;
+      padding: 2px 8px;
+      background: ${bgColor};
+      border-radius: 12px;
+      font-size: 11px;
+      cursor: help;
+      position: relative;
+    "
+    onmouseenter="this.querySelector('.sentiment-tooltip').style.display='block'"
+    onmouseleave="this.querySelector('.sentiment-tooltip').style.display='none'">
+      <span style="font-size: 14px;">${icon}</span>
+      <span style="color: #6b7280;">${label} ${confidencePercent}%</span>
+      <span class="sentiment-tooltip" style="
+        display: none;
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        background: #1f2937;
+        color: white;
+        border-radius: 6px;
+        font-size: 12px;
+        white-space: nowrap;
+        z-index: 1000;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      ">
+        情绪识别：${label}<br/>
+        置信度：${confidencePercent}%
+        <span style="
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          border: 4px solid transparent;
+          border-top-color: #1f2937;
+        "></span>
+      </span>
+    </span>`;
+  }
+
+  metaContent += `<span>${escapeHtml(displayAuthor)}</span>`;
+  meta.innerHTML = metaContent;
 
   const contentWrapper = document.createElement('div');
+  contentWrapper.className = 'message-content-wrapper';
   contentWrapper.appendChild(bubble);
   contentWrapper.appendChild(meta);
+
+  // 为客户消息添加AI辅助icon（hover显示）
+  if (normalizedRole === 'customer') {
+    const aiIcon = document.createElement('button');
+    aiIcon.className = 'ai-assist-icon';
+    aiIcon.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+    `;
+    aiIcon.title = '查看AI辅助';
+    contentWrapper.appendChild(aiIcon);
+  }
 
   if (normalizedRole === 'agent') {
     wrapper.appendChild(contentWrapper);

@@ -1,0 +1,256 @@
+# 智能售后工作台 - Prometheus告警规则
+
+groups:
+  # Agent告警规则
+  - name: agent_alerts
+    interval: 30s
+    rules:
+      # Agent调用失败率过高
+      - alert: HighAgentErrorRate
+        expr: |
+          (
+            rate(agent_calls_total{status="error"}[5m])
+            /
+            rate(agent_calls_total[5m])
+          ) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "Agent {{ $labels.agent_name }} 错误率过高"
+          description: "Agent {{ $labels.agent_name }} 在过去5分钟的错误率为 {{ $value | humanizePercentage }}"
+
+      # Agent响应时间过慢
+      - alert: SlowAgentResponse
+        expr: |
+          histogram_quantile(0.95,
+            rate(agent_duration_seconds_bucket[5m])
+          ) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "Agent {{ $labels.agent_name }} 响应时间过慢"
+          description: "Agent {{ $labels.agent_name }} P95响应时间为 {{ $value }}秒"
+
+      # Agent置信度持续偏低
+      - alert: LowAgentConfidence
+        expr: |
+          histogram_quantile(0.5,
+            rate(agent_confidence_bucket[10m])
+          ) < 0.7
+        for: 10m
+        labels:
+          severity: info
+          component: agent
+        annotations:
+          summary: "Agent {{ $labels.agent_name }} 置信度持续偏低"
+          description: "Agent {{ $labels.agent_name }} 中位数置信度仅为 {{ $value }}"
+
+  # 工作流告警规则
+  - name: workflow_alerts
+    interval: 30s
+    rules:
+      # 工作流失败率过高
+      - alert: HighWorkflowFailureRate
+        expr: |
+          (
+            rate(workflow_executions_total{status="failed"}[5m])
+            /
+            rate(workflow_executions_total[5m])
+          ) > 0.2
+        for: 5m
+        labels:
+          severity: critical
+          component: workflow
+        annotations:
+          summary: "工作流 {{ $labels.workflow_name }} 失败率过高"
+          description: "工作流 {{ $labels.workflow_name }} 失败率为 {{ $value | humanizePercentage }}"
+
+      # 工作流执行时间过长
+      - alert: SlowWorkflowExecution
+        expr: |
+          histogram_quantile(0.95,
+            rate(workflow_duration_seconds_bucket[5m])
+          ) > 120
+        for: 10m
+        labels:
+          severity: warning
+          component: workflow
+        annotations:
+          summary: "工作流 {{ $labels.workflow_name }} 执行时间过长"
+          description: "工作流 {{ $labels.workflow_name }} P95执行时间为 {{ $value }}秒"
+
+      # 人工审核超时率过高
+      - alert: HighHumanReviewTimeoutRate
+        expr: |
+          (
+            rate(workflow_human_reviews_total{action="timeout"}[10m])
+            /
+            rate(workflow_human_reviews_total[10m])
+          ) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+          component: workflow
+        annotations:
+          summary: "工作流 {{ $labels.workflow_name }} 人工审核超时率过高"
+          description: "超时率为 {{ $value | humanizePercentage }}，请检查审核人员响应情况"
+
+  # Task告警规则
+  - name: task_alerts
+    interval: 1m
+    rules:
+      # 待处理Task积压
+      - alert: TaskBacklog
+        expr: tasks_by_status{status="pending"} > 50
+        for: 15m
+        labels:
+          severity: warning
+          component: task
+        annotations:
+          summary: "待处理Task积压严重"
+          description: "当前有 {{ $value }} 个待处理Task，请及时分配"
+
+      # 进行中Task过多
+      - alert: TooManyInProgressTasks
+        expr: tasks_by_status{status="in_progress"} > 100
+        for: 30m
+        labels:
+          severity: info
+          component: task
+        annotations:
+          summary: "进行中Task数量过多"
+          description: "当前有 {{ $value }} 个进行中Task，可能存在任务堆积"
+
+      # Task完成时长过长（urgent任务超过4小时）
+      - alert: UrgentTaskOverdue
+        expr: |
+          histogram_quantile(0.95,
+            rate(task_completion_time_hours_bucket{priority="urgent"}[1h])
+          ) > 4
+        for: 1h
+        labels:
+          severity: critical
+          component: task
+        annotations:
+          summary: "紧急Task完成时间过长"
+          description: "紧急Task P95完成时间为 {{ $value }}小时"
+
+  # Conversation告警规则
+  - name: conversation_alerts
+    interval: 1m
+    rules:
+      # 活跃对话过多
+      - alert: TooManyOpenConversations
+        expr: conversations_by_status{status="open"} > 200
+        for: 10m
+        labels:
+          severity: warning
+          component: conversation
+        annotations:
+          summary: "活跃对话数量过多"
+          description: "当前有 {{ $value }} 个活跃对话"
+
+      # SLA违规率过高
+      - alert: HighSLAViolationRate
+        expr: |
+          rate(sla_violations_total[10m]) > 0.1
+        for: 10m
+        labels:
+          severity: critical
+          component: conversation
+        annotations:
+          summary: "SLA违规率过高"
+          description: "过去10分钟SLA违规率为 {{ $value }} 次/秒"
+
+      # 客户满意度下降
+      - alert: LowCustomerSatisfaction
+        expr: |
+          histogram_quantile(0.5,
+            rate(customer_satisfaction_score_bucket[1h])
+          ) < 3
+        for: 2h
+        labels:
+          severity: warning
+          component: conversation
+        annotations:
+          summary: "客户满意度持续下降"
+          description: "{{ $labels.channel }} 渠道中位数满意度仅为 {{ $value }} 分"
+
+  # 系统告警规则
+  - name: system_alerts
+    interval: 30s
+    rules:
+      # HTTP错误率过高
+      - alert: HighHTTPErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status_code=~"5.."}[5m])
+            /
+            rate(http_requests_total[5m])
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "HTTP 5xx错误率过高"
+          description: "{{ $labels.route }} 错误率为 {{ $value | humanizePercentage }}"
+
+      # HTTP响应时间过慢
+      - alert: SlowHTTPResponse
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket[5m])
+          ) > 2
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "HTTP响应时间过慢"
+          description: "{{ $labels.route }} P95响应时间为 {{ $value }}秒"
+
+      # 数据库查询时间过长
+      - alert: SlowDatabaseQuery
+        expr: |
+          histogram_quantile(0.95,
+            rate(db_query_duration_seconds_bucket[5m])
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "数据库查询时间过长"
+          description: "{{ $labels.operation }} 操作P95时间为 {{ $value }}秒"
+
+      # 内存使用率过高
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            nodejs_heap_size_used_bytes
+            /
+            nodejs_heap_size_total_bytes
+          ) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Node.js内存使用率过高"
+          description: "内存使用率为 {{ $value | humanizePercentage }}"
+
+      # 服务不可用
+      - alert: ServiceDown
+        expr: up{job="backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "后端服务不可用"
+          description: "后端服务已宕机超过1分钟"

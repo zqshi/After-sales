@@ -6,7 +6,7 @@ from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIChatFormatter
 from agentscope.memory import InMemoryMemory
 from agentscope.message import Msg
-from agentscope.model import OpenAIChatWrapper
+from agentscope.model import OpenAIChatModel
 from agentscope.tool import Toolkit
 
 from src.tools.mcp_tools import BackendMCPClient
@@ -19,13 +19,12 @@ class CustomerServiceAgent(ReActAgent):
         self,
         name: str,
         sys_prompt: str,
-        model: OpenAIChatWrapper,
+        model: OpenAIChatModel,
         formatter: OpenAIChatFormatter,
         toolkit: Toolkit,
         mcp_client: BackendMCPClient,
         memory: InMemoryMemory | None = None,
         max_iters: int = 10,
-        verbose: bool = False,
     ) -> None:
         super().__init__(
             name=name,
@@ -35,13 +34,20 @@ class CustomerServiceAgent(ReActAgent):
             toolkit=toolkit,
             memory=memory or InMemoryMemory(),
             max_iters=max_iters,
-            verbose=verbose,
         )
         self.mcp_client = mcp_client
 
     @classmethod
     async def create(cls, toolkit: Toolkit, mcp_client: BackendMCPClient) -> "CustomerServiceAgent":
-        model = OpenAIChatWrapper(config_name="deepseek_qwen")
+        from src.config.settings import settings
+        cfg = settings.deepseek_config
+        model = OpenAIChatModel(
+            model_name=cfg["model_name"],
+            api_key=cfg["api_key"],
+            stream=cfg.get("stream", True),
+            client_kwargs={"base_url": cfg["base_url"], "timeout": cfg["timeout"]},
+            generate_kwargs={"max_retries": 3}
+        )
         formatter = OpenAIChatFormatter()
         sys_prompt = """你是一个专业的售后客服助手。
 1. 理解客户问题并快速判断是否可自动解决。
@@ -65,7 +71,6 @@ class CustomerServiceAgent(ReActAgent):
             mcp_client=mcp_client,
             memory=InMemoryMemory(),
             max_iters=8,
-            verbose=False,
         )
 
     async def should_escalate_to_human(self, msg: Msg) -> bool:

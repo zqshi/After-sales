@@ -8,6 +8,7 @@ let activeKnowledgeCard = null;
 export function initKnowledgeBase() {
   bindKnowledgeClicks();
   bindPreviewButtons();
+  initKnowledgeSearch();
   loadKnowledgeCards();
   document.addEventListener('knowledge-item-created', () => {
     loadKnowledgeCards();
@@ -254,4 +255,173 @@ export function openKnowledgeSource(url, label) {
   if (label) {
     addToSuggestion(`引用知识：${label}`);
   }
+}
+
+// 知识库搜索功能
+function initKnowledgeSearch() {
+  const searchInput = qs('#knowledge-search-input');
+  const searchBtn = qs('#knowledge-search-btn');
+  const quickTags = qsa('.knowledge-quick-tag');
+
+  // 搜索按钮点击
+  if (searchBtn) {
+    on(searchBtn, 'click', () => {
+      performKnowledgeSearch();
+    });
+  }
+
+  // 搜索框回车
+  if (searchInput) {
+    on(searchInput, 'keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        performKnowledgeSearch();
+      }
+    });
+  }
+
+  // 快捷标签点击
+  quickTags.forEach(tag => {
+    on(tag, 'click', () => {
+      const keyword = tag.getAttribute('data-keyword') || tag.textContent.trim();
+      if (searchInput) {
+        searchInput.value = keyword;
+      }
+      performKnowledgeSearch();
+    });
+  });
+}
+
+async function performKnowledgeSearch() {
+  const searchInput = qs('#knowledge-search-input');
+  const searchBtn = qs('#knowledge-search-btn');
+  const keyword = searchInput?.value?.trim();
+
+  if (!keyword) {
+    // 如果搜索词为空，重新加载所有知识卡片
+    await loadKnowledgeCards();
+    return;
+  }
+
+  // 显示加载状态
+  if (searchBtn) {
+    const originalHTML = searchBtn.innerHTML;
+    searchBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+    searchBtn.disabled = true;
+
+    try {
+      // 调用搜索API
+      const results = await searchKnowledge(keyword);
+      displaySearchResults(results, keyword);
+    } catch (error) {
+      console.error('[knowledge] search failed', error);
+      showNoResults(keyword);
+    } finally {
+      searchBtn.innerHTML = originalHTML;
+      searchBtn.disabled = false;
+    }
+  }
+}
+
+async function searchKnowledge(keyword) {
+  if (!isApiEnabled()) {
+    // API未启用时，从当前DOM中进行本地搜索
+    return performLocalSearch(keyword);
+  }
+
+  try {
+    // 调用后端搜索API
+    const results = await knowledgeController.search({ keyword, pageSize: 10 });
+    return results?.items || results || [];
+  } catch (error) {
+    console.warn('[knowledge] API search failed, falling back to local search', error);
+    return performLocalSearch(keyword);
+  }
+}
+
+function performLocalSearch(keyword) {
+  const cards = qsa('.knowledge-card');
+  const results = [];
+  const lowerKeyword = keyword.toLowerCase();
+
+  cards.forEach((card, index) => {
+    const title = card.querySelector('h4')?.textContent || '';
+    const preview = card.querySelector('.line-clamp-2')?.textContent || '';
+    const detailBtn = card.querySelector('[data-click="knowledge-detail"]');
+
+    if (title.toLowerCase().includes(lowerKeyword) ||
+        preview.toLowerCase().includes(lowerKeyword)) {
+      results.push({
+        id: detailBtn?.getAttribute('data-id') || `local-${index}`,
+        title: title,
+        preview: preview,
+        type: detailBtn?.getAttribute('data-type') || '文档',
+        url: detailBtn?.getAttribute('data-url') || '#',
+        updatedAt: detailBtn?.getAttribute('data-updated') || '',
+        tags: parseKnowledgeTags(detailBtn?.getAttribute('data-tags') || ''),
+        full: detailBtn?.getAttribute('data-full') || preview
+      });
+    }
+  });
+
+  return results;
+}
+
+function displaySearchResults(results, keyword) {
+  const container = qs('#knowledge-card-container');
+  if (!container) return;
+
+  if (!results || results.length === 0) {
+    showNoResults(keyword);
+    return;
+  }
+
+  // 渲染搜索结果
+  container.innerHTML = results.map((item, index) => renderKnowledgeCard(item, index)).join('');
+
+  // 重新绑定事件
+  bindKnowledgeClicks();
+
+  // 显示搜索结果提示
+  const searchInfo = document.createElement('div');
+  searchInfo.className = 'text-xs text-gray-600 mb-2 p-2 bg-blue-50 rounded';
+  searchInfo.innerHTML = `找到 ${results.length} 条关于 "<strong>${escapeHtml(keyword)}</strong>" 的结果`;
+  container.parentElement?.insertBefore(searchInfo, container);
+
+  // 3秒后自动移除提示
+  setTimeout(() => searchInfo.remove(), 3000);
+}
+
+function showNoResults(keyword) {
+  const container = qs('#knowledge-card-container');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="col-span-2 text-center py-8 text-gray-500">
+      <i class="fa fa-search text-4xl mb-3 text-gray-300"></i>
+      <p>未找到关于 "<strong>${escapeHtml(keyword)}</strong>" 的知识</p>
+      <p class="text-sm mt-2">尝试使用其他关键词或<button class="text-primary hover:underline" onclick="document.getElementById('knowledge-search-input').value='';window.knowledgeModule.resetSearch()">清除搜索</button></p>
+    </div>
+  `;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+export function resetSearch() {
+  const searchInput = qs('#knowledge-search-input');
+  if (searchInput) {
+    searchInput.value = '';
+  }
+  loadKnowledgeCards();
+}
+
+// 导出到全局以便HTML调用
+if (typeof window !== 'undefined') {
+  window.knowledgeModule = {
+    resetSearch
+  };
 }

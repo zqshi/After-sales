@@ -65,14 +65,14 @@ async def setup_toolkit() -> MCPToolkitBundle:
     """Set up the AgentScope toolkit and MCP client."""
 
     toolkit = Toolkit()
-    mcp_client = HttpStatelessClient(
-        name="aftersales-node",
-        transport="streamable_http",
-        url=f"{settings.node_backend_url}/mcp",
-        headers={"Authorization": f"Bearer {settings.mcp_api_key}"} if settings.mcp_api_key else None,
-    )
-
-    await toolkit.register_mcp_client(mcp_client)
+    # Temporarily disable MCP client registration for quick startup
+    # mcp_client = HttpStatelessClient(
+    #     name="aftersales-node",
+    #     transport="streamable_http",
+    #     url=f"{settings.node_backend_url}/mcp",
+    #     headers={"Authorization": f"Bearer {settings.mcp_api_key}"} if settings.mcp_api_key else None,
+    # )
+    # await toolkit.register_mcp_client(mcp_client)
 
     backend_client = BackendMCPClient(
         f"{settings.node_backend_url}/mcp",

@@ -9,6 +9,8 @@ import { Channel } from '../value-objects/Channel';
 import { ConversationStatus, MessagePriority, SLAStatus } from '../types';
 import { SLACalculatorService, slaCalculator } from '../services/SLACalculatorService';
 
+export type AgentMode = 'agent_auto' | 'agent_supervised' | 'human_first';
+
 interface ConversationProps {
   customerId: string;
   agentId?: string;
@@ -18,6 +20,7 @@ interface ConversationProps {
   slaStatus: SLAStatus;
   slaDeadline?: Date;
   messages: Message[];
+  mode?: AgentMode; // Agent处理模式
   createdAt: Date;
   updatedAt: Date;
   closedAt?: Date;
@@ -38,6 +41,7 @@ export class Conversation extends AggregateRoot<ConversationProps> {
     agentId?: string;
     priority?: MessagePriority;
     slaDeadline?: Date;
+    mode?: AgentMode;
     metadata?: Record<string, unknown>;
   }, slaService: SLACalculatorService = slaCalculator): Conversation {
     const now = new Date();
@@ -52,6 +56,7 @@ export class Conversation extends AggregateRoot<ConversationProps> {
         slaStatus: 'normal',
         slaDeadline: data.slaDeadline,
         messages: [],
+        mode: data.mode || 'agent_auto', // 默认自动模式
         createdAt: now,
         updatedAt: now,
         closedAt: undefined,
@@ -118,12 +123,24 @@ export class Conversation extends AggregateRoot<ConversationProps> {
     return this.props.metadata;
   }
 
+  get mode(): AgentMode {
+    return this.props.mode || 'agent_auto';
+  }
+
   get createdAt(): Date {
     return this.props.createdAt;
   }
 
   get updatedAt(): Date {
     return this.props.updatedAt;
+  }
+
+  public setMode(mode: AgentMode): void {
+    if (this.status === 'closed') {
+      throw new Error('无法修改已关闭对话的模式');
+    }
+    this.props.mode = mode;
+    this.props.updatedAt = new Date();
   }
 
   public sendMessage(data: {
