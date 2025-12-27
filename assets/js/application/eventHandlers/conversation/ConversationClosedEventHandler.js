@@ -10,6 +10,7 @@ export class ConversationClosedEventHandler {
   constructor() {
     const container = getContainer();
     this.profileService = container.resolve('customerProfileApplicationService');
+    this.taskService = container.resolve('taskService');
   }
 
   /**
@@ -41,14 +42,21 @@ export class ConversationClosedEventHandler {
 
       console.log('[ConversationClosedEventHandler] 已添加互动记录到客户画像');
 
-      // 如果对话有SLA违规，创建质检任务（TODO: 待实现任务模块）
+      // 如果对话有SLA违规，创建质检任务
       if (event.slaViolated) {
-        console.log('[ConversationClosedEventHandler] 检测到SLA违规，应创建质检任务');
-        // await this.taskService.createTask({
-        //   type: 'quality-check',
-        //   title: `对话SLA违规质检 - ${event.conversationId}`,
-        //   conversationId: event.conversationId,
-        // });
+        console.log('[ConversationClosedEventHandler] 检测到SLA违规，创建质检任务');
+        try {
+          const task = await this.taskService.createTask({
+            type: 'quality-check',
+            title: `对话SLA违规质检 - ${event.conversationId}`,
+            priority: 'high',
+            conversationId: event.conversationId,
+            description: `该对话违反了SLA规定，需要进行质量检查。对话ID: ${event.conversationId}`,
+          });
+          console.log('[ConversationClosedEventHandler] 已创建质检任务:', task.id);
+        } catch (error) {
+          console.error('[ConversationClosedEventHandler] 创建质检任务失败:', error);
+        }
       }
     } catch (error) {
       console.error('[ConversationClosedEventHandler] 处理事件失败:', error);

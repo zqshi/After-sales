@@ -180,6 +180,18 @@ export class Requirement extends AggregateRoot<RequirementProps> {
     this.updateStatus('cancelled');
   }
 
+  /**
+   * 关联到对话
+   * 当内部需求需要与客户沟通时，将其关联到Conversation
+   */
+  associateWithConversation(conversationId: string): void {
+    if (this.props.conversationId === conversationId) {
+      return;
+    }
+    this.props.conversationId = conversationId;
+    this.props.updatedAt = new Date();
+  }
+
   static rehydrate(
     props: RequirementProps,
     id: string,

@@ -16,6 +16,8 @@ import { CreateConversationUseCase } from '../use-cases/CreateConversationUseCas
 import { CreateRequirementUseCase } from '../use-cases/requirement/CreateRequirementUseCase';
 import { CreateTaskUseCase } from '../use-cases/task/CreateTaskUseCase';
 import { CloseConversationUseCase } from '../use-cases/CloseConversationUseCase';
+import { SendMessageUseCase } from '../use-cases/SendMessageUseCase';
+import { AssociateRequirementWithConversationUseCase } from '../use-cases/requirement/AssociateRequirementWithConversationUseCase';
 import { AiService } from './AiService';
 import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
 import { EventBus } from '@infrastructure/events/EventBus';
@@ -84,6 +86,8 @@ export class ConversationTaskCoordinator {
     private readonly createRequirementUseCase: CreateRequirementUseCase,
     private readonly createTaskUseCase: CreateTaskUseCase,
     private readonly closeConversationUseCase: CloseConversationUseCase,
+    private readonly sendMessageUseCase: SendMessageUseCase,
+    private readonly associateRequirementWithConversationUseCase: AssociateRequirementWithConversationUseCase,
     private readonly aiService: AiService,
     private readonly eventBus: EventBus,
   ) {
@@ -132,7 +136,13 @@ export class ConversationTaskCoordinator {
     } else {
       // 使用现有对话
       conversationId = conversation[0].id;
-      // TODO: 添加新消息到现有对话（需要SendMessageUseCase）
+      // 添加新消息到现有对话
+      await this.sendMessageUseCase.execute({
+        conversationId,
+        senderId: msg.senderId,
+        senderType: 'external',
+        content: msg.content,
+      });
     }
 
     // Step 2: AI分析需求
@@ -319,8 +329,11 @@ export class ConversationTaskCoordinator {
       },
     });
 
-    // Step 4: 关联Requirement
-    // TODO: 更新Requirement的conversationId（需要UpdateRequirementUseCase）
+    // Step 4: 关联Requirement到Conversation
+    await this.associateRequirementWithConversationUseCase.execute({
+      requirementId,
+      conversationId: conversation.id,
+    });
 
     return {
       conversationId: conversation.id,
@@ -464,7 +477,7 @@ export class ConversationTaskCoordinator {
       const knowledgeItems = await (this.aiService as any).knowledgeRepository.findByFilters({}, { limit: 10, offset: 0 });
 
       // 简单匹配：标题包含查询词
-      const baseUrl = 'http://localhost:3000'; // TODO: 从config获取
+      const baseUrl = config.app.baseUrl;
       return knowledgeItems
         .filter((item: any) => {
           const queryWords = query.split(/\s+/);

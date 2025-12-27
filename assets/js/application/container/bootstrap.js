@@ -17,6 +17,9 @@ import { RequirementRepository } from '../../infrastructure/repositories/Require
 import { TaskRepository } from '../../infrastructure/repositories/TaskRepository.js';
 import { KnowledgeRepository } from '../../infrastructure/repositories/KnowledgeRepository.js';
 
+// Domain服务
+import { TaskService } from '../../domains/task/services/TaskService.js';
+
 // 应用服务
 import { ConversationApplicationService } from '../conversation/ConversationApplicationService.js';
 import { CustomerProfileApplicationService } from '../customer/CustomerProfileApplicationService.js';
@@ -72,6 +75,14 @@ export function createContainer() {
   container.register('knowledgeRepository', (c) => {
     const apiClient = c.resolve('apiClient');
     return new KnowledgeRepository(apiClient);
+  }, true);
+
+  // ==================== Domain服务层 ====================
+
+  // TaskService - 任务Domain服务（单例）
+  container.register('taskService', (c) => {
+    const apiClient = c.resolve('apiClient');
+    return new TaskService(apiClient);
   }, true);
 
   // ==================== 应用服务层 ====================
