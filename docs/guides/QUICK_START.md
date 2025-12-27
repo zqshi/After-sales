@@ -440,18 +440,128 @@ Phase 8: 上线准备              [░░░░░░░░░░]   0% ⏳
 
 ---
 
-## 🎉 恭喜！
+## 🤖 Multi-Agent功能演示
 
-Phase 1 基础设施已全部完成！现在您可以：
+### Agent列表查询
 
-1. ✅ 使用 Docker 一键启动整个开发环境
-2. ✅ 开始编写 TDD 测试和领域模型
-3. ✅ 利用 CI/CD 自动化测试和部署
-4. ✅ 使用 Prometheus 和 Grafana 监控系统
+```bash
+# 查看所有可用Agent
+curl http://localhost:5000/api/agents/list
 
-**开始编码吧！** 🚀
+# 预期输出
+{
+  "agents": [
+    "AssistantAgent",
+    "EngineerAgent",
+    "InspectorAgent",
+    "HumanAgent"
+  ]
+}
+```
 
 ---
 
-**最后更新**: 2024-12-14
-**维护者**: 开发团队
+### 智能路由演示
+
+**场景1: 简单咨询（Simple模式）**
+
+```bash
+curl -X POST http://localhost:5000/api/orchestrator/route \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "开票功能怎么用？",
+    "conversation_id": "conv-001",
+    "customer_id": "customer-001"
+  }'
+
+# Agent选择: AssistantAgent
+# 执行模式: simple
+# 响应时间: ~3秒
+```
+
+**场景2: 故障诊断（Parallel模式）**
+
+```bash
+curl -X POST http://localhost:5000/api/orchestrator/route \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "系统报500错误，无法登录",
+    "conversation_id": "conv-002",
+    "customer_id": "customer-002"
+  }'
+
+# Agent选择: AssistantAgent + EngineerAgent（并行执行）
+# 执行模式: parallel
+# 响应时间: ~15秒
+# 返回: 情感分析 + 故障诊断 + 技术方案
+```
+
+---
+
+### 质检功能演示
+
+**触发质检**：
+
+```bash
+# 1. 创建对话并发送消息（通过Backend API）
+# 2. 关闭对话（自动触发质检）
+
+# 3. 查询质检报告
+curl http://localhost:8080/api/quality-reports/conv-001
+
+# 预期输出
+{
+  "success": true,
+  "report": {
+    "quality_score": 85,
+    "dimensions": {
+      "completeness": 90,
+      "professionalism": 85,
+      "compliance": 90,
+      "tone": 75
+    },
+    "customer_satisfaction_prediction": 4.2,
+    "need_follow_up": false
+  }
+}
+```
+
+**运行集成测试**：
+
+```bash
+# 完整的质检流程测试
+./tests/integration/test-quality-inspection.sh
+
+# 输出:
+# ✓ Backend服务检查通过
+# ✓ AgentScope服务检查通过
+# ✓ 创建测试对话
+# ✓ 关闭对话 (耗时: 320ms)
+# ✓ 质检已完成，质量分: 78
+# ✓ 质检集成测试全部通过
+```
+
+---
+
+## 🎉 恭喜！
+
+**Phase 1 & 2 已完成！** 现在您可以：
+
+1. ✅ 使用 Multi-Agent 智能客服系统
+2. ✅ 体验并行执行和智能路由
+3. ✅ 自动质检对话质量
+4. ✅ 使用 Docker 一键启动整个开发环境
+5. ✅ 利用 CI/CD 自动化测试和部署
+
+**了解更多**：
+- [Multi-Agent架构设计](../architecture/AGENT_ARCHITECTURE_DESIGN.md)
+- [Phase 1实施报告](../implementation/PHASE_1_AGENTS_IMPLEMENTATION.md)
+- [Phase 2实施报告](../implementation/PHASE_2_QUALITY_INSPECTION.md)
+- [API文档](../api/API_REFERENCE.md)
+
+**开始体验Multi-Agent智能客服吧！** 🚀
+
+---
+
+**最后更新**: 2025-12-27
+**维护者**: After-Sales开发团队

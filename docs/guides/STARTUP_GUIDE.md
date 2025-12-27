@@ -35,6 +35,42 @@
 
 ---
 
+## 1.5 Multi-Agent架构说明
+
+**After-Sales系统采用Multi-Agent架构，包含4个智能Agent：**
+
+### Agent列表
+
+| Agent | 职责 | 触发时机 |
+|-------|------|---------|
+| **AssistantAgent** | 情感分析、需求提取、回复生成 | 所有对话场景 |
+| **EngineerAgent** | 故障诊断、知识检索、技术方案 | 故障场景 |
+| **InspectorAgent** | 质量评分、报告生成、客户回访 | 对话关闭后（异步） |
+| **OrchestratorAgent** | 智能路由、执行模式决策 | 所有对话入口 |
+
+### 执行模式
+
+- **Simple**: 单AssistantAgent处理（简单咨询）
+- **Parallel**: Assistant+Engineer并行（故障场景）
+- **Supervised**: Agent处理+人工审核（中高复杂度）
+- **HumanFirst**: 人工优先+Agent建议（高风险/VIP/投诉）
+
+### 质检异步化
+
+对话关闭后，系统通过**事件驱动架构**自动触发InspectorAgent进行质检：
+
+1. 用户/系统关闭对话
+2. Backend发布`ConversationClosedEvent`
+3. ConversationTaskCoordinator监听事件
+4. 异步调用AgentScope质检API
+5. InspectorAgent执行质检并保存报告
+
+**性能优势**：对话关闭延迟从3-5秒降至<500ms（降低90%）
+
+**详细架构**：参见 [AGENT_ARCHITECTURE_DESIGN.md](../architecture/AGENT_ARCHITECTURE_DESIGN.md)
+
+---
+
 ## 二、前置要求
 
 ### 2.1 软件版本
@@ -298,13 +334,29 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 5000 --reload
 # 预期输出:
 # INFO:     Uvicorn running on http://0.0.0.0:5000
 # INFO:     Application startup complete
+# INFO:     [AgentManager] Initializing agents...
+# INFO:     [AgentManager] AssistantAgent initialized
+# INFO:     [AgentManager] EngineerAgent initialized
+# INFO:     [AgentManager] InspectorAgent initialized
+# INFO:     [AgentManager] HumanAgent initialized
+# INFO:     [AgentManager] All agents ready
 ```
 
 **验证AgentScope**:
 ```bash
+# 健康检查
 curl http://localhost:5000/health
-# 预期输出: {"status":"healthy","agentscope_version":"...","agents_ready":true}
+# 预期输出: {"status":"healthy","agents_ready":true}
+
+# 查看可用Agent列表
+curl http://localhost:5000/api/agents/list
+# 预期输出: {"agents":["AssistantAgent","EngineerAgent","InspectorAgent","HumanAgent"]}
 ```
+
+**⚠️ 重要提示**：
+- **DeepSeek API Key必须配置**：AgentScope依赖DeepSeek v3进行推理
+- **Agent初始化需要5-10秒**：首次启动时Agent需要连接LLM和MCP服务
+- **MCP工具依赖Backend**：确保Backend服务先启动
 
 ---
 
