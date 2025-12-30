@@ -45,10 +45,12 @@
   <link rel="preload" href="assets/css/main.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <link rel="preload" href="assets/css/unified-chat.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <link rel="preload" href="assets/css/im-enhancements.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" href="assets/css/modern-ui.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/unified-chat.css">
     <link rel="stylesheet" href="assets/css/im-enhancements.css">
+    <link rel="stylesheet" href="assets/css/modern-ui.css">
   </noscript>
 
   <!-- Tailwind 配置 -->
@@ -196,7 +198,7 @@
         <!-- 对话列表 -->
         <div class="conversation-list flex-1 overflow-y-auto">
           <!-- 对话项 - 活跃状态 -->
-          <div class="conversation-item p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer bg-blue-50"
+          <div class="conversation-item is-active"
             data-id="conv-001">
             <div class="flex items-start">
               <div
@@ -227,7 +229,7 @@
           </div>
 
           <!-- 对话项 -->
-          <div class="conversation-item p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer"
+          <div class="conversation-item"
             data-id="conv-002">
             <div class="flex items-start">
               <div
@@ -257,7 +259,7 @@
           </div>
 
           <!-- 对话项 -->
-          <div class="conversation-item p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer"
+          <div class="conversation-item"
             data-id="conv-003">
             <div class="flex items-start">
               <div
@@ -287,7 +289,7 @@
           </div>
 
           <!-- 更多对话项 -->
-          <div class="conversation-item p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer"
+          <div class="conversation-item"
             data-id="conv-004">
             <div class="flex items-start">
               <div
@@ -316,7 +318,7 @@
             </div>
           </div>
 
-          <div class="conversation-item p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer"
+          <div class="conversation-item"
             data-id="conv-005">
             <div class="flex items-start">
               <div
@@ -605,7 +607,7 @@
           </div>
 
           <!-- AI辅助信息 -->
-          <div class="ai-assistant bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div class="ai-assistant p-4">
             <div class="problem-identification mb-3 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded">
               <strong>待解决问题：</strong>企业ERP系统登录认证失败，多用户受影响
             </div>
@@ -705,7 +707,7 @@
         </div>
 
         <!-- AI辅助面板 -->
-        <div id="ai-assistant-panel" class="ai-assistant-panel border-t border-gray-200 bg-gray-50 hidden">
+        <div id="ai-assistant-panel" class="ai-assistant-panel hidden">
           <div class="p-4">
             <!-- 情感分析 -->
             <div id="sentiment-analysis" class="sentiment-section mb-3 hidden">
@@ -2128,18 +2130,6 @@
     <!-- JavaScript -->
     <script type="module" src="assets/js/main.js"></script>
 
-    <!-- 页面加载完成标记 - 防止样式闪现 -->
-    <script>
-      window.addEventListener('DOMContentLoaded', function() {
-        // 标记DOM加载完成
-        document.body.classList.add('loaded');
-      });
-
-      window.addEventListener('load', function() {
-        // 确保所有资源加载完成后再显示
-        document.body.classList.add('loaded');
-      });
-    </script>
 </body>
 
 </html>

@@ -79,6 +79,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.add('loaded');
+});
+
+window.addEventListener('load', () => {
+  document.body.classList.add('loaded');
+});
+
 // 兼容现有的内联事件（可逐步移除）
 window.toggleRightSidebar = toggleRightSidebar;
 window.openFullAnalysisPanel = openFullAnalysisPanel;

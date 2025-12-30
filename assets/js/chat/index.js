@@ -104,8 +104,8 @@ function bindConversationEvents() {
 
   conversationItems.forEach((item) => {
     on(item, 'click', () => {
-      conversationItems.forEach((node) => node.classList.remove('bg-blue-50'));
-      item.classList.add('bg-blue-50');
+      conversationItems.forEach((node) => node.classList.remove('is-active'));
+      item.classList.add('is-active');
       const conversationId = item.getAttribute('data-id') || 'conv-001';
       currentConversationId = conversationId;
       updateChatContent(conversationId);
@@ -113,7 +113,7 @@ function bindConversationEvents() {
     });
   });
 
-  const active = conversationItems.find((node) => node.classList.contains('bg-blue-50'));
+  const active = conversationItems.find((node) => node.classList.contains('is-active'));
   if (active) {
     const activeId = active.getAttribute('data-id') || 'conv-001';
     currentConversationId = activeId;
@@ -211,9 +211,7 @@ function createConversationMarkup(conv, isActive) {
   const sentimentIcon = getSentimentIcon(sentiment);
 
   return `
-    <div class="conversation-item p-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer ${
-  isActive ? 'bg-blue-50' : ''
-}" data-id="${conv.conversationId}" data-channel="${conv.channel}">
+    <div class="conversation-item ${isActive ? 'is-active' : ''}" data-id="${conv.conversationId}" data-channel="${conv.channel}">
       <div class="flex items-start">
         <div
           class="avatar w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">

@@ -1,10 +1,10 @@
 # After-Sales 项目文档中心
 
-**项目名称**: After-Sales 售后系统
-**技术栈**: AgentScope + Node.js + PostgreSQL + Redis
+**项目名称**: 智能售后工作台 (After-Sales Platform)
+**技术栈**: AgentScope + NestJS + PostgreSQL + Redis + Milvus
 **架构模式**: Multi-Agent + DDD + Event-Driven
-**文档版本**: v1.0
-**最后更新**: 2025-12-27
+**文档版本**: v2.0
+**最后更新**: 2025-12-30
 
 ---
 
@@ -12,45 +12,63 @@
 
 ### 🚀 新手必读
 
-如果你是新加入团队的开发者，按以下顺序阅读文档：
+如果你是新加入团队的成员，按以下顺序阅读文档：
 
-1. **[快速开始](guides/QUICK_START.md)** - 5分钟快速了解项目
-2. **[启动指南](guides/STARTUP_GUIDE.md)** - 详细的环境配置和启动步骤
-3. **[Multi-Agent架构](architecture/MULTI_AGENT_ARCHITECTURE.md)** - 核心架构设计
-4. **[API参考](api/API_REFERENCE.md)** - AgentScope API文档
+| 角色 | 推荐路径 | 预计时间 |
+|-----|---------|---------|
+| **产品经理** | [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) → [PRD目录](prd/README.md) | 30分钟 |
+| **开发工程师** | [快速开始](guides/QUICK_START.md) → [启动指南](guides/STARTUP_GUIDE.md) → [架构设计](architecture/AGENT_ARCHITECTURE_DESIGN.md) | 1小时 |
+| **架构师** | [产品概述](prd/2-baseline/1-overview/Product-Overview.md) → [架构设计](architecture/AGENT_ARCHITECTURE_DESIGN.md) → [ADR文档](architecture/decision-records/) | 2小时 |
+| **测试工程师** | [启动指南](guides/STARTUP_GUIDE.md) → [测试文档](testing/) → [PRD验收标准](prd/README.md) | 1小时 |
 
 ---
 
-## 📂 文档结构
+## 📂 文档结构总览
 
 ```
 docs/
-├── README.md                            # 📍 本文件（文档导航）
-├──architecture/                          # 🏗️ 架构设计
-│   ├── MULTI_AGENT_ARCHITECTURE.md       # Multi-Agent架构详解
-│   └── decision-records/                 # 架构决策记录（ADR）
-│       └── ADR-001-MULTI-AGENT.md        # ADR-001: 为什么选择Multi-Agent
-├── api/                                  # 🔌 API文档
-│   ├── API_REFERENCE.md                  # AgentScope API参考
-│   └── BACKEND_API.md                    # Backend API参考
-├── implementation/                       # 📝 实施记录
-│   ├── PHASE_1_AGENTS.md                 # Phase 1: 3个Agent实施
-│   ├── PHASE_2_QUALITY_INSPECTION.md     # Phase 2: 质检异步化
-│   └── PHASE_3_TESTING.md                # Phase 3: 测试和优化
-├── guides/                               # 📚 使用指南
-│   ├── QUICK_START.md                    # 快速开始（5分钟）
-│   ├── STARTUP_GUIDE.md                  # 完整启动指南（30分钟）
-│   └── DEVELOPMENT_GUIDE.md              # 开发者指南
-├── features/                             # ✨ 功能文档
-│   └── SENTIMENT_ICON_FEATURE.md         # 情感图标功能
-├── prd/                                  # 📋 产品需求文档
-│   ├── README.md                         # PRD索引
-│   ├── BUSINESS_FLOW_DESIGN.md           # 业务流程设计
-│   ├── DIALOGUE_MODE_SPECIFICATION.md    # 对话模式规格
-│   └── PRODUCT_ANALYSIS_REPORT.md        # 产品分析报告
-└── reports/                              # 📊 各类报告
-    ├── CODE_GOVERNANCE_REPORT.md         # 代码治理报告
-    └── DOCS_GOVERNANCE_ANALYSIS.md       # 文档治理分析
+├── README.md                           # 📍 本文件(文档中心导航)
+│
+├── 📋 PRD文档 (prd/)                    # 产品需求文档
+│   ├── README.md                       # PRD导航(必读)
+│   ├── 1-roadmap/                      # 产品路线图
+│   ├── 2-baseline/                     # 基线PRD(14个文档,~14,750行)
+│   │   ├── 1-overview/                 # 产品概述
+│   │   ├── 2-features/                 # 功能PRD(4个)
+│   │   ├── 3-agents/                   # Agent PRD(4个)
+│   │   ├── 4-hybrid-modules/           # 混合模块PRD(4个)
+│   │   └── 5-nonfunctional/            # 非功能需求
+│   ├── 3-incremental/                  # 增量PRD(v0.5/v0.8/v1.0)
+│   ├── 4-templates/                    # PRD模板
+│   └── 5-guides/                       # PRD编写指南
+│
+├── 🏗️ 架构设计 (architecture/)          # 系统架构文档
+│   ├── AGENT_ARCHITECTURE_DESIGN.md    # Multi-Agent架构详解
+│   └── decision-records/               # 架构决策记录(ADR)
+│       └── ADR-001-MULTI-AGENT.md      # ADR-001: 为什么选择Multi-Agent
+│
+├── 🔌 API文档 (api/)                    # API参考文档
+│   └── API_REFERENCE.md                # AgentScope API参考
+│
+├── 📝 实施记录 (implementation/)        # 实施历程文档
+│   ├── PHASE_1_AGENTS_IMPLEMENTATION.md        # Phase 1: Agent实施
+│   └── PHASE_2_QUALITY_INSPECTION.md           # Phase 2: 质检异步化
+│
+├── 📚 使用指南 (guides/)                # 快速入门指南
+│   ├── QUICK_START.md                  # 5分钟快速开始
+│   └── STARTUP_GUIDE.md                # 完整启动指南(30分钟)
+│
+├── ✨ 功能文档 (features/)              # 具体功能说明
+│   └── SENTIMENT_ICON_FEATURE.md       # 情感图标功能
+│
+├── 🚀 部署文档 (deployment/)            # 部署运维
+│   └── README.md                       # 部署文档索引(待补充)
+│
+├── 🧪 测试文档 (testing/)               # 测试策略
+│   └── README.md                       # 测试文档索引(待补充)
+│
+└── 🔧 运维文档 (operations/)            # 运维手册
+    └── README.md                       # 运维文档索引(待补充)
 ```
 
 ---
@@ -59,57 +77,74 @@ docs/
 
 ### 👨‍💻 开发工程师
 
-**必读文档**:
-1. [启动指南](guides/STARTUP_GUIDE.md) - 如何运行项目
-2. [Multi-Agent架构](architecture/MULTI_AGENT_ARCHITECTURE.md) - 理解系统架构
-3. [API参考](api/API_REFERENCE.md) - AgentScope API使用
+**必读文档** (按优先级排序):
+1. ⭐ [启动指南](guides/STARTUP_GUIDE.md) - 环境配置与项目启动
+2. ⭐ [Multi-Agent架构](architecture/AGENT_ARCHITECTURE_DESIGN.md) - 理解核心架构
+3. ⭐ [产品概述](prd/2-baseline/1-overview/Product-Overview.md) - 了解产品全貌
+4. [API参考](api/API_REFERENCE.md) - AgentScope API使用
+5. [Agent PRD](prd/2-baseline/3-agents/) - 了解各Agent职责
 
 **参考文档**:
-- [Phase 1实施](implementation/PHASE_1_AGENTS.md) - 3个Agent实现细节
-- [代码治理报告](reports/CODE_GOVERNANCE_REPORT.md) - 代码规范
+- [Phase 1实施记录](implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) - Agent实现细节
+- [功能PRD](prd/2-baseline/2-features/) - 各功能模块详细设计
+- [非功能需求](prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md) - 性能、安全等要求
 
 ---
 
-### 🏗️ 架构师/Tech Lead
+### 🏗️ 架构师 / Tech Lead
 
 **必读文档**:
-1. [Multi-Agent架构](architecture/MULTI_AGENT_ARCHITECTURE.md) - 完整架构设计
-2. [ADR-001](architecture/decision-records/ADR-001-MULTI-AGENT.md) - 架构决策记录
-3. [Phase 1-3实施](implementation/) - 实施历史
+1. ⭐ [产品概述](prd/2-baseline/1-overview/Product-Overview.md) - 产品定位与价值
+2. ⭐ [Multi-Agent架构](architecture/AGENT_ARCHITECTURE_DESIGN.md) - 完整架构设计
+3. ⭐ [ADR-001](architecture/decision-records/ADR-001-MULTI-AGENT.md) - 架构决策记录
+4. [非功能需求](prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md) - 企业级要求
+5. [混合模块PRD](prd/2-baseline/4-hybrid-modules/) - Agent与功能协作
 
 **参考文档**:
-- [文档治理分析](reports/DOCS_GOVERNANCE_ANALYSIS.md) - 文档质量评估
-- [产品分析](prd/PRODUCT_ANALYSIS_REPORT.md) - 产品需求
+- [增量PRD](prd/3-incremental/) - 版本演进规划
+- [产品路线图](prd/1-roadmap/ITERATIONS_ROADMAP.md) - 迭代计划
+- [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) - 业务流程
 
 ---
 
 ### 🎨 产品经理
 
 **必读文档**:
-1. [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) - 业务流程
-2. [对话模式规格](prd/DIALOGUE_MODE_SPECIFICATION.md) - 对话模式
-3. [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) - 产品分析
+1. ⭐ [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) - 产品全面分析
+2. ⭐ [PRD目录](prd/README.md) - PRD文档导航
+3. ⭐ [产品概述](prd/2-baseline/1-overview/Product-Overview.md) - 快速了解产品
+4. [功能PRD](prd/2-baseline/2-features/) - 4个核心功能详细设计
+5. [对话模式规格](prd/DIALOGUE_MODE_SPECIFICATION.md) - 对话模式设计
 
 **参考文档**:
-- [Multi-Agent架构](architecture/MULTI_AGENT_ARCHITECTURE.md) - 技术架构（第一、二章）
-- [情感图标功能](features/SENTIMENT_ICON_FEATURE.md) - 功能示例
+- [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) - 业务流程
+- [混合模块PRD](prd/2-baseline/4-hybrid-modules/) - 复杂功能设计
+- [增量PRD](prd/3-incremental/) - 版本演进
 
 ---
 
 ### 🧪 测试工程师
 
 **必读文档**:
-1. [启动指南](guides/STARTUP_GUIDE.md) - 如何运行项目
-2. [Phase 3测试](implementation/PHASE_3_TESTING.md) - 测试策略和用例
-3. [API参考](api/API_REFERENCE.md) - API测试参考
+1. ⭐ [启动指南](guides/STARTUP_GUIDE.md) - 如何运行项目
+2. ⭐ [测试文档目录](testing/README.md) - 测试策略与规范
+3. [功能PRD验收标准](prd/2-baseline/2-features/) - 各功能验收要求
+4. [非功能需求](prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md) - 性能、安全验收
+5. [API参考](api/API_REFERENCE.md) - API测试参考
+
+**参考文档**:
+- [Agent PRD验收标准](prd/2-baseline/3-agents/) - Agent功能验收
+- [业务流程](prd/BUSINESS_FLOW_DESIGN.md) - E2E测试场景
 
 ---
 
-### 📝 技术写作者
+### 🔧 DevOps / SRE
 
 **必读文档**:
-1. [文档治理分析](reports/DOCS_GOVERNANCE_ANALYSIS.md) - 文档现状和规范
-2. [本导航](README.md) - 文档结构
+1. ⭐ [部署文档目录](deployment/README.md) - 部署指南
+2. ⭐ [运维文档目录](operations/README.md) - 运维手册
+3. [非功能需求](prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md) - 性能、可用性要求
+4. [启动指南](guides/STARTUP_GUIDE.md) - 环境配置参考
 
 ---
 
@@ -117,75 +152,91 @@ docs/
 
 ### 🏗️ 架构与设计
 
-| 文档 | 描述 | 难度 |
-|------|------|------|
-| [Multi-Agent架构](architecture/MULTI_AGENT_ARCHITECTURE.md) | 完整架构设计（需求、设计、实现） | ⭐⭐⭐ |
-| [ADR-001](architecture/decision-records/ADR-001-MULTI-AGENT.md) | 为什么选择Multi-Agent架构 | ⭐⭐ |
-| [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) | 业务层面流程设计 | ⭐ |
+| 文档 | 描述 | 难度 | 优先级 |
+|------|------|------|--------|
+| [Multi-Agent架构](architecture/AGENT_ARCHITECTURE_DESIGN.md) | 完整架构设计(需求、设计、实现) | ⭐⭐⭐ | P0 |
+| [ADR-001](architecture/decision-records/ADR-001-MULTI-AGENT.md) | 为什么选择Multi-Agent架构 | ⭐⭐ | P0 |
+| [产品概述](prd/2-baseline/1-overview/Product-Overview.md) | 产品定位、用户、价值、技术栈 | ⭐ | P0 |
+| [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) | 业务层面流程设计 | ⭐⭐ | P1 |
 
 ---
 
 ### 🔧 实施与开发
 
-| 文档 | 描述 | 难度 |
-|------|------|------|
-| [Phase 1实施](implementation/PHASE_1_AGENTS.md) | 3个Agent实现详情 | ⭐⭐⭐ |
-| [Phase 2实施](implementation/PHASE_2_QUALITY_INSPECTION.md) | 质检异步化实现 | ⭐⭐⭐ |
-| [Phase 3实施](implementation/PHASE_3_TESTING.md) | 测试和优化 | ⭐⭐ |
-| [启动指南](guides/STARTUP_GUIDE.md) | 详细的环境配置和启动 | ⭐⭐ |
+| 文档 | 描述 | 难度 | 优先级 |
+|------|------|------|--------|
+| [启动指南](guides/STARTUP_GUIDE.md) | 完整启动指南(30分钟) | ⭐⭐ | P0 |
+| [快速开始](guides/QUICK_START.md) | 快速开始(5分钟) | ⭐ | P0 |
+| [Phase 1实施](implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) | 3个Agent实现详情 | ⭐⭐⭐ | P1 |
+| [Phase 2实施](implementation/PHASE_2_QUALITY_INSPECTION.md) | 质检异步化实现 | ⭐⭐⭐ | P1 |
 
 ---
 
 ### 🔌 API文档
 
-| 文档 | 描述 | 难度 |
-|------|------|------|
-| [AgentScope API](api/API_REFERENCE.md) | Python服务API参考 | ⭐⭐ |
-| [Backend API](api/BACKEND_API.md) | Node.js服务API参考 | ⭐⭐ |
+| 文档 | 描述 | 难度 | 优先级 |
+|------|------|------|--------|
+| [AgentScope API](api/API_REFERENCE.md) | Python服务API参考 | ⭐⭐ | P0 |
 
 ---
 
 ### 📋 产品与需求
 
-| 文档 | 描述 | 难度 |
-|------|------|------|
-| [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) | 产品需求分析 | ⭐ |
-| [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) | 业务流程图 | ⭐ |
-| [对话模式规格](prd/DIALOGUE_MODE_SPECIFICATION.md) | 对话模式详细说明 | ⭐⭐ |
+| 文档 | 描述 | 优先级 | 完成度 |
+|------|------|--------|--------|
+| [PRD目录](prd/README.md) | PRD文档导航(必读) | P0 | ✅ 100% |
+| [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) | 产品全面分析 | P0 | ✅ 100% |
+| [基线PRD](prd/2-baseline/) | 14个模块化PRD文档 | P0 | ✅ 100% |
+| [增量PRD](prd/3-incremental/) | v0.5/v0.8/v1.0版本演进 | P0 | ✅ 100% |
+| [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) | 业务流程图 | P1 | ✅ 100% |
+| [对话模式规格](prd/DIALOGUE_MODE_SPECIFICATION.md) | 对话模式详细说明 | P1 | ✅ 100% |
+
+**统计**: PRD文档共17个文件，总计约**18,000+行**，覆盖产品、功能、Agent、混合模块、非功能需求5大类
 
 ---
 
-### 📊 报告与分析
+### 🚀 部署运维
 
-| 文档 | 描述 | 受众 |
-|------|------|------|
-| [代码治理报告](reports/CODE_GOVERNANCE_REPORT.md) | 代码库治理成果 | 全员 |
-| [文档治理分析](reports/DOCS_GOVERNANCE_ANALYSIS.md) | 文档质量评估 | 架构师、TW |
+| 文档 | 描述 | 优先级 | 状态 |
+|------|------|--------|------|
+| [部署文档目录](deployment/README.md) | 部署、环境、CI/CD | P0 | 🚧 待补充 |
+| [测试文档目录](testing/README.md) | 测试策略、用例、性能测试 | P0 | 🚧 待补充 |
+| [运维文档目录](operations/README.md) | 运维手册、故障排查 | P0 | 🚧 待补充 |
 
 ---
 
 ## 🔍 常见问题导航
 
 ### Q: 如何快速运行项目？
-**A**: 阅读 [快速开始](guides/QUICK_START.md)（5分钟）或 [启动指南](guides/STARTUP_GUIDE.md)（完整版）
+**A**: 阅读 [快速开始](guides/QUICK_START.md) (5分钟) 或 [启动指南](guides/STARTUP_GUIDE.md) (完整版30分钟)
 
 ### Q: 什么是Multi-Agent架构？
-**A**: 阅读 [Multi-Agent架构](architecture/MULTI_AGENT_ARCHITECTURE.md) 第一、二章
+**A**: 阅读 [Multi-Agent架构](architecture/AGENT_ARCHITECTURE_DESIGN.md) 第一、二章，或查看 [产品概述](prd/2-baseline/1-overview/Product-Overview.md)
 
-### Q: 3个Agent分别做什么？
-**A**: 阅读 [Multi-Agent架构](architecture/MULTI_AGENT_ARCHITECTURE.md) 第2.3节
+### Q: 有哪些Agent，分别做什么？
+**A**:
+- **Orchestrator**: 智能路由，意图识别与Agent选择
+- **AssistantAgent**: 知识检索与回复生成
+- **EngineerAgent**: 故障诊断与解决方案推荐
+- **InspectorAgent**: 质检评分与违规检测
+
+详见 [Agent PRD目录](prd/2-baseline/3-agents/)
+
+### Q: 对话管理功能有哪些？
+**A**: 阅读 [对话管理PRD](prd/2-baseline/2-features/2.1-Conversation-Management-PRD.md)，包括多渠道对话、实时消息、对话转派、历史查询等
 
 ### Q: 质检是如何实现的？
-**A**: 阅读 [Phase 2实施](implementation/PHASE_2_QUALITY_INSPECTION.md) 或 [Multi-Agent架构](architecture/MULTI_AGENT_ARCHITECTURE.md) 第三章场景3
+**A**: 阅读 [分析与质检PRD](prd/2-baseline/4-hybrid-modules/Analytics-QA-PRD.md)，包含五维度评分、违规检测、异议复审等
 
 ### Q: 如何添加新的Agent？
-**A**: 阅读 [Phase 1实施](implementation/PHASE_1_AGENTS.md)，参考AssistantAgent实现
+**A**: 参考 [Agent PRD模板](prd/4-templates/Agent_PRD_Template.md) 和 [Phase 1实施](implementation/PHASE_1_AGENTS_IMPLEMENTATION.md)
 
-### Q: AgentScope API有哪些接口？
-**A**: 阅读 [API参考](api/API_REFERENCE.md)
+### Q: 性能要求是什么？
+**A**: 阅读 [非功能需求 - 第5.1章](prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md)
+- v1.0目标: API P95 <200ms, 1000+并发用户, 99.95%可用性
 
 ### Q: 项目有哪些技术债务？
-**A**: 阅读 [代码治理报告](reports/CODE_GOVERNANCE_REPORT.md) 和 [文档治理分析](reports/DOCS_GOVERNANCE_ANALYSIS.md)
+**A**: 查看 [部署文档](deployment/README.md)、[测试文档](testing/README.md)、[运维文档](operations/README.md) 中的待补充清单
 
 ---
 
@@ -194,37 +245,23 @@ docs/
 | 状态 | 说明 | 图标 |
 |------|------|------|
 | **完成** | 文档已完成并审核 | ✅ |
-| **草稿** | 文档正在编写中 | 🚧 |
-| **待审核** | 文档已完成，等待审核 | ⏳ |
-| **已过时** | 文档内容已过时，需要更新 | ⚠️ |
+| **待补充** | 文档框架已建立，内容待补充 | 🚧 |
+| **规划中** | 文档尚未创建 | 📅 |
 
-### 当前文档状态
+### 当前文档状态总览
 
-#### 架构设计
-- ✅ [MULTI_AGENT_ARCHITECTURE.md](architecture/MULTI_AGENT_ARCHITECTURE.md) - 完成（2025-12-27）
-- 🚧 [ADR-001-MULTI-AGENT.md](architecture/decision-records/ADR-001-MULTI-AGENT.md) - 待创建
+#### ✅ 已完成 (19个文档)
+- 产品PRD体系 (17个文档, ~18,000行)
+- 架构设计文档 (1个)
+- 使用指南 (2个)
 
-#### API文档
-- 🚧 [API_REFERENCE.md](api/API_REFERENCE.md) - 待创建
-- 🚧 [BACKEND_API.md](api/BACKEND_API.md) - 待创建
-
-#### 实施记录
-- 🚧 [PHASE_1_AGENTS.md](implementation/PHASE_1_AGENTS.md) - 待创建
-- 🚧 [PHASE_2_QUALITY_INSPECTION.md](implementation/PHASE_2_QUALITY_INSPECTION.md) - 待创建
-- 🚧 [PHASE_3_TESTING.md](implementation/PHASE_3_TESTING.md) - 待创建
-
-#### 使用指南
-- ⏳ [QUICK_START.md](guides/QUICK_START.md) - 待审核
-- ⏳ [STARTUP_GUIDE.md](guides/STARTUP_GUIDE.md) - 待审核
-
-#### 产品文档
-- ✅ [PRD目录](prd/README.md) - 完成
-- ⏳ [BUSINESS_FLOW_DESIGN.md](prd/BUSINESS_FLOW_DESIGN.md) - 待验证
-- ⏳ [DIALOGUE_MODE_SPECIFICATION.md](prd/DIALOGUE_MODE_SPECIFICATION.md) - 待验证
-
-#### 报告
-- ✅ [CODE_GOVERNANCE_REPORT.md](reports/CODE_GOVERNANCE_REPORT.md) - 完成（2025-12-27）
-- ✅ [DOCS_GOVERNANCE_ANALYSIS.md](reports/DOCS_GOVERNANCE_ANALYSIS.md) - 完成（2025-12-27）
+#### 🚧 待补充 (6个文档)
+- 部署指南 (DEPLOYMENT_GUIDE.md)
+- 环境配置 (ENVIRONMENT_SETUP.md)
+- 测试策略 (TEST_STRATEGY.md)
+- 测试用例 (TEST_CASES.md)
+- 运维手册 (OPERATIONS_RUNBOOK.md)
+- 故障排查 (TROUBLESHOOTING_GUIDE.md)
 
 ---
 
@@ -238,7 +275,9 @@ docs/
    - 实施记录 → `implementation/`
    - 使用指南 → `guides/`
    - 产品需求 → `prd/`
-   - 报告 → `reports/`
+   - 部署运维 → `deployment/`
+   - 测试文档 → `testing/`
+   - 运维手册 → `operations/`
 
 2. **使用清晰的文件名**:
    - ✅ 好: `MULTI_AGENT_ARCHITECTURE.md`
@@ -266,36 +305,14 @@ docs/
 
 ---
 
-### 文档Review流程
-
-1. **开发者**: 创建/更新文档
-2. **自检**: 检查格式、链接、代码示例
-3. **提交PR**: 与代码变更一起提交
-4. **Reviewer**: 技术负责人或架构师Review
-5. **合并**: 合并后更新文档状态为✅
-
----
-
 ## 🔧 文档工具
 
 ### 推荐工具
 
 - **Markdown编辑器**: VSCode + Markdown All in One插件
 - **图表工具**: draw.io、Excalidraw
-- **API文档**: TypeDoc（TypeScript）、JSDoc（JavaScript）、Sphinx（Python）
+- **API文档**: TypeDoc (TypeScript)、JSDoc (JavaScript)、Sphinx (Python)
 - **架构图**: PlantUML、Mermaid
-
-### 本地预览
-
-```bash
-# 安装Markdown预览工具
-npm install -g markdown-serve
-
-# 在docs目录运行
-cd docs
-markdown-serve
-# 访问 http://localhost:3000
-```
 
 ---
 
@@ -308,21 +325,6 @@ markdown-serve
 - ✅ **具体的代码示例**: 不要只描述，要有可运行的代码
 - ✅ **准确的信息**: 与实际代码实现100%一致
 - ✅ **及时的更新**: 代码变更时同步更新文档
-
-### 文档检查清单
-
-创建/更新文档时，检查以下项：
-
-- [ ] 文件名清晰明确
-- [ ] 有标题、版本号、日期
-- [ ] 超过200行时有目录
-- [ ] 章节结构清晰
-- [ ] 有代码示例（如需要）
-- [ ] 有图表（如需要）
-- [ ] 链接到相关文档
-- [ ] 拼写和语法检查
-- [ ] 更新了docs/README.md导航
-- [ ] 更新了"最后更新"日期
 
 ---
 
@@ -344,41 +346,14 @@ markdown-serve
 
 ---
 
-## 🎯 2026年文档路线图
-
-### Q1 2026（1-3月）
-
-- [ ] 完成所有P0文档（API、实施记录）
-- [ ] 建立文档Review流程
-- [ ] 配置自动化文档生成工具
-
-### Q2 2026（4-6月）
-
-- [ ] 完成所有P1文档
-- [ ] 建立文档质量自动检查
-- [ ] 创建视频教程
-
-### Q3-Q4 2026（7-12月）
-
-- [ ] 持续优化文档质量
-- [ ] 建立文档守护者（Doc Guardian）机制
-- [ ] 文档国际化（如需要）
-
----
-
 ## 📞 获取帮助
 
 ### 文档相关问题
 
 - **架构设计问题**: 联系架构师团队
 - **API使用问题**: 查看 [API参考](api/API_REFERENCE.md) 或联系Backend团队
+- **PRD需求问题**: 查看 [PRD目录](prd/README.md) 或联系产品团队
 - **文档缺失/错误**: 在GitHub Issues中提issue，标签：`documentation`
-
-### 紧急联系方式
-
-- **技术负责人**: [联系方式]
-- **架构师**: [联系方式]
-- **文档维护者**: [联系方式]
 
 ---
 
@@ -386,11 +361,11 @@ markdown-serve
 
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|---------|------|
+| v2.0 | 2025-12-30 | 文档治理:删除冗余,补充缺失,更新索引 | Claude |
 | v1.0 | 2025-12-27 | 创建文档导航，新增MULTI_AGENT_ARCHITECTURE.md | Claude |
-| - | - | - | - |
 
 ---
 
-**文档维护者**: 架构团队
-**最后审查**: 2025-12-27
-**下次审查**: 2026-02-01
+**文档维护者**: 架构团队 + 产品团队
+**最后审查**: 2025-12-30
+**下次审查**: 2026-01-30

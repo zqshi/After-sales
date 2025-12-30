@@ -15,6 +15,7 @@ import { ListConversationsUseCase } from './application/use-cases/ListConversati
 import { AssignAgentUseCase } from './application/use-cases/AssignAgentUseCase';
 import { SendMessageUseCase } from './application/use-cases/SendMessageUseCase';
 import { CloseConversationUseCase } from './application/use-cases/CloseConversationUseCase';
+import { AssociateRequirementWithConversationUseCase } from './application/use-cases/requirement/AssociateRequirementWithConversationUseCase';
 import { GetConversationUseCase } from './application/use-cases/GetConversationUseCase';
 import { ConversationRepository } from './infrastructure/repositories/ConversationRepository';
 import { EventBus } from './infrastructure/events/EventBus';
@@ -129,6 +130,9 @@ export async function createApp(
   const closeConversationUseCase = new CloseConversationUseCase(
     conversationRepository,
     eventBus,
+  );
+  const associateRequirementWithConversationUseCase = new AssociateRequirementWithConversationUseCase(
+    requirementRepository,
   );
   const getConversationUseCase = new GetConversationUseCase(
     conversationRepository,
@@ -252,7 +256,7 @@ export async function createApp(
   const applySolutionUseCase = new ApplySolutionUseCase(aiService);
   const aiController = new AiController(analyzeConversationUseCase, applySolutionUseCase);
 
-  // 创建ConversationTaskCoordinator应用层协调服务
+  //创建ConversationTaskCoordinator应用层协调服务
   // 用于Saga协调：客户消息→Conversation→Requirement→Task→完成→关闭
   const conversationTaskCoordinator = new ConversationTaskCoordinator(
     conversationRepository,
@@ -262,6 +266,8 @@ export async function createApp(
     createRequirementUseCase,
     createTaskUseCase,
     closeConversationUseCase,
+    sendMessageUseCase,
+    associateRequirementWithConversationUseCase,
     aiService,
     eventBus,
   );

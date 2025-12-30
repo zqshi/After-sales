@@ -119,21 +119,9 @@ body.app-bg {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* 消息气泡样式 */
-.message-bubble-customer {
-  border-radius: 18px 18px 18px 4px;
-  background-color: var(--bg-white);
-  box-shadow: var(--shadow-sm);
-}
-.message-bubble-engineer {
-  border-radius: 18px 18px 4px 18px;
-  background-color: var(--primary-color);
-  color: white;
-}
-
 /* 标签页样式 */
 .tab-active {
-  border-bottom: 2px solid var(--primary-color);
+  border-bottom: 2px solid transparent;
   color: var(--primary-color);
   font-weight: 500;
 }
@@ -146,7 +134,7 @@ body.app-bg {
   background-color: rgba(59, 130, 246, 0.05);
 }
 .sidebar-tab {
-  border: 1px solid var(--border-color);
+  border: 1px solid transparent;
   border-radius: 10px;
   background: #f8fafc;
   padding: 10px 8px;
@@ -154,7 +142,7 @@ body.app-bg {
 }
 .sidebar-tab.tab-active {
   background: #eef2ff;
-  border-color: var(--primary-light);
+  border-color: transparent;
   color: var(--primary-dark);
   font-weight: 600;
 }
@@ -486,7 +474,7 @@ body.app-bg {
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid var(--border-color);
+  border: 1px solid transparent;
   border-radius: 10px;
   background: #f8fafc;
 }
@@ -933,26 +921,7 @@ body.app-bg {
   box-shadow: var(--shadow-md);
 }
 
-/* 侧栏、列表与消息区域 */
-.conversation-list {
-  background: transparent;
-  border-radius: 0;
-}
-.conversation-item {
-  border-bottom: 1px solid var(--border-color);
-  border-radius: 0;
-  margin: 0;
-  padding: 0.75rem;
-  transition: background 0.2s ease;
-  background: #fff;
-}
-.conversation-item:hover {
-  background: #f8fbff;
-}
-.conversation-item.bg-blue-50 {
-  background: #e5edff;
-  border-color: transparent;
-}
+/* 侧栏、列表与消息区域 - 样式已迁移到 modern-ui.css */
 .chat-header {
   backdrop-filter: blur(10px);
   border-color: #edf0f4;

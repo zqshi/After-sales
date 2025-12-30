@@ -153,7 +153,7 @@ async function fallbackApplySolution(type) {
 }
 
 function getActiveConversationId() {
-  return qs('.conversation-item.bg-blue-50')?.getAttribute('data-id') || 'conv-001';
+  return qs('.conversation-item.is-active')?.getAttribute('data-id') || 'conv-001';
 }
 
 function delay(ms) {
