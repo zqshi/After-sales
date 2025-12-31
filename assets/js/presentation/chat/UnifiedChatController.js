@@ -242,6 +242,43 @@ export class UnifiedChatController {
       }
     } catch (error) {
       console.warn('[UnifiedChat] 无法加载历史消息', error);
+
+      // 降级：注入mock消息数据以保证功能演示
+      this.appendMessage({
+        role: 'customer',
+        author: '客户',
+        content: '我的系统突然报错，无法登录，这影响了我们的业务运营！',
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        sentiment: {
+          emotion: 'negative',
+          score: 0.85,
+          confidence: 0.92
+        }
+      });
+      this.appendMessage({
+        role: 'agent',
+        author: '客服',
+        content: '非常抱歉给您带来困扰。我已经记录了您的问题，我们的技术团队正在全力修复。请稍候，预计15分钟内恢复。',
+        timestamp: new Date(Date.now() - 1800000).toISOString(),
+      });
+      this.appendMessage({
+        role: 'customer',
+        author: '客户',
+        content: '好的，那大概什么时候能恢复？我们这边业务受到很大影响。',
+        timestamp: new Date(Date.now() - 1200000).toISOString(),
+        sentiment: {
+          emotion: 'anxious',
+          score: 0.75,
+          confidence: 0.88
+        }
+      });
+      this.appendMessage({
+        role: 'agent',
+        author: '客服',
+        content: '我理解您的担忧。技术团队正在全力处理，预计15分钟内恢复正常。我会持续跟进并及时通知您最新进展。',
+        timestamp: new Date(Date.now() - 600000).toISOString(),
+      });
+      showNotification('后端API暂不可用，已加载示例对话以便功能演示', 'warning');
     }
 
     // 加载AI分析数据（带缓存）
@@ -360,6 +397,74 @@ export class UnifiedChatController {
       }
     } catch (error) {
       console.warn('[UnifiedChat] 无法加载AI分析', error);
+
+      // 降级：使用mock AI分析数据
+      const mockAnalysis = {
+        lastCustomerSentiment: {
+          emotion: 'negative',
+          score: 0.85,
+          confidence: 0.92
+        },
+        detectedIssues: [{
+          type: 'system_error',
+          severity: 'high',
+          description: '系统登录失败 - 网关502错误'
+        }],
+        replySuggestion: {
+          suggestedReply: '我们已经收到您的问题反馈。技术团队正在紧急处理系统登录故障，预计在15分钟内恢复。感谢您的耐心等待。',
+          confidence: 0.88,
+          needsHumanReview: false
+        },
+        knowledgeRecommendations: [
+          { id: 'kb-001', title: '系统登录故障排查手册', category: '系统运维', score: 0.95, url: '/knowledge/kb-001' },
+          { id: 'kb-002', title: 'HTTP 502错误解决方案', category: '故障处理', score: 0.89, url: '/knowledge/kb-002' },
+          { id: 'kb-003', title: '网关服务配置指南', category: '技术文档', score: 0.85, url: '/knowledge/kb-003' },
+          { id: 'kb-004', title: '紧急故障响应流程', category: '应急预案', score: 0.82, url: '/knowledge/kb-004' }
+        ],
+        relatedTasks: [
+          { id: 1234, title: '登录接口502错误 - 网关超时', priority: 'high', url: '/tasks/1234' },
+          { id: 5678, title: '用户反馈无法访问系统', priority: 'medium', url: '/tasks/5678' },
+          { id: 9012, title: '系统认证服务异常排查', priority: 'high', url: '/tasks/9012' }
+        ]
+      };
+
+      // 调用原有的显示逻辑
+      const hasIssue = mockAnalysis.detectedIssues?.length > 0 ||
+                       mockAnalysis.lastCustomerSentiment?.emotion === 'negative';
+
+      if (hasIssue) {
+        this.aiPanel?.show('issue');
+
+        if (mockAnalysis.lastCustomerSentiment) {
+          this.aiPanel?.updateSentiment(mockAnalysis.lastCustomerSentiment);
+        }
+
+        if (mockAnalysis.replySuggestion) {
+          this.aiPanel?.updateReplySuggestion(mockAnalysis.replySuggestion);
+        }
+
+        // 自动生成解决步骤
+        if (mockAnalysis.detectedIssues?.length > 0) {
+          const issueContext = {
+            description: mockAnalysis.detectedIssues?.[0]?.description || '当前问题',
+            severity: mockAnalysis.detectedIssues?.[0]?.severity || 'high'
+          };
+          const solutionSteps = this.aiPanel?.generateSolutionSteps(issueContext);
+          if (solutionSteps) {
+            this.aiPanel?.updateSolutionSteps(solutionSteps);
+          }
+        }
+
+        if (mockAnalysis.knowledgeRecommendations?.length > 0) {
+          this.aiPanel?.updateKnowledgeBase(mockAnalysis.knowledgeRecommendations);
+        }
+
+        if (mockAnalysis.relatedTasks?.length > 0) {
+          this.aiPanel?.updateRelatedTasks(mockAnalysis.relatedTasks);
+        }
+      }
+
+      showNotification('后端AI分析暂不可用，已加载示例分析以便功能演示', 'warning');
     }
 
     scrollToBottom();

@@ -20,6 +20,12 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     open: false,
+    proxy: {
+      '/api/v1': {
+        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
   },
   define: {
     __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production'),

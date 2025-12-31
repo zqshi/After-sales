@@ -90,6 +90,61 @@ async function loadConversationList() {
       }
     } catch (e) {
       console.warn('[chat] fetch conversations failed', e);
+
+      // 降级：使用mock对话列表数据
+      const mockConversations = [
+        {
+          conversationId: 'conv-001',
+          customerName: '张三',
+          lastMessage: '我的系统突然报错，无法登录，这影响了我们的业务运营！',
+          updatedAt: new Date(Date.now() - 3600000).toISOString(),
+          channel: 'feishu',
+          slaLevel: 'SLA-金牌',
+          urgency: 'high',
+          severity: 'high',
+          unreadCount: 3,
+          sentiment: { type: 'negative', label: '😟 不满' }
+        },
+        {
+          conversationId: 'conv-002',
+          customerName: '李四',
+          lastMessage: '关于上个月的账单有一些疑问，想咨询一下',
+          updatedAt: new Date(Date.now() - 7200000).toISOString(),
+          channel: 'qq',
+          slaLevel: 'SLA-银牌',
+          urgency: 'normal',
+          severity: 'normal',
+          unreadCount: 0,
+          sentiment: { type: 'neutral', label: '😐 中性' }
+        },
+        {
+          conversationId: 'conv-003',
+          customerName: '王五',
+          lastMessage: '新功能使用很流畅，感谢你们的支持！',
+          updatedAt: new Date(Date.now() - 86400000).toISOString(),
+          channel: 'wechat',
+          slaLevel: 'SLA-铜牌',
+          urgency: 'low',
+          severity: 'low',
+          unreadCount: 0,
+          sentiment: { type: 'positive', label: '😊 满意' }
+        },
+        {
+          conversationId: 'conv-004',
+          customerName: '赵六',
+          lastMessage: '需要申请新的API密钥，请问如何操作？',
+          updatedAt: new Date(Date.now() - 90000000).toISOString(),
+          channel: 'feishu',
+          slaLevel: 'SLA-银牌',
+          urgency: 'normal',
+          severity: 'normal',
+          unreadCount: 1,
+          sentiment: { type: 'neutral', label: '😐 中性' }
+        }
+      ];
+
+      renderConversationItems(container, mockConversations);
+      showNotification('后端API暂不可用，已加载示例对话列表以便功能演示', 'warning');
     }
   }
 
@@ -210,6 +265,9 @@ function createConversationMarkup(conv, isActive) {
   const sentiment = conv.sentiment || null;
   const sentimentIcon = getSentimentIcon(sentiment);
 
+  // 未读消息数
+  const unreadCount = conv.unreadCount || 0;
+
   return `
     <div class="conversation-item ${isActive ? 'is-active' : ''}" data-id="${conv.conversationId}" data-channel="${conv.channel}">
       <div class="flex items-start">
@@ -231,9 +289,12 @@ function createConversationMarkup(conv, isActive) {
               <span class="px-2 py-0.5 rounded-full ${badgeClass}">${conv.slaLevel || 'SLA 级别'}</span>
               ${sentimentIcon ? `<span class="sentiment-icon" title="${sentiment?.label || '情绪识别中'}">${sentimentIcon}</span>` : ''}
             </div>
-            <span class="text-xs ${conv.urgency === 'high' ? 'text-red-600' : 'text-gray-500'}">${
+            <div class="flex items-center gap-2">
+              <span class="text-xs ${conv.urgency === 'high' ? 'text-red-600' : 'text-gray-500'}">${
   conv.urgency || '正常'
 }</span>
+              ${unreadCount > 0 ? `<span class="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">${unreadCount}</span>` : ''}
+            </div>
           </div>
         </div>
       </div>

@@ -87,16 +87,20 @@
     }
   </script>
 
+  <!-- 运行时配置（可选，用于覆盖默认API地址） -->
+  <script src="runtime-config.js"></script>
   <!-- API配置 -->
   <script>
     // 全局配置对象 - 用于配置API地址和用户信息
+    const runtimeConfig = window.RUNTIME_CONFIG || {};
+    const defaultOrigin = window.location.origin;
     window.config = {
-      apiBaseUrl: 'http://localhost:8080/api/v1',  // 后端API基础地址
+      apiBaseUrl: runtimeConfig.apiBaseUrl || `${defaultOrigin}/api/v1`,  // 后端API基础地址
       authToken: null,  // 认证令牌（登录后设置）
       userId: 'agent-001',  // 当前用户ID（示例）
       analysisContext: '',  // AI分析上下文
-      agentScopeUrl: 'http://localhost:5000', // AgentScope 服务地址
-      agentScopeWebSocketUrl: '' // WebSocket暂未实现，留空禁用
+      agentScopeUrl: runtimeConfig.agentScopeUrl || defaultOrigin, // AgentScope 服务地址
+      agentScopeWebSocketUrl: runtimeConfig.agentScopeWebSocketUrl || '' // WebSocket暂未实现，留空禁用
     };
   </script>
 </head>
@@ -196,156 +200,8 @@
         </div>
 
         <!-- 对话列表 -->
-        <div class="conversation-list flex-1 overflow-y-auto">
-          <!-- 对话项 - 活跃状态 -->
-          <div class="conversation-item is-active"
-            data-id="conv-001">
-            <div class="flex items-start">
-              <div
-                class="avatar w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-                张
-              </div>
-
-              <div class="ml-3 flex-1">
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center">
-                    <span class="customer-name font-medium">张三</span>
-                    <img
-                      src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/47be857bf4254486b0181004cf849791~tplv-a9rns2rl98-image.image?rcl=202512041658460DBDD2A62AEA3305CF3B&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1767430781&x-signature=yMqrJ%2FqfxQ492Fqv7RM4m1aiKiA%3D"
-                      alt="飞书" class="w-5 h-5 ml-1">
-                  </div>
-
-                  <span class="text-xs text-gray-500">10:30</span>
-                </div>
-
-                <div class="conv-preview text-sm text-gray-600 truncate">系统报错，无法登录，这影响了我们的业务运营！</div>
-                <div class="flex justify-between items-center mt-1">
-                  <span class="urgency-high text-xs px-2 py-0.5 rounded-full">😡 紧急</span>
-                  <span
-                    class="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 对话项 -->
-          <div class="conversation-item"
-            data-id="conv-002">
-            <div class="flex items-start">
-              <div
-                class="avatar w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-semibold">
-                李
-              </div>
-
-              <div class="ml-3 flex-1">
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center">
-                    <span class="customer-name font-medium">李四</span>
-                    <img
-                      src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/e0b077d6d40c4f1cbfba73a9fd57a5c9~tplv-a9rns2rl98-image.image?rcl=202512041658460DBDD2A62AEA3305CF3B&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1767430781&x-signature=hIYlnJufKyZbsdC5xMrfAAK1JjM%3D"
-                      alt="企业QQ" class="w-5 h-5 ml-1">
-                  </div>
-
-                  <span class="text-xs text-gray-500">09:45</span>
-                </div>
-
-                <div class="conv-preview text-sm text-gray-600 truncate">关于上个月的账单有一些疑问，想咨询一下</div>
-                <div class="flex justify-between items-center mt-1">
-                  <span class="urgency-medium text-xs px-2 py-0.5 rounded-full">⚠️ 普通</span>
-                  <span class="bg-transparent"></span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 对话项 -->
-          <div class="conversation-item"
-            data-id="conv-003">
-            <div class="flex items-start">
-              <div
-                class="avatar w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold">
-                王
-              </div>
-
-              <div class="ml-3 flex-1">
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center">
-                    <span class="customer-name font-medium">王五</span>
-                    <img
-                      src="https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/fd2983fbee29412eaf146b6123211d78~tplv-a9rns2rl98-image.image?rcl=202512041658460DBDD2A62AEA3305CF3B&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1767430781&x-signature=T0blEE2Ss%2BNU9NhQtDC61boxkD4%3D"
-                      alt="微信" class="w-5 h-5 ml-1">
-                  </div>
-
-                  <span class="text-xs text-gray-500">昨天</span>
-                </div>
-
-                <div class="conv-preview text-sm text-gray-600 truncate">新功能使用很流畅，感谢你们的支持！</div>
-                <div class="flex justify-between items-center mt-1">
-                  <span class="urgency-low text-xs px-2 py-0.5 rounded-full">😊 已解决</span>
-                  <span class="bg-transparent"></span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 更多对话项 -->
-          <div class="conversation-item"
-            data-id="conv-004">
-            <div class="flex items-start">
-              <div
-                class="avatar w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-semibold">
-                赵
-              </div>
-
-              <div class="ml-3 flex-1">
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center">
-                    <span class="customer-name font-medium">赵六</span>
-                    <img
-                      src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/47be857bf4254486b0181004cf849791~tplv-a9rns2rl98-image.image?rcl=202512041658460DBDD2A62AEA3305CF3B&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1767430781&x-signature=yMqrJ%2FqfxQ492Fqv7RM4m1aiKiA%3D"
-                      alt="飞书" class="w-5 h-5 ml-1">
-                  </div>
-
-                  <span class="text-xs text-gray-500">昨天</span>
-                </div>
-
-                <div class="conv-preview text-sm text-gray-600 truncate">需要申请新的API密钥，请问如何操作？</div>
-                <div class="flex justify-between items-center mt-1">
-                  <span class="urgency-medium text-xs px-2 py-0.5 rounded-full">⚠️ 普通</span>
-                  <span class="bg-transparent"></span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="conversation-item"
-            data-id="conv-005">
-            <div class="flex items-start">
-              <div
-                class="avatar w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-semibold">
-                孙
-              </div>
-
-              <div class="ml-3 flex-1">
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center">
-                    <span class="customer-name font-medium">孙七</span>
-                    <img
-                      src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/e0b077d6d40c4f1cbfba73a9fd57a5c9~tplv-a9rns2rl98-image.image?rcl=202512041658460DBDD2A62AEA3305CF3B&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1767430781&x-signature=hIYlnJufKyZbsdC5xMrfAAK1JjM%3D"
-                      alt="企业QQ" class="w-5 h-5 ml-1">
-                  </div>
-
-                  <span class="text-xs text-gray-500">07-19</span>
-                </div>
-
-                <div class="conv-preview text-sm text-gray-600 truncate">数据同步出现问题，部分信息丢失</div>
-                <div class="flex justify-between items-center mt-1">
-                  <span class="urgency-high text-xs px-2 py-0.5 rounded-full">😡 紧急</span>
-                  <span class="bg-transparent"></span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="conversation-list flex-1 overflow-y-auto p-3">
+          <!-- 对话项将由JavaScript动态生成 -->
         </div>
 
         <!-- 底部用户信息 -->
@@ -707,7 +563,7 @@
         </div>
 
         <!-- AI辅助面板 -->
-        <div id="ai-assistant-panel" class="ai-assistant-panel hidden">
+        <div id="ai-assistant-panel" class="ai-assistant-panel">
           <div class="p-4">
             <!-- 情感分析 -->
             <div id="sentiment-analysis" class="sentiment-section mb-3 hidden">

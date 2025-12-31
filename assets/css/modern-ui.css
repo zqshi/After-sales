@@ -180,15 +180,6 @@
   --card-hover-border: transparent;
 }
 
-.conversation-item {
-  border-color: transparent;
-}
-
-.conversation-item:hover,
-.conversation-item.is-active {
-  border-color: transparent;
-}
-
 .card,
 .panel-card,
 .suggestion-card,
