@@ -443,7 +443,7 @@ function showModal(title, content) {
   }
 
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+  modal.className = 'modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[140]';
   modal.innerHTML = `
     <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
       <div class="p-4 border-b border-gray-200 flex items-center justify-between">

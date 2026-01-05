@@ -979,163 +979,165 @@
           <div class="flex flex-1 min-h-0">
             <!-- 中间对话/质量区域 -->
             <main class="flex-1 min-h-0 overflow-y-auto bg-white" id="task-detail-wrapper">
-              <div id="task-quality-overview" class="p-4 -mt-5 space-y-4 bg-white">
+              <div id="task-quality-overview" class="bg-white">
                 <div
-                  class="py-2 bg-white sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3">
+                  class="chat-header px-4 py-2 border-b border-t border-gray-200 flex items-center glass-effect sticky top-0 z-10">
                   <div class="flex-1 min-w-0 flex flex-col gap-2">
                     <div class="flex items-center justify-between gap-3">
-                      <div class="flex items-center gap-2 min-w-0 flex-wrap">
-                        <span class="text-base font-semibold text-gray-900 truncate">质量检测分析</span>
+                      <div class="flex items-center gap-2 min-w-0">
+                        <h2 class="text-base font-semibold truncate">质量检测分析</h2>
                       </div>
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                      <div class="min-w-0 text-sm text-gray-500">质检专员可对群聊会话进行多维度质检</div>
+                      <div class="min-w-0 text-sm text-gray-500 truncate">质检专员可对群聊会话进行多维度质检</div>
                     </div>
                   </div>
-                  <div class="flex flex-wrap gap-2">
+                  <div class="flex flex-wrap gap-2 shrink-0">
                     <button id="start-task-conversation"
                       class="px-3 py-1.5 text-xs min-w-[120px] bg-primary text-white rounded-lg hover:bg-primary-dark">对话驱动任务</button>
                   </div>
                 </div>
-                <div class="flex items-center justify-between gap-2">
-                  <div>
-                    <h3 class="text-sm font-semibold text-gray-800"></h3>
-                  </div>
-                  <div class="flex items-center gap-2 text-[11px] text-gray-500">
-                  </div>
-                </div>
-
-                <div class="grid md:grid-cols-3 gap-3">
-                  <div class="stat-tile">
-                    <div class="text-[11px] text-gray-500">平均质检得分</div>
-                    <div class="text-xl font-semibold text-primary">89 分</div>
-                    <p class="text-[11px] text-gray-500 mt-1">近7天 · 覆盖 12 个客户</p>
-                  </div>
-                  <div class="stat-tile">
-                    <div class="text-[11px] text-gray-500">高紧急会话</div>
-                    <div class="text-xl font-semibold text-amber-600">3 条</div>
-                    <p class="text-[11px] text-gray-500 mt-1">需优先处理并派发任务</p>
-                  </div>
-                  <div class="stat-tile">
-                    <div class="text-[11px] text-gray-500">自动派发指令</div>
-                    <div class="text-xl font-semibold text-emerald-600">6 次</div>
-                    <p class="text-[11px] text-gray-500 mt-1">系统Agent自动落地</p>
-                  </div>
-                </div>
-
-                <div class="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
-                  <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="p-4 space-y-4">
+                  <div class="flex items-center justify-between gap-2">
                     <div>
-                      <h4 class="text-sm font-medium text-gray-800">客户质量状态列表</h4>
-                      <p class="text-[11px] text-gray-500 mt-1">按客户等级筛选、选择时间或搜索群聊进行质检分析。</p>
+                      <h3 class="text-sm font-semibold text-gray-800"></h3>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                      <select class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white">
-                        <option>全部客户等级</option>
-                        <option>VIP</option>
-                        <option>KA1</option>
-                        <option>KA0</option>
-                        <option>普通</option>
-                      </select>
-                      <select class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white">
-                        <option>最近7天</option>
-                        <option>最近30天</option>
-                        <option>最近90天</option>
-                        <option>自定义时间</option>
-                      </select>
-                      <div class="relative">
-                        <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
-                        <input
-                          class="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
-                          placeholder="搜索群聊/客户/对话ID">
-                      </div>
+                    <div class="flex items-center gap-2 text-[11px] text-gray-500">
                     </div>
                   </div>
 
-                  <div>
-                    <div class="flex items-center justify-between"></div>
-                    <div class="mt-3 space-y-3">
-                      <div class="customer-row flex items-center justify-between text-sm">
-                        <div class="flex items-start gap-3">
-                          <div
-                            class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold">
-                            张</div>
-                          <div>
-                            <div class="flex items-center gap-2">
-                              <span class="font-medium text-gray-800">小米保障群 · conv-001</span>
-                              <span
-                                class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">高紧急</span>
-                            </div>
-                            <p class="text-xs text-gray-600 mt-1">云服务器连接异常影响业务，需补充实例ID/IP并按 P2 优先级推进。</p>
-                          </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                          <div class="text-xs text-gray-500">质检 92 分 · 待公告</div>
-                          <div class="flex items-center gap-2">
-                            <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                              data-open-qc data-conv-id="conv-001">对话质检</button>
-                            <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                              onclick="openAnalysisPanelClassic()">客户详情</button>
-                          </div>
+                  <div class="grid md:grid-cols-3 gap-3">
+                    <div class="stat-tile">
+                      <div class="text-[11px] text-gray-500">平均质检得分</div>
+                      <div class="text-xl font-semibold text-primary">89 分</div>
+                      <p class="text-[11px] text-gray-500 mt-1">近7天 · 覆盖 12 个客户</p>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="text-[11px] text-gray-500">高紧急会话</div>
+                      <div class="text-xl font-semibold text-amber-600">3 条</div>
+                      <p class="text-[11px] text-gray-500 mt-1">需优先处理并派发任务</p>
+                    </div>
+                    <div class="stat-tile">
+                      <div class="text-[11px] text-gray-500">自动派发指令</div>
+                      <div class="text-xl font-semibold text-emerald-600">6 次</div>
+                      <p class="text-[11px] text-gray-500 mt-1">系统Agent自动落地</p>
+                    </div>
+                  </div>
+
+                  <div class="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h4 class="text-sm font-medium text-gray-800">客户质量状态列表</h4>
+                        <p class="text-[11px] text-gray-500 mt-1">按客户等级筛选、选择时间或搜索群聊进行质检分析。</p>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <select class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white">
+                          <option>全部客户等级</option>
+                          <option>VIP</option>
+                          <option>KA1</option>
+                          <option>KA0</option>
+                          <option>普通</option>
+                        </select>
+                        <select class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white">
+                          <option>最近7天</option>
+                          <option>最近30天</option>
+                          <option>最近90天</option>
+                          <option>自定义时间</option>
+                        </select>
+                        <div class="relative">
+                          <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                          <input
+                            class="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+                            placeholder="搜索群聊/客户/对话ID">
                         </div>
                       </div>
-                      <div class="customer-row flex items-center justify-between text-sm">
-                        <div class="flex items-start gap-3">
-                          <div
-                            class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold">
-                            李</div>
-                          <div>
-                            <div class="flex items-center gap-2">
-                              <span class="font-medium text-gray-800">恒星数据 · conv-002</span>
-                              <span
-                                class="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">处理中</span>
+                    </div>
+
+                    <div>
+                      <div class="flex items-center justify-between"></div>
+                      <div class="mt-3 space-y-3">
+                        <div class="customer-row flex items-center justify-between text-sm">
+                          <div class="flex items-start gap-3">
+                            <div
+                              class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold">
+                              张</div>
+                            <div>
+                              <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-800">小米保障群 · conv-001</span>
+                                <span
+                                  class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">高紧急</span>
+                              </div>
+                              <p class="text-xs text-gray-600 mt-1">云服务器连接异常影响业务，需补充实例ID/IP并按 P2 优先级推进。</p>
                             </div>
-                            <p class="text-xs text-gray-600 mt-1">账单核验问题待确认，已派发账单指引，等待客户反馈。</p>
                           </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                          <div class="text-xs text-gray-500">质检 86 分 · 账单核验</div>
-                          <div class="flex items-center gap-2">
-                            <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                              data-open-qc data-conv-id="conv-002">对话质检</button>
-                            <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                              onclick="openAnalysisPanelClassic()">客户详情</button>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="customer-row flex items-center justify-between text-sm">
-                        <div class="flex items-start gap-3">
-                          <div
-                            class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold">
-                            王</div>
-                          <div>
+                          <div class="flex items-center gap-3">
+                            <div class="text-xs text-gray-500">质检 92 分 · 待公告</div>
                             <div class="flex items-center gap-2">
-                              <span class="font-medium text-gray-800">万象互动 · conv-003</span>
-                              <span
-                                class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">已解决</span>
+                              <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                                data-open-qc data-conv-id="conv-001">对话质检</button>
+                              <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
+                                onclick="openAnalysisPanelClassic()">客户详情</button>
                             </div>
-                            <p class="text-xs text-gray-600 mt-1">功能体验反馈已处理，待回访确认满意度并收集改进建议。</p>
                           </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                          <div class="text-xs text-gray-500">质检 90 分 · 待回访</div>
-                          <div class="flex items-center gap-2">
-                            <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                              data-open-qc data-conv-id="conv-003">对话质检</button>
-                            <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                              onclick="openAnalysisPanelClassic()">客户详情</button>
+                        <div class="customer-row flex items-center justify-between text-sm">
+                          <div class="flex items-start gap-3">
+                            <div
+                              class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold">
+                              李</div>
+                            <div>
+                              <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-800">恒星数据 · conv-002</span>
+                                <span
+                                  class="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">处理中</span>
+                              </div>
+                              <p class="text-xs text-gray-600 mt-1">账单核验问题待确认，已派发账单指引，等待客户反馈。</p>
+                            </div>
+                          </div>
+                          <div class="flex items-center gap-3">
+                            <div class="text-xs text-gray-500">质检 86 分 · 账单核验</div>
+                            <div class="flex items-center gap-2">
+                              <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                                data-open-qc data-conv-id="conv-002">对话质检</button>
+                              <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
+                                onclick="openAnalysisPanelClassic()">客户详情</button>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="customer-row flex items-center justify-between text-sm">
+                          <div class="flex items-start gap-3">
+                            <div
+                              class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold">
+                              王</div>
+                            <div>
+                              <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-800">万象互动 · conv-003</span>
+                                <span
+                                  class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">已解决</span>
+                              </div>
+                              <p class="text-xs text-gray-600 mt-1">功能体验反馈已处理，待回访确认满意度并收集改进建议。</p>
+                            </div>
+                          </div>
+                          <div class="flex items-center gap-3">
+                            <div class="text-xs text-gray-500">质检 90 分 · 待回访</div>
+                            <div class="flex items-center gap-2">
+                              <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                                data-open-qc data-conv-id="conv-003">对话质检</button>
+                              <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
+                                onclick="openAnalysisPanelClassic()">客户详情</button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
+                  </div>
                 </div>
               </div>
 
               <div id="task-conversation-area" class="hidden h-full flex flex-col bg-white border-t border-gray-200">
                 <div
-                  class="px-4 py-2 -mt-px bg-white sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3">
+                  class="chat-header px-4 py-2 border-b border-gray-200 flex items-center glass-effect sticky top-0 z-10">
                   <div class="flex-1 min-w-0 flex flex-col gap-2">
                     <div class="flex items-center justify-between gap-3">
                       <div class="flex items-center gap-2 min-w-0 flex-wrap">
@@ -1687,7 +1689,7 @@
     </div>
 
     <!-- 知识删除确认 -->
-    <div id="knowledge-delete-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+    <div id="knowledge-delete-modal" class="hidden fixed inset-0 bg-black/40 z-[140] flex items-center justify-center px-4">
       <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-200">
           <h3 class="text-sm font-semibold text-gray-900">删除确认</h3>
