@@ -7,65 +7,65 @@ export const mockAiAnalysisData = {
   detectedIssues: [
     {
       type: 'system_error',
-      severity: 'high',
-      description: '系统登录失败，HTTP 502错误'
+      severity: 'p2',
+      description: '故障处理问题：云服务器无法连接，预定级 P2'
     }
   ],
 
   lastCustomerSentiment: {
-    emotion: 'negative',
-    score: 0.75,
+    emotion: 'urgent',
+    score: 0.86,
     confidence: 0.92
   },
 
   replySuggestion: {
-    suggestedReply: '非常抱歉给您带来不便。我们的技术团队正在紧急排查这个登录问题，初步判断是服务器网关故障。预计15分钟内可以恢复，请您稍后再试。',
-    confidence: 0.88,
+    suggestedReply: '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。',
+    confidence: 0.9,
     needsHumanReview: false
   },
 
   knowledgeRecommendations: [
     {
-      id: 'kb-001',
-      title: '系统登录故障排查手册',
-      category: '系统运维',
-      score: 0.95,
-      url: '/knowledge/kb-001'
-    },
-    {
-      id: 'kb-002',
-      title: 'HTTP 502错误解决方案',
+      id: 'kb-011',
+      title: '云服务器无法连接排查手册',
       category: '故障处理',
-      score: 0.89,
-      url: '/knowledge/kb-002'
+      score: 0.93,
+      url: '/knowledge/kb-011'
     },
     {
-      id: 'kb-003',
-      title: '网关服务重启操作指南',
-      category: '运维手册',
-      score: 0.82,
-      url: '/knowledge/kb-003'
+      id: 'kb-014',
+      title: '实例网络连通性诊断指南',
+      category: '云服务器',
+      score: 0.9,
+      url: '/knowledge/kb-014'
+    },
+    {
+      id: 'kb-018',
+      title: 'P2故障升级与通报流程',
+      category: '应急预案',
+      score: 0.84,
+      url: '/knowledge/kb-018'
     }
   ],
 
   relatedTasks: [
     {
-      id: 1234,
-      title: '登录接口502错误 - 网关超时',
+      id: 2231,
+      title: '云服务器实例无法连接 - P2',
       priority: 'high',
-      url: '/tasks/1234'
+      url: '/tasks/2231'
     },
     {
-      id: 5678,
-      title: '用户反馈无法访问系统',
-      priority: 'medium',
-      url: '/tasks/5678'
+      id: 2232,
+      title: '客户实例test123网络排查',
+      priority: 'high',
+      url: '/tasks/2232'
     },
     {
-      id: 9012,
-      title: '系统响应缓慢，部分功能不可用',
+      id: 2233,
+      title: '云服务器连通性异常告警复盘',
       priority: 'medium',
-      url: '/tasks/9012'
+      url: '/tasks/2233'
     }
   ]
 };

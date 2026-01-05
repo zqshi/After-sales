@@ -6,6 +6,8 @@ let startX = 0;
 let startWidth = 0;
 let drawer = null;
 let overlay = null;
+const DRAWER_MIN_WIDTH = 320;
+const DRAWER_MAX_WIDTH = 520;
 
 function setDrawerMode(mode = 'analysis') {
   if (!drawer) {
@@ -215,6 +217,19 @@ function syncDrawerWidth() {
   document.documentElement.style.setProperty('--drawer-width', `${width}px`);
 }
 
+function getDrawerMaxWidth() {
+  const viewportMax = Math.min(DRAWER_MAX_WIDTH, window.innerWidth - 120);
+  return Math.max(DRAWER_MIN_WIDTH, viewportMax);
+}
+
+function setDrawerWidth(width) {
+  if (!drawer) {
+    return;
+  }
+  drawer.style.width = `${width}px`;
+  syncDrawerWidth();
+}
+
 function initDrawerResizer() {
   const resizer = qs('#right-drawer-resizer');
   if (!resizer || !drawer) {
@@ -224,7 +239,7 @@ function initDrawerResizer() {
   let resizing = false;
   let startClientX = 0;
   let startDrawerWidth = 0;
-  const minWidth = 320;
+  const minWidth = DRAWER_MIN_WIDTH;
 
   const beginResize = (event) => {
     resizing = true;
@@ -239,10 +254,9 @@ function initDrawerResizer() {
     }
     const clientX = event.clientX || event.touches?.[0]?.clientX || 0;
     const delta = startClientX - clientX;
-    const viewportMax = Math.min(520, window.innerWidth - 120);
+    const viewportMax = Math.min(DRAWER_MAX_WIDTH, window.innerWidth - 120);
     const width = Math.min(Math.max(startDrawerWidth + delta, minWidth), viewportMax);
-    drawer.style.width = `${width}px`;
-    syncDrawerWidth();
+    setDrawerWidth(width);
   };
 
   const endResize = () => {
@@ -272,10 +286,10 @@ export function toggleRightSidebar(forceState) {
       : drawer.classList.contains('translate-x-full');
 
   if (shouldOpen) {
+    setDrawerWidth(getDrawerMaxWidth());
     drawer.classList.remove('translate-x-full');
     overlay.classList.remove('hidden');
     document.body.classList.add('drawer-open');
-    syncDrawerWidth();
   } else {
     drawer.classList.add('translate-x-full');
     overlay.classList.add('hidden');

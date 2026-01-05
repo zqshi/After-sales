@@ -261,7 +261,7 @@
               <div class="task-list-item" data-task-id="task-001">
                 <div>
                   <div class="flex items-center gap-2">
-                    <span class="text-sm font-semibold text-gray-800">ERP登录公告</span>
+                    <span class="text-sm font-semibold text-gray-800">云服务器连接公告</span>
                     <span
                       class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">高</span>
                   </div>
@@ -342,7 +342,7 @@
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div id="chat-header-summary" class="min-w-0 text-sm text-gray-500 truncate">
                 <span>智能摘要：</span>
-                <span>客户反馈系统登录失败，影响业务运营，需要紧急处理。</span>
+                <span>客户反馈云服务器无法连接，影响业务运营，需要紧急处理。</span>
               </div>
               <div id="chat-mode-control" class="chat-mode-control flex items-center gap-2 flex-wrap shrink-0">
                 <button data-chat-mode="agent_auto" class="chat-mode-pill active">Agent自动</button>
@@ -372,7 +372,7 @@
           </div>
 
           <!-- 客户消息 -->
-          <div class="message customer-message flex" data-history-label="ERP系统数据同步问题">
+          <div class="message customer-message flex" data-history-label="云服务器连通性异常">
             <div
               class="avatar w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
               张
@@ -380,7 +380,7 @@
 
             <div class="ml-2 max-w-[70%]">
               <div class="message-bubble bg-blue-100 p-3 message-bubble-customer">
-                <p>我的系统突然报错，无法登录，这影响了我们的业务运营！</p>
+                <p>我的服务器无法连接，目前有影响业务，赶快看下。</p>
               </div>
 
               <div class="message-meta flex justify-between items-center mt-1">
@@ -394,7 +394,7 @@
           <div class="message engineer-message flex justify-end">
             <div class="mr-2 max-w-[70%]">
               <div class="message-bubble bg-primary text-white p-3 message-bubble-engineer">
-                <p>您好，很抱歉给您带来不便。请问您使用的是什么系统？出现了什么具体错误信息？</p>
+                <p>您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。</p>
               </div>
 
               <div class="message-meta flex justify-end mt-1">
@@ -417,13 +417,31 @@
 
             <div class="ml-2 max-w-[70%]">
               <div class="message-bubble bg-blue-100 p-3 message-bubble-customer">
-                <p>是企业ERP系统，登录时显示"认证失败，请联系管理员"，但我们的账号密码都是正确的。</p>
+                <p>服务器实例为test123，ip是192.168.10.2。</p>
               </div>
 
               <div class="message-meta flex justify-between items-center mt-1">
                 <span class="text-xs text-gray-500">10:35</span>
-                <span class="emotion-neutral text-xs px-2 py-0.5 rounded-full">😐 中性</span>
+                <span class="emotion-neutral text-xs px-2 py-0.5 rounded-full">🙂 稍缓</span>
               </div>
+            </div>
+          </div>
+
+          <!-- 工程师消息 -->
+          <div class="message engineer-message flex justify-end">
+            <div class="mr-2 max-w-[70%]">
+              <div class="message-bubble bg-primary text-white p-3 message-bubble-engineer">
+                <p>收到，我们高优排查该问题，有进展第一时间同步。</p>
+              </div>
+
+              <div class="message-meta flex justify-end mt-1">
+                <span class="text-xs text-gray-500">10:35</span>
+              </div>
+            </div>
+
+            <div
+              class="avatar w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
+              王
             </div>
           </div>
 
@@ -436,12 +454,12 @@
 
             <div class="ml-2 max-w-[70%]">
               <div class="message-bubble bg-blue-100 p-3 message-bubble-customer">
-                <p>我们有多个用户都遇到了同样的问题，这应该不是个人账号的问题。</p>
+                <p>麻烦尽快同步排查进展，业务现在受影响。</p>
               </div>
 
               <div class="message-meta flex justify-between items-center mt-1">
                 <span class="text-xs text-gray-500">10:36</span>
-                <span class="emotion-negative text-xs px-2 py-0.5 rounded-full">😟 不满</span>
+                <span class="emotion-negative text-xs px-2 py-0.5 rounded-full">⚠️ 急切</span>
               </div>
             </div>
           </div>
@@ -449,7 +467,7 @@
           <!-- AI辅助信息 -->
           <div class="ai-assistant p-4">
             <div class="problem-identification mb-3 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-              <strong>待解决问题：</strong>企业ERP系统登录认证失败，多用户受影响
+              <strong>待解决问题：</strong>云服务器无法连接，业务受影响（P2）
             </div>
 
             <div class="reply-suggestions mb-3">
@@ -463,9 +481,9 @@
 
                   <div class="ml-2 flex-1">
                     <p class="text-xs text-gray-500">参考知识库：<a href="#"
-                        class="text-primary hover:underline">企业ERP系统登录问题排查指南</a></p>
+                        class="text-primary hover:underline">云服务器无法连接排查手册</a></p>
                     <p class="text-sm mt-1">
-                      感谢您提供的信息。这看起来是系统认证服务的问题，我们的技术团队已经收到警报并正在处理。预计15分钟内恢复正常。为了确保服务质量，我们将为您的账户额外赠送1个月的高级支持服务。</p>
+                      您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。</p>
                   </div>
                 </div>
 
@@ -484,9 +502,9 @@
 
                   <div class="ml-2 flex-1">
                     <p class="text-xs text-gray-500">参考历史案例：<a href="#"
-                        class="text-primary hover:underline">07-15系统登录问题解决方案</a></p>
+                        class="text-primary hover:underline">07-15云服务器连通性问题解决方案</a></p>
                     <p class="text-sm mt-1">
-                      非常抱歉给您带来不便。根据您的描述，这是系统认证服务出现了故障。我们已经启动了应急响应流程，技术团队正在全力修复。预计将在15分钟内恢复正常访问。我们会持续关注修复进度，并及时向您反馈。</p>
+                      收到，我们高优排查该问题，有进展第一时间同步。</p>
                   </div>
                 </div>
 
@@ -504,11 +522,11 @@
                   <div class="bg-white border border-gray-200 rounded-lg p-3">
                     <h5 class="text-sm font-medium">标准处理流程</h5>
                     <ol class="list-decimal pl-5 mt-1 space-y-1 text-sm">
-                      <li>确认系统认证服务状态</li>
-                      <li>检查认证服务器日志，定位故障原因</li>
-                      <li>重启认证服务或切换到备用服务器</li>
-                      <li>验证服务恢复情况</li>
-                      <li>向受影响客户发送道歉和补偿方案</li>
+                      <li>确认实例状态与网络连通性</li>
+                      <li>检查安全组/路由/网关配置</li>
+                      <li>排查宿主机与网络设备告警</li>
+                      <li>执行修复或切换线路</li>
+                      <li>验证业务访问恢复情况</li>
                     </ol>
                   </div>
 
@@ -1048,7 +1066,7 @@
                               <span
                                 class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">高紧急</span>
                             </div>
-                            <p class="text-xs text-gray-600 mt-1">认证失败影响多用户，承诺 15 分钟恢复；需同步公告与补偿方案。</p>
+                            <p class="text-xs text-gray-600 mt-1">云服务器连接异常影响业务，需补充实例ID/IP并按 P2 优先级推进。</p>
                           </div>
                         </div>
                         <div class="flex items-center gap-3">
@@ -1180,13 +1198,13 @@
       <div class="analysis-header flex items-start justify-between gap-4 border-b border-gray-200 p-4">
         <div>
           <div class="flex flex-wrap items-center gap-2">
-              <h3 class="text-lg font-semibold" id="analysis-case-title">小米保障群 · ERP登录中断</h3>
+              <h3 class="text-lg font-semibold" id="analysis-case-title">小米保障群 · 云服务器无法连接</h3>
             <span class="analysis-chip chip-urgent" id="analysis-urgency-chip">高紧急</span>
             <span class="analysis-chip chip-sla" id="analysis-sla-chip">VIP</span>
             <span class="analysis-chip chip-impact" id="analysis-impact-chip">业务受阻</span>
           </div>
           <p class="text-sm text-gray-600 mt-2 w-full" id="analysis-case-summary">
-            智能摘要：认证失败影响多用户，承诺 15 分钟恢复；需同步公告与补偿方案。</p>
+            智能摘要：云服务器连接异常影响业务，已请求补充实例ID/IP并按 P2 优先级推进。</p>
         </div>
         <div class="flex flex-shrink-0 items-center gap-2">
           <button
@@ -1275,14 +1293,14 @@
                       <h4 class="text-sm font-medium text-gray-700">群公告</h4>
                       <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">最新</span>
                     </div>
-                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">认证服务出现波动，预计 15 分钟内恢复。请勿重复提交重置请求。</p>
+                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">云服务器连接异常，已启动高优排查。请提供实例ID/IP以便加速定位。</p>
                   </div>
                   <div class="panel-card">
                     <div class="flex items-center justify-between">
                       <h4 class="text-sm font-medium text-gray-700">群备注</h4>
                       <span class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">内部</span>
                     </div>
-                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">客户为企业ERP核心系统群聊，需同步公告并保持每 10 分钟进度更新。</p>
+                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">客户为云服务器核心业务群聊，需同步排查进展并保持每 10 分钟更新节奏。</p>
                   </div>
                 </div>
 
@@ -1291,7 +1309,7 @@
                     <h4 class="text-sm font-medium text-gray-700">当前客情摘要</h4>
                     <button class="text-xs text-primary hover:underline" onclick="document.querySelector('[data-tab=&quot;history&quot;][data-tab-group=&quot;analysis&quot;]').click()">查看历史对话</button>
                   </div>
-                  <p class="mt-2 text-sm text-gray-700 leading-relaxed">客户反馈系统登录认证失败，多用户受影响；当前情绪急切，需要快速给出处理进展。</p>
+                  <p class="mt-2 text-sm text-gray-700 leading-relaxed">客户反馈云服务器无法连接，业务受影响；当前情绪急切，需要快速给出排查进展。</p>
                   <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
                     <span class="px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-100">客情状态：紧急</span>
                     <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">情绪：急切</span>
@@ -1471,32 +1489,38 @@
                   </h4>
                   <span class="text-[11px] text-gray-500">根据当前会话自动生成</span>
                 </div>
+                <div class="ai-panel-card ai-panel-card--compact bg-slate-50 border border-slate-200">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-xs text-gray-600">信息获取不清晰，需要做问题澄清</p>
+                    <button class="ai-panel-chip" data-action="clarify">问题澄清</button>
+                  </div>
+                </div>
                 <div id="ai-reply-list" class="space-y-3">
                   <div class="ai-panel-card">
-                    <div class="flex items-start justify-between gap-3">
-                      <div>
-                        <div class="text-xs text-gray-400 mb-1">方案 A · 稳定情绪</div>
-                        <p class="text-sm text-gray-700">非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。</p>
+                    <div>
+                      <div class="text-xs text-gray-400 mb-1">方案 A · 稳定情绪</div>
+                      <p class="text-sm text-gray-700">非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。</p>
+                      <div class="mt-3 flex justify-end">
+                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。">采纳</button>
                       </div>
-                      <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。">采纳</button>
                     </div>
                   </div>
                   <div class="ai-panel-card">
-                    <div class="flex items-start justify-between gap-3">
-                      <div>
-                        <div class="text-xs text-gray-400 mb-1">方案 B · 明确排查</div>
-                        <p class="text-sm text-gray-700">我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。</p>
+                    <div>
+                      <div class="text-xs text-gray-400 mb-1">方案 B · 明确排查</div>
+                      <p class="text-sm text-gray-700">我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。</p>
+                      <div class="mt-3 flex justify-end">
+                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。">采纳</button>
                       </div>
-                      <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。">采纳</button>
                     </div>
                   </div>
                   <div class="ai-panel-card">
-                    <div class="flex items-start justify-between gap-3">
-                      <div>
-                        <div class="text-xs text-gray-400 mb-1">方案 C · 安抚 + 补偿口径</div>
-                        <p class="text-sm text-gray-700">我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。</p>
+                    <div>
+                      <div class="text-xs text-gray-400 mb-1">方案 C · 安抚 + 补偿口径</div>
+                      <p class="text-sm text-gray-700">我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。</p>
+                      <div class="mt-3 flex justify-end">
+                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。">采纳</button>
                       </div>
-                      <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。">采纳</button>
                     </div>
                   </div>
                 </div>

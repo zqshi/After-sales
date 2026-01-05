@@ -198,24 +198,24 @@ export class UnifiedChatController {
       return;
     }
 
-    const negativeEmotions = ['negative', 'angry', 'frustrated', 'anxious'];
+    const negativeEmotions = ['negative', 'angry', 'frustrated', 'anxious', 'urgent'];
     const sentimentEmotion = analysisData?.sentiment?.emotion || analysisData?.lastCustomerSentiment?.emotion;
     const hasIssue = analysisData?.detectedIssues?.length > 0 ||
       negativeEmotions.includes(sentimentEmotion);
 
-    const issueTag = messageRow.querySelector('.issue-tag');
+    const issueTags = messageRow.querySelectorAll('.issue-tag');
     const messageEmotion = messageRow.dataset.sentiment || analysisData?.sentiment?.emotion || analysisData?.lastCustomerSentiment?.emotion;
     const isNegativeEmotion = negativeEmotions.includes(messageEmotion) || (!messageEmotion && analysisData?.detectedIssues?.length > 0);
     if (hasIssue) {
       messageRow.dataset.hasIssue = 'true';
-      if (issueTag) {
-        issueTag.style.display = isNegativeEmotion ? 'inline-flex' : 'none';
-      }
+      issueTags.forEach((tag) => {
+        tag.style.display = isNegativeEmotion ? 'inline-flex' : 'none';
+      });
     } else {
       delete messageRow.dataset.hasIssue;
-      if (issueTag) {
-        issueTag.style.display = 'none';
-      }
+      issueTags.forEach((tag) => {
+        tag.style.display = 'none';
+      });
     }
   }
 
@@ -287,36 +287,36 @@ export class UnifiedChatController {
       this.appendMessage({
         role: 'customer',
         author: '客户',
-        content: '我的系统突然报错，无法登录，这影响了我们的业务运营！',
+        content: '我的服务器无法连接，目前有影响业务，赶快看下',
         timestamp: new Date(Date.now() - 3600000).toISOString(),
         sentiment: {
-          emotion: 'negative',
-          score: 0.85,
+          emotion: 'urgent',
+          score: 0.86,
           confidence: 0.92
         }
       });
       this.appendMessage({
         role: 'agent',
         author: '客服',
-        content: '非常抱歉给您带来困扰。我已经记录了您的问题，我们的技术团队正在全力修复。请稍候，预计15分钟内恢复。',
-        timestamp: new Date(Date.now() - 1800000).toISOString(),
+        content: '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。',
+        timestamp: new Date(Date.now() - 2700000).toISOString(),
       });
       this.appendMessage({
         role: 'customer',
         author: '客户',
-        content: '好的，那大概什么时候能恢复？我们这边业务受到很大影响。',
+        content: '服务器实例为test123，ip是192.168.10.2',
         timestamp: new Date(Date.now() - 1200000).toISOString(),
         sentiment: {
-          emotion: 'anxious',
-          score: 0.75,
-          confidence: 0.88
+          emotion: 'urgent',
+          score: 0.8,
+          confidence: 0.9
         }
       });
       this.appendMessage({
         role: 'agent',
         author: '客服',
-        content: '我理解您的担忧。技术团队正在全力处理，预计15分钟内恢复正常。我会持续跟进并及时通知您最新进展。',
-        timestamp: new Date(Date.now() - 600000).toISOString(),
+        content: '收到，我们高优排查该问题，有进展第一时间同步。',
+        timestamp: new Date(Date.now() - 900000).toISOString(),
       });
       showNotification('后端API暂不可用，已加载示例对话以便功能演示', 'warning');
     }
@@ -352,15 +352,15 @@ export class UnifiedChatController {
         console.warn('[临时] 后端未返回问题数据，添加测试问题以触发完整AI辅助');
         analysisData.detectedIssues = [{
           type: 'system_error',
-          severity: 'high',
-          description: '系统登录失败'
+          severity: 'p2',
+          description: '故障处理问题：云服务器无法连接，预定级 P2'
         }];
         // 同时添加负面情感，确保hasIssue为true
-        if (!analysisData.lastCustomerSentiment || analysisData.lastCustomerSentiment.emotion !== 'negative') {
+        if (!analysisData.lastCustomerSentiment || analysisData.lastCustomerSentiment.emotion !== 'urgent') {
           analysisData.lastCustomerSentiment = {
-            emotion: 'negative',
-            score: 0.75,
-            confidence: 0.9
+            emotion: 'urgent',
+            score: 0.86,
+            confidence: 0.92
           };
         }
       }
@@ -368,7 +368,9 @@ export class UnifiedChatController {
 
       // 检查是否有问题需要显示AI入口
       const hasIssue = analysisData.detectedIssues?.length > 0 ||
-                       analysisData.lastCustomerSentiment?.emotion === 'negative';
+                       ['negative', 'angry', 'frustrated', 'anxious', 'urgent'].includes(
+                         analysisData.lastCustomerSentiment?.emotion,
+                       );
 
       if (hasIssue) {
         this.attachConversationIssueToLatestMessage(analysisData);
@@ -381,30 +383,29 @@ export class UnifiedChatController {
       // 降级：使用mock AI分析数据
       const mockAnalysis = {
         lastCustomerSentiment: {
-          emotion: 'negative',
-          score: 0.85,
+          emotion: 'urgent',
+          score: 0.86,
           confidence: 0.92
         },
         detectedIssues: [{
           type: 'system_error',
-          severity: 'high',
-          description: '系统登录失败 - 网关502错误'
+          severity: 'p2',
+          description: '故障处理问题：云服务器无法连接，预定级 P2'
         }],
         replySuggestion: {
-          suggestedReply: '我们已经收到您的问题反馈。技术团队正在紧急处理系统登录故障，预计在15分钟内恢复。感谢您的耐心等待。',
-          confidence: 0.88,
+          suggestedReply: '收到，我们高优排查该问题，有进展第一时间同步。',
+          confidence: 0.9,
           needsHumanReview: false
         },
         knowledgeRecommendations: [
-          { id: 'kb-001', title: '系统登录故障排查手册', category: '系统运维', score: 0.95, url: '/knowledge/kb-001' },
-          { id: 'kb-002', title: 'HTTP 502错误解决方案', category: '故障处理', score: 0.89, url: '/knowledge/kb-002' },
-          { id: 'kb-003', title: '网关服务配置指南', category: '技术文档', score: 0.85, url: '/knowledge/kb-003' },
-          { id: 'kb-004', title: '紧急故障响应流程', category: '应急预案', score: 0.82, url: '/knowledge/kb-004' }
+          { id: 'kb-011', title: '云服务器无法连接排查手册', category: '故障处理', score: 0.93, url: '/knowledge/kb-011' },
+          { id: 'kb-014', title: '实例网络连通性诊断指南', category: '云服务器', score: 0.9, url: '/knowledge/kb-014' },
+          { id: 'kb-018', title: 'P2故障升级与通报流程', category: '应急预案', score: 0.84, url: '/knowledge/kb-018' }
         ],
         relatedTasks: [
-          { id: 1234, title: '登录接口502错误 - 网关超时', priority: 'high', url: '/tasks/1234' },
-          { id: 5678, title: '用户反馈无法访问系统', priority: 'medium', url: '/tasks/5678' },
-          { id: 9012, title: '系统认证服务异常排查', priority: 'high', url: '/tasks/9012' }
+          { id: 2231, title: '云服务器实例无法连接 - P2', priority: 'high', url: '/tasks/2231' },
+          { id: 2232, title: '客户实例test123网络排查', priority: 'high', url: '/tasks/2232' },
+          { id: 2233, title: '云服务器连通性异常告警复盘', priority: 'medium', url: '/tasks/2233' }
         ]
       };
 
@@ -552,7 +553,11 @@ export class UnifiedChatController {
     const icons = {
       positive: '😊',
       neutral: '😐',
-      negative: '😟'
+      negative: '😟',
+      urgent: '⚠️',
+      anxious: '😰',
+      angry: '😠',
+      frustrated: '😤'
     };
     return icons[emotion] || '😐';
   }
@@ -653,7 +658,9 @@ export class UnifiedChatController {
 
     // 检查是否有问题
     const hasIssue = analysisData.detectedIssues?.length > 0 ||
-                     analysisData.sentiment?.emotion === 'negative';
+                     ['negative', 'angry', 'frustrated', 'anxious', 'urgent'].includes(
+                       analysisData.sentiment?.emotion,
+                     );
 
     // 清空当前面板
     this.aiPanel?.clear();
@@ -688,17 +695,17 @@ export class UnifiedChatController {
     if (hasIssue && (!analysisData.knowledgeRecommendations || analysisData.knowledgeRecommendations.length === 0)) {
       console.warn('[临时] 后端未返回知识库数据，使用测试数据');
       analysisData.knowledgeRecommendations = [
-        { id: 'kb-001', title: '系统登录故障排查手册', category: '系统运维', score: 0.95, url: '/knowledge/kb-001' },
-        { id: 'kb-002', title: 'HTTP 502错误解决方案', category: '故障处理', score: 0.89, url: '/knowledge/kb-002' },
-        { id: 'kb-003', title: '网关服务重启操作指南', category: '运维手册', score: 0.82, url: '/knowledge/kb-003' }
+        { id: 'kb-011', title: '云服务器无法连接排查手册', category: '故障处理', score: 0.93, url: '/knowledge/kb-011' },
+        { id: 'kb-014', title: '实例网络连通性诊断指南', category: '云服务器', score: 0.9, url: '/knowledge/kb-014' },
+        { id: 'kb-018', title: 'P2故障升级与通报流程', category: '应急预案', score: 0.84, url: '/knowledge/kb-018' }
       ];
     }
     if (hasIssue && (!analysisData.relatedTasks || analysisData.relatedTasks.length === 0)) {
       console.warn('[临时] 后端未返回工单数据，使用测试数据');
       analysisData.relatedTasks = [
-        { id: 1234, title: '登录接口502错误 - 网关超时', priority: 'high', url: '/tasks/1234' },
-        { id: 5678, title: '用户反馈无法访问系统', priority: 'medium', url: '/tasks/5678' },
-        { id: 9012, title: '系统响应缓慢，部分功能不可用', priority: 'medium', url: '/tasks/9012' }
+        { id: 2231, title: '云服务器实例无法连接 - P2', priority: 'high', url: '/tasks/2231' },
+        { id: 2232, title: '客户实例test123网络排查', priority: 'high', url: '/tasks/2232' },
+        { id: 2233, title: '云服务器连通性异常告警复盘', priority: 'medium', url: '/tasks/2233' }
       ];
     }
     // === 临时测试数据结束 ===

@@ -76,7 +76,11 @@ function initAiAssistantPanelActions() {
 
   panel.addEventListener('click', (event) => {
     const adoptBtn = event.target.closest('.ai-reply-adopt');
+    const clarifyBtn = event.target.closest('[data-action="clarify"]');
     if (!adoptBtn) {
+      if (clarifyBtn) {
+        openClarifyPanel();
+      }
       return;
     }
     const suggestion = adoptBtn.dataset.suggestion || '';
@@ -216,12 +220,12 @@ function setAiReplyMockData() {
 
   listEl.innerHTML = suggestions.map((item) => `
     <div class="ai-panel-card">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <div class="text-xs text-gray-400 mb-1">${item.tag}</div>
-          <p class="text-sm text-gray-700">${item.text}</p>
+      <div>
+        <div class="text-xs text-gray-400 mb-1">${item.tag}</div>
+        <p class="text-sm text-gray-700">${item.text}</p>
+        <div class="mt-3 flex justify-end">
+          <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="${item.text}">采纳</button>
         </div>
-        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="${item.text}">采纳</button>
       </div>
     </div>
   `).join('');
@@ -1045,13 +1049,17 @@ export function openClarifyPanel() {
   const latest = getLatestCustomerMessageText();
   const analysis = analyzeClarifyNeeds(latest);
   if (analysis.needsClarify) {
+    const clarifyQuestions = [
+      '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。',
+      ...analysis.questions,
+    ];
     setAiClarifyPanelContent(`
       <div class="ai-panel-stack">
         <div class="ai-panel-card">
           <div class="ai-panel-title">问题澄清</div>
           <div class="ai-panel-text">问题描述仍需澄清，建议补充以下信息：</div>
           <ul class="ai-panel-list mt-2">
-          ${analysis.questions.map((item, index) => `
+          ${clarifyQuestions.map((item, index) => `
             <li class="flex items-start gap-2">
               <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">${index + 1}</span>
               <span>${item}</span>
@@ -1154,15 +1162,15 @@ async function loadConversationList() {
         {
           conversationId: 'conv-001',
           customerName: '小米保障群',
-          lastMessage: '我的系统突然报错，无法登录，这影响了我们的业务运营！',
-          aiSummary: '认证失败影响多用户，承诺 15 分钟恢复；需同步公告与补偿方案。',
+          lastMessage: '我的服务器无法连接，目前有影响业务，赶快看下',
+          aiSummary: '云服务器连接故障，影响业务；需补充实例ID/IP并按 P2 优先级处理。',
           updatedAt: new Date(Date.now() - 3600000).toISOString(),
           channel: 'feishu',
           slaLevel: 'VIP',
           urgency: 'high',
           severity: 'high',
           unreadCount: 3,
-          sentiment: { type: 'negative', label: '😟 不满' }
+          sentiment: { type: 'urgent', label: '⚠️ 急切' }
         },
         {
           conversationId: 'conv-002',

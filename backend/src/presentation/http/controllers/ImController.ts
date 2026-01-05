@@ -249,7 +249,7 @@ export class ImController {
           channel: 'web',
           status: 'open',
           mode: 'agent_auto', // Agent模式
-          lastMessage: '我的订单退款还没到账，这是什么问题？',
+          lastMessage: '我的服务器无法连接，目前有影响业务，赶快看下',
           lastMessageTime: new Date(Date.now() - 3600000).toISOString(),
           unreadCount: 2,
           agentId: 'agent-001',
@@ -323,7 +323,7 @@ export class ImController {
       const { limit = 40, offset = 0 } = request.query as any;
 
       // Mock数据：模拟历史消息
-      const mockMessages = [
+      const refundMessages = [
         {
           id: 'msg-001',
           conversationId: id,
@@ -394,6 +394,57 @@ export class ImController {
           },
         },
       ];
+
+      const cloudServerMessages = [
+        {
+          id: 'msg-001',
+          conversationId: id,
+          content: '我的服务器无法连接，目前有影响业务，赶快看下',
+          senderType: 'customer',
+          senderId: 'customer-001',
+          senderName: '张三',
+          timestamp: new Date(Date.now() - 3600000).toISOString(),
+          sentiment: {
+            emotion: 'urgent',
+            score: 0.86,
+            confidence: 0.9,
+          },
+        },
+        {
+          id: 'msg-002',
+          conversationId: id,
+          content: '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。',
+          senderType: 'agent',
+          senderId: 'agent-001',
+          senderName: '客服小王',
+          timestamp: new Date(Date.now() - 3540000).toISOString(),
+        },
+        {
+          id: 'msg-003',
+          conversationId: id,
+          content: '服务器实例为test123，ip是192.168.10.2',
+          senderType: 'customer',
+          senderId: 'customer-001',
+          senderName: '张三',
+          timestamp: new Date(Date.now() - 3480000).toISOString(),
+          sentiment: {
+            emotion: 'urgent',
+            score: 0.8,
+            confidence: 0.9,
+          },
+        },
+        {
+          id: 'msg-004',
+          conversationId: id,
+          content: '收到，我们高优排查该问题，有进展第一时间同步。',
+          senderType: 'agent',
+          senderId: 'agent-001',
+          senderName: '客服小王',
+          timestamp: new Date(Date.now() - 3420000).toISOString(),
+        },
+      ];
+
+      const mockMessages = id === 'conv-001' ? cloudServerMessages : refundMessages;
 
       const start = Number(offset);
       const end = start + Number(limit);
@@ -680,68 +731,68 @@ export class ImController {
       // 根据会话ID返回不同场景的Mock数据
       let mockAnalysis: any;
 
-      // 场景1：conv-001 - 负面情绪+问题场景（退款延迟）- 显示AI辅助面板
+      // 场景1：conv-001 - 急切情绪+问题场景（云服务器连接异常）- 显示AI辅助面板
       if (id === 'conv-001') {
         mockAnalysis = {
           conversationId: id,
           lastCustomerSentiment: {
-            emotion: 'negative',
-            score: 0.3,
-            confidence: 0.78,
-            messageContent: '订单号是 ORD20231215001，我三天前申请的退款还没到账',
+            emotion: 'urgent',
+            score: 0.86,
+            confidence: 0.9,
+            messageContent: '我的服务器无法连接，目前有影响业务，赶快看下',
           },
           replySuggestion: {
-            suggestedReply: '非常抱歉让您久等了。我已经帮您查询了退款进度，您的退款已经审批通过，正在处理中。根据系统显示，预计会在1-3个工作日内到账。我们会持续关注，如有任何问题请随时联系我们。',
-            confidence: 0.85,
+            suggestedReply: '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。',
+            confidence: 0.9,
             needsHumanReview: false,
-            reason: '标准退款查询场景，置信度较高',
+            reason: '云服务器故障排查需补充实例信息',
           },
           knowledgeRecommendations: [
             {
-              id: 'kb-001',
-              title: '退款处理流程和时效说明',
-              category: '订单与退款',
-              score: 0.92,
-              url: 'http://localhost:3000/knowledge/kb-001',
+              id: 'kb-011',
+              title: '云服务器无法连接排查手册',
+              category: '故障处理',
+              score: 0.93,
+              url: 'http://localhost:3000/knowledge/kb-011',
               type: 'knowledge',
             },
             {
-              id: 'kb-002',
-              title: '退款到账时间常见问题',
-              category: '订单与退款',
-              score: 0.85,
-              url: 'http://localhost:3000/knowledge/kb-002',
+              id: 'kb-014',
+              title: '实例网络连通性诊断指南',
+              category: '云服务器',
+              score: 0.9,
+              url: 'http://localhost:3000/knowledge/kb-014',
               type: 'knowledge',
             },
             {
-              id: 'kb-003',
-              title: '如何查询退款进度',
-              category: '订单与退款',
-              score: 0.78,
-              url: 'http://localhost:3000/knowledge/kb-003',
+              id: 'kb-018',
+              title: 'P2故障升级与通报流程',
+              category: '应急预案',
+              score: 0.84,
+              url: 'http://localhost:3000/knowledge/kb-018',
               type: 'knowledge',
             },
           ],
           relatedTasks: [
             {
               id: 'task-001',
-              title: '退款延迟处理 - ORD20231215001',
+              title: '云服务器实例无法连接 - P2',
               priority: 'high',
-              url: 'http://localhost:3000/tasks/task-001',
+              url: 'http://localhost:3000/tasks/task-2231',
             },
             {
               id: 'task-002',
-              title: '批量退款审核异常问题排查',
+              title: '客户实例网络排查',
               priority: 'medium',
-              url: 'http://localhost:3000/tasks/task-002',
+              url: 'http://localhost:3000/tasks/task-2232',
             },
           ],
           detectedIssues: [
             {
-              type: 'refund_delay',
-              description: '客户反馈退款延迟',
-              severity: 'medium',
-              suggestedAction: '优先处理并跟进',
+              type: 'cloud_server_incident',
+              description: '产品线为云服务器，P2',
+              severity: 'p2',
+              suggestedAction: '高优排查并同步进展',
             },
           ],
           analyzedAt: new Date().toISOString(),

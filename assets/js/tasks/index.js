@@ -11,15 +11,15 @@ import { taskController } from '../presentation/task/TaskController.js';
 
 const qualityProfiles = {
   'conv-001': {
-    title: 'ERP登录中断 - 小米保障群',
+    title: '云服务器无法连接 - 小米保障群',
     score: 92,
-    summary: '响应及时且补偿到位，建议补充复盘与复测日志，关注二次反馈。',
+    summary: '响应及时，建议补充实例信息与网络诊断记录，并同步排查进展。',
     dimensions: [
       { label: '合规', score: 96, hint: '未触发敏感词与越权操作' },
-      { label: '完整度', score: 91, hint: '结论明确，但复测截图缺失' },
-      { label: '情绪', score: 88, hint: '安抚到位，仍需跟进情绪回落' },
+      { label: '完整度', score: 91, hint: '实例信息已收集，但诊断结果待同步' },
+      { label: '情绪', score: 88, hint: '安抚到位，仍需持续跟进情绪回落' },
     ],
-    actions: ['导出质检报告', '生成复盘大纲', '触发满意度回访'],
+    actions: ['导出质检报告', '生成排查清单', '触发满意度回访'],
   },
   'conv-002': {
     title: '账单咨询 - 李四',
@@ -47,7 +47,7 @@ const qualityProfiles = {
 
 const conversationQcProfiles = {
   'conv-001': {
-    title: '小米保障群 · ERP登录中断',
+    title: '小米保障群 · 云服务器无法连接',
     urgency: '高紧急',
     urgencyClass: 'chip-urgent',
     tone: 'urgent',
@@ -55,22 +55,22 @@ const conversationQcProfiles = {
     impact: '业务受阻',
     channel: '飞书',
     time: '10:30',
-    summary: '群聊客户与业务用户集中反馈认证失败，已承诺 15 分钟恢复；需同步公告与补偿口径。',
-    tags: ['认证失败', '群聊集中反馈', '响应时效', '补偿说明'],
+    summary: '群聊客户反馈云服务器无法连接，影响业务运行；需补充实例ID/IP并按 P2 流程推进。',
+    tags: ['云服务器', '连接失败', '响应时效', 'P2升级'],
     metrics: { urgency: '85%', emotion: 65, eta: '15min' },
     dimensions: {
       emotion: { score: 72, label: '情感态度 · 安抚有效', bar: 72 },
-      quality: { score: 88, label: '回复质量 · 关键信息齐全', bar: 88 },
+      quality: { score: 88, label: '回复质量 · 需补充诊断结果', bar: 88 },
       satisfaction: { score: 76, label: '响应时效 · 偏紧张', bar: 76 },
     },
-    tip: '建议固定 10 分钟节奏同步进展，并补充复测证据与补偿口径。',
+    tip: '建议固定 10 分钟节奏同步进展，并补充网络诊断结论与复测证据。',
     threadTitle: '对话节选 · conv-001',
     thread: [
-      { role: '客户', text: '系统报错无法登录，多人受影响，影响业务。', sentiment: '😡 不满', tag: '高紧急' },
-      { role: '工程师', text: '已收到告警，正在重启认证服务并核对备节点。', sentiment: '🛠️ 处理中', tag: '已响应' },
-      { role: '客户', text: '收到，麻烦 10 分钟内给进展，先发公告说明。', sentiment: '🙂 回落', tag: '待公告' },
+      { role: '客户', text: '我的服务器无法连接，目前有影响业务，赶快看下。', sentiment: '⚠️ 急切', tag: '高紧急' },
+      { role: '工程师', text: '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。', sentiment: '🧭 协调中', tag: '信息确认' },
+      { role: '客户', text: '服务器实例为test123，ip是192.168.10.2。', sentiment: '🙂 稍缓', tag: '已补充' },
     ],
-    insights: ['群聊集中反馈需同步时间点与责任人，避免多头回复', '响应节奏需固定，防止用户重复追问', '回复质量需补充复测证据与补偿生效时间'],
+    insights: ['群聊集中反馈需同步责任人与时间点，避免多头回复', '响应节奏需固定，防止用户重复追问', '回复质量需补充诊断结论与复测证据'],
   },
   'conv-002': {
     title: '恒星数据 · 账单核验',

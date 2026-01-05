@@ -134,6 +134,11 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
         label = '焦虑';
         bgColor = '#fed7aa'; // 橙色背景
         break;
+      case 'urgent':
+        icon = '⚠️';
+        label = '急切';
+        bgColor = '#fee2e2'; // 浅红色背景
+        break;
       case 'neutral':
       default:
         icon = '😐';
@@ -189,17 +194,48 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
   }
 
   if (meta) {
-    const issueProductLabel = escapeHtml(getPurchasedProductLabel());
-    metaContent += `<span class="issue-tag" style="
-      display: none;
-      align-items: center;
-      padding: 2px 8px;
-      background: #ede9fe;
-      color: #6d28d9;
-      border: 1px solid #ddd6fe;
-      border-radius: 9999px;
-      font-size: 11px;
-    ">问题产品定位：${issueProductLabel}</span>`;
+    const issueProductLabelRaw = getPurchasedProductLabel();
+    let issueProductName = issueProductLabelRaw;
+    let issueSeverity = '';
+
+    if (issueProductLabelRaw && issueProductLabelRaw !== '未标注') {
+      const parts = issueProductLabelRaw.split(/[，,]\s*/).filter(Boolean);
+      if (parts.length > 1) {
+        const severityPart = parts.find((part) => /P[0-4]/i.test(part));
+        const namePart = parts.find((part) => !/P[0-4]/i.test(part));
+        issueProductName = namePart || issueProductLabelRaw;
+        issueSeverity = severityPart || '';
+      } else if (/P[0-4]/i.test(issueProductLabelRaw)) {
+        issueProductName = issueProductLabelRaw.replace(/P[0-4]/gi, '').replace(/[，,]\s*/g, '').trim() || issueProductLabelRaw;
+        issueSeverity = issueProductLabelRaw.match(/P[0-4]/i)?.[0] || '';
+      }
+    }
+
+    const issueProductLabel = escapeHtml(issueProductName || issueProductLabelRaw);
+    metaContent += `<span class="issue-tags" style="display: inline-flex; align-items: center; gap: 6px; margin-left: 6px;">
+      <span class="issue-tag" style="
+        display: none;
+        align-items: center;
+        padding: 2px 8px;
+        background: #ede9fe;
+        color: #6d28d9;
+        border: 1px solid #ddd6fe;
+        border-radius: 9999px;
+        font-size: 11px;
+      ">问题产品定位：${issueProductLabel}</span>`;
+    if (issueSeverity) {
+      metaContent += `<span class="issue-tag" style="
+        display: none;
+        align-items: center;
+        padding: 2px 8px;
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        border-radius: 9999px;
+        font-size: 11px;
+      ">故障等级：${escapeHtml(issueSeverity.toUpperCase())}</span>`;
+    }
+    metaContent += '</span>';
     meta.innerHTML = metaContent;
   }
 

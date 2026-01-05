@@ -157,7 +157,9 @@ export class AiAssistantPanel {
     const emotionMap = {
       positive: { icon: '😊', label: '积极', class: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
       neutral: { icon: '😐', label: '中性', class: 'bg-slate-100 text-slate-700 border-slate-200' },
-      negative: { icon: '😟', label: '消极', class: 'bg-rose-50 text-rose-700 border-rose-200' }
+      negative: { icon: '😟', label: '消极', class: 'bg-rose-50 text-rose-700 border-rose-200' },
+      urgent: { icon: '⚠️', label: '急切', class: 'bg-rose-50 text-rose-700 border-rose-200' },
+      anxious: { icon: '😰', label: '焦虑', class: 'bg-rose-50 text-rose-700 border-rose-200' }
     };
 
     const emotionInfo = emotionMap[emotion] || emotionMap.neutral;
@@ -199,14 +201,20 @@ export class AiAssistantPanel {
         : '';
 
       this.elements.replyList.innerHTML = `
+        <div class="ai-panel-card ai-panel-card--compact bg-slate-50 border border-slate-200">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-xs text-gray-600">信息获取不清晰，需要做问题澄清</p>
+            <button class="ai-panel-chip" data-action="clarify">问题澄清</button>
+          </div>
+        </div>
         <div class="ai-panel-card">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <div class="text-xs text-gray-400 mb-1">AI建议 · 置信度 ${Math.round(confidence * 100)}%</div>
-              ${reviewBadge}
-              <p class="text-sm text-gray-700 mt-1">${this.escapeHtml(normalizedReply)}</p>
+          <div>
+            <div class="text-xs text-gray-400 mb-1">AI建议 · 置信度 ${Math.round(confidence * 100)}%</div>
+            ${reviewBadge}
+            <p class="text-sm text-gray-700 mt-1">${this.escapeHtml(normalizedReply)}</p>
+            <div class="mt-3 flex justify-end">
+              <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="${this.escapeHtml(normalizedReply)}">采纳</button>
             </div>
-            <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="${this.escapeHtml(normalizedReply)}">采纳</button>
           </div>
         </div>
       `;
