@@ -2,6 +2,7 @@ import { qs, qsa, on } from '../core/dom.js';
 import { scrollToBottom } from '../core/scroll.js';
 import { showNotification } from '../core/notifications.js';
 import { UnifiedChatController } from '../presentation/chat/UnifiedChatController.js';
+import { openAiAssistantPanel } from '../ui/layout.js';
 import {
   analyzeRequirementText,
   loadRequirementsData,
@@ -63,11 +64,1053 @@ export function initChat() {
   initInputEvents();
   initConversationEndDetection();
   initConversationFilters();
+  initAiAssistantPanelActions();
   scrollToBottom();
+}
+
+function initAiAssistantPanelActions() {
+  const panel = qs('#ai-assistant-panel');
+  if (!panel) {
+    return;
+  }
+
+  panel.addEventListener('click', (event) => {
+    const adoptBtn = event.target.closest('.ai-reply-adopt');
+    if (!adoptBtn) {
+      return;
+    }
+    const suggestion = adoptBtn.dataset.suggestion || '';
+    const input = qs('#message-input');
+    if (input && suggestion) {
+      input.value = suggestion;
+      input.focus();
+      showNotification('已采纳回复建议', 'success');
+    }
+  });
+}
+
+function setAiPanelMode(mode) {
+  const panel = qs('#ai-assistant-panel');
+  const replyPanel = qs('#ai-panel-reply');
+  const solutionPanel = qs('#ai-panel-solution');
+  const actionPanel = qs('#ai-panel-action');
+  const clarifyPanel = qs('#ai-panel-clarify');
+  const title = qs('#ai-assistant-title');
+  const badge = qs('#ai-assistant-badge');
+  const desc = qs('#ai-assistant-desc');
+
+  if (panel) {
+    panel.classList.remove('hidden');
+  }
+  if (!replyPanel || !solutionPanel || !actionPanel || !clarifyPanel) {
+    return;
+  }
+
+  replyPanel.classList.toggle('hidden', mode !== 'reply');
+  solutionPanel.classList.toggle('hidden', mode !== 'solution');
+  actionPanel.classList.toggle('hidden', mode !== 'action');
+  clarifyPanel.classList.toggle('hidden', mode !== 'clarify');
+
+  if (title) {
+    if (mode === 'reply') {
+      title.textContent = '回复建议';
+    } else if (mode === 'solution') {
+      title.textContent = 'AI解决方案';
+    } else if (mode === 'clarify') {
+      title.textContent = '问题澄清';
+    } else {
+      title.textContent = '协作面板';
+    }
+  }
+  if (badge) {
+    if (mode === 'reply') {
+      badge.textContent = '话术';
+    } else if (mode === 'solution') {
+      badge.textContent = '排查';
+    } else if (mode === 'clarify') {
+      badge.textContent = '评估';
+    } else {
+      badge.textContent = '表单';
+    }
+  }
+  if (desc) {
+    if (mode === 'reply') {
+      desc.textContent = '提供可编辑回复建议，点击采纳标记推荐。';
+    } else if (mode === 'solution') {
+      desc.textContent = '提供排查建议步骤与参考资料，便于快速定位问题。';
+    } else if (mode === 'clarify') {
+      desc.textContent = '基于当前会话评估问题描述完整度。';
+    } else {
+      desc.textContent = '支持工单与排查协作，可与对话并行操作。';
+    }
+  }
+}
+
+export function openAiReplyPanel() {
+  openAiAssistantPanel();
+  hideRightSidebarOverlay();
+  setAiReplyMockData();
+  setAiPanelMode('reply');
+}
+
+export function openAiSolutionPanel() {
+  openAiAssistantPanel();
+  hideRightSidebarOverlay();
+  setAiSolutionMockData();
+  setAiPanelMode('solution');
+}
+
+function setAiSolutionMockData() {
+  const stepsEl = qs('#ai-solution-steps');
+  const refsEl = qs('#ai-solution-references');
+  if (!stepsEl || !refsEl) {
+    return;
+  }
+
+  const contextText = getConversationContext().join(' ');
+  const steps = buildSolutionStepsFromContext(contextText);
+  const references = buildSolutionReferencesFromContext(contextText);
+
+  stepsEl.innerHTML = steps.map((step) => `<li>${step}</li>`).join('');
+  refsEl.innerHTML = references.map((item) => `
+    <div class="ai-panel-card ai-panel-card--compact flex items-start gap-3">
+      <div class="w-8 h-8 rounded-full ${item.tagClass} flex items-center justify-center text-xs">${item.tag}</div>
+      <div class="flex-1">
+        <div class="text-sm text-gray-700">${item.title}</div>
+        <div class="text-[11px] text-gray-500 mt-1">${item.meta}</div>
+      </div>
+      <button class="text-xs text-primary hover:underline" data-action="view-reference" data-title="${item.title}" data-meta="${item.meta}">查看</button>
+    </div>
+  `).join('');
+
+  refsEl.onclick = (event) => {
+    const viewBtn = event.target.closest('[data-action="view-reference"]');
+    if (!viewBtn) {
+      return;
+    }
+    const title = viewBtn.dataset.title || '参考资料';
+    const meta = viewBtn.dataset.meta || '';
+    showActionModal({
+      title,
+      bodyHtml: `
+        <div class="ai-panel-stack">
+          <div class="ai-panel-card">
+            <div class="ai-panel-title">摘要</div>
+            <div class="ai-panel-text">当前为参考资料预览，实际内容可在知识库中查看。</div>
+            ${meta ? `<div class="ai-panel-meta mt-2">${meta}</div>` : ''}
+          </div>
+        </div>
+      `
+    });
+  };
+}
+
+function setAiReplyMockData() {
+  const listEl = qs('#ai-reply-list');
+  if (!listEl) {
+    return;
+  }
+
+  const context = getConversationContext();
+  const suggestions = buildReplySuggestions(context);
+
+  listEl.innerHTML = suggestions.map((item) => `
+    <div class="ai-panel-card">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="text-xs text-gray-400 mb-1">${item.tag}</div>
+          <p class="text-sm text-gray-700">${item.text}</p>
+        </div>
+        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="${item.text}">采纳</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getConversationContext() {
+  const messagesRoot = qs('#chat-messages');
+  if (!messagesRoot) {
+    return [];
+  }
+
+  const customerRows = Array.from(messagesRoot.querySelectorAll('.message-row[data-sender-role="customer"]'));
+  if (customerRows.length) {
+    return customerRows
+      .map((row) => row.querySelector('.message-bubble p')?.innerText?.trim())
+      .filter(Boolean)
+      .slice(-4);
+  }
+
+  const legacyRows = Array.from(messagesRoot.querySelectorAll('.message.customer-message .message-bubble p'));
+  return legacyRows.map((node) => node.innerText?.trim()).filter(Boolean).slice(-4);
+}
+
+function getLatestCustomerMessageText() {
+  const context = getConversationContext();
+  return context[context.length - 1] || '';
+}
+
+function hideRightSidebarOverlay() {
+  const overlay = qs('#right-sidebar-overlay');
+  if (overlay) {
+    overlay.classList.add('hidden');
+  }
+}
+
+function setAiActionPanelContent({ titleText, badgeText, descText, contentHtml }) {
+  const content = qs('#ai-action-content');
+  if (content) {
+    content.innerHTML = contentHtml;
+  }
+  setAiPanelMode('action');
+  const title = qs('#ai-assistant-title');
+  const badge = qs('#ai-assistant-badge');
+  const desc = qs('#ai-assistant-desc');
+  if (title && titleText) {
+    title.textContent = titleText;
+  }
+  if (badge && badgeText) {
+    badge.textContent = badgeText;
+  }
+  if (desc && descText) {
+    desc.textContent = descText;
+  }
+}
+
+function setAiClarifyPanelContent(contentHtml) {
+  const content = qs('#ai-clarify-content');
+  if (content) {
+    content.innerHTML = contentHtml;
+  }
+  setAiPanelMode('clarify');
+}
+
+function buildSolutionStepsFromContext(contextText) {
+  const steps = [
+    '确认客户问题的发生时间与影响范围，优先定位受影响模块。',
+    '查看监控与告警，确认是否有异常指标或服务不可用。',
+    '收集关键日志与错误码，定位根因并安排修复。',
+    '验证恢复结果，确认客户侧功能恢复正常。',
+    '同步客户处理进展并记录复盘要点。'
+  ];
+
+  if (/登录|认证|账号|密码/.test(contextText)) {
+    return [
+      '检查认证服务与登录网关健康状态。',
+      '排查登录失败的错误码与异常日志。',
+      '确认是否有权限变更或密码重置记录。',
+      '必要时重启认证服务或切换备用节点。',
+      '验证多账号登录恢复情况并同步客户。'
+    ];
+  }
+  if (/无法访问|连接失败|超时|502|503/.test(contextText)) {
+    return [
+      '确认服务是否可用，检查网关/负载均衡状态。',
+      '定位异常接口与错误码，排查上游依赖。',
+      '查看近期发布/配置变更记录。',
+      '执行回滚或故障修复操作，验证访问恢复。',
+      '同步公告口径与恢复时间点。'
+    ];
+  }
+  return steps;
+}
+
+function buildSolutionReferencesFromContext(contextText) {
+  if (/登录|认证|账号|密码/.test(contextText)) {
+    return [
+      {
+        tag: 'KB',
+        tagClass: 'bg-blue-100 text-blue-600',
+        title: '认证服务异常排查手册',
+        meta: '适用场景：登录失败 · 平均恢复：15分钟'
+      },
+      {
+        tag: 'DOC',
+        tagClass: 'bg-emerald-100 text-emerald-600',
+        title: '用户权限变更与回滚流程',
+        meta: '适用场景：权限异常 · 版本：v3.2'
+      },
+      {
+        tag: 'REF',
+        tagClass: 'bg-amber-100 text-amber-600',
+        title: '登录链路监控与追踪指引',
+        meta: '建议工具：APM · 推荐时长：10分钟'
+      }
+    ];
+  }
+  return [
+    {
+      tag: 'KB',
+      tagClass: 'bg-blue-100 text-blue-600',
+      title: '服务不可用应急处理流程',
+      meta: '适用场景：不可用 · 解决时间：12分钟'
+    },
+    {
+      tag: 'DOC',
+      tagClass: 'bg-emerald-100 text-emerald-600',
+      title: '接口超时排查清单',
+      meta: '适用场景：超时/502 · 更新：本月'
+    },
+    {
+      tag: 'REF',
+      tagClass: 'bg-amber-100 text-amber-600',
+      title: '稳定性发布回滚策略',
+      meta: '建议版本：v2.4 · 建议时长：10分钟'
+    }
+  ];
+}
+
+function buildReplySuggestions(contextLines = []) {
+  const contextText = contextLines.join(' ').trim();
+  const hasLoginIssue = /登录|无法登录|认证|账号|密码/.test(contextText);
+  const hasSystemDown = /报错|无法访问|宕机|502|503|超时|连接失败/.test(contextText);
+  const hasMultipleUsers = /多用户|多个用户|大面积|批量/.test(contextText);
+
+  const suggestions = [];
+  const header = contextText ? `根据您反馈的情况（${contextLines.slice(-1)[0] || '客户问题'}）` : '根据当前会话情况';
+
+  suggestions.push({
+    tag: '建议 1 · 稳定情绪',
+    text: `${header}，我们已经同步技术团队处理。当前正在定位原因并加急恢复，预计 15 分钟内给到进展。给您带来不便非常抱歉。`
+  });
+
+  if (hasLoginIssue || hasSystemDown) {
+    suggestions.push({
+      tag: '建议 2 · 询问关键信息',
+      text: '为尽快定位问题，请补充：报错截图、出现时间、是否所有账号均受影响，以及是否近期有密码重置/权限调整。'
+    });
+  }
+
+  if (hasMultipleUsers) {
+    suggestions.push({
+      tag: '建议 3 · 影响范围确认',
+      text: '我们将优先确认影响范围并同步公告口径。请告知受影响用户数量及业务影响程度，方便我们评估优先级。'
+    });
+  }
+
+  suggestions.push({
+    tag: '建议 4 · 临时建议',
+    text: '建议先尝试清理缓存/重新登录，若仍异常请保持现状，我们会在修复后第一时间通知您。'
+  });
+
+  suggestions.push({
+    tag: '建议 5 · 跟进承诺',
+    text: '我会持续跟进处理进度，并在关键节点（定位/修复/恢复）及时向您同步。'
+  });
+
+  return suggestions;
+}
+
+function showActionModal({ title, bodyHtml, primaryText }) {
+  const overlay = qs('#action-modal-overlay');
+  const modalTitle = qs('#action-modal-title');
+  const modalBody = qs('#action-modal-body');
+  const primaryBtn = qs('#action-modal-primary');
+  if (!overlay || !modalTitle || !modalBody || !primaryBtn) {
+    return;
+  }
+
+  modalTitle.textContent = title;
+  modalBody.innerHTML = bodyHtml;
+  modalBody.onclick = null;
+  if (primaryText) {
+    primaryBtn.textContent = primaryText;
+    primaryBtn.classList.remove('hidden');
+    primaryBtn.onclick = () => {
+      overlay.classList.add('hidden');
+      primaryBtn.classList.add('hidden');
+    };
+  } else {
+    primaryBtn.classList.add('hidden');
+    primaryBtn.onclick = null;
+  }
+  overlay.classList.remove('hidden');
+}
+
+export function openAssistCheckMock() {
+  const latest = getLatestCustomerMessageText();
+  openAiAssistantPanel();
+  hideRightSidebarOverlay();
+  setAiActionPanelContent({
+    titleText: '辅助排查',
+    badgeText: '排查',
+    descText: '根据当前反馈生成辅助排查建议。',
+    contentHtml: `
+    <div class="ai-panel-stack ai-panel-stack-tight">
+      <div class="ai-panel-card">
+        <div class="ai-panel-title">辅助排查</div>
+        <div class="ai-panel-text">问题概述：${latest || '客户反馈出现异常，需要辅助排查。'}</div>
+        <div class="ai-panel-label">系统排查优先级：</div>
+        <ol class="ai-panel-list mt-2">
+          <li class="ai-panel-card ai-panel-card--compact">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex items-start gap-2">
+                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">1</span>
+                  <span class="text-sm text-gray-700">认证服务状态与告警是否异常</span>
+                </div>
+                <div class="ai-tool-meta">
+                  <span>工具：监控告警中心</span>
+                  <span class="ai-tool-status" data-tool-status="监控告警中心">自动调用中</span>
+                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                </div>
+              </div>
+              <button class="ai-panel-chip" data-action="manual-check" data-tool="监控告警中心">手动排查</button>
+            </div>
+          </li>
+          <li class="ai-panel-card ai-panel-card--compact">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex items-start gap-2">
+                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">2</span>
+                  <span class="text-sm text-gray-700">网关/登录接口日志中是否有 401/502 峰值</span>
+                </div>
+                <div class="ai-tool-meta">
+                  <span>工具：网关日志检索</span>
+                  <span class="ai-tool-status" data-tool-status="网关日志检索">自动调用中</span>
+                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                </div>
+              </div>
+              <button class="ai-panel-chip" data-action="manual-check" data-tool="网关日志检索">手动排查</button>
+            </div>
+          </li>
+          <li class="ai-panel-card ai-panel-card--compact">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex items-start gap-2">
+                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">3</span>
+                  <span class="text-sm text-gray-700">最近 30 分钟是否发生配置变更或发布</span>
+                </div>
+                <div class="ai-tool-meta">
+                  <span>工具：变更审计台</span>
+                  <span class="ai-tool-status" data-tool-status="变更审计台">自动调用中</span>
+                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                </div>
+              </div>
+              <button class="ai-panel-chip" data-action="manual-check" data-tool="变更审计台">手动排查</button>
+            </div>
+          </li>
+          <li class="ai-panel-card ai-panel-card--compact">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex items-start gap-2">
+                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">4</span>
+                  <span class="text-sm text-gray-700">缓存服务健康度与命中率</span>
+                </div>
+                <div class="ai-tool-meta">
+                  <span>工具：缓存监控</span>
+                  <span class="ai-tool-status" data-tool-status="缓存监控">自动调用中</span>
+                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                </div>
+              </div>
+              <button class="ai-panel-chip" data-action="manual-check" data-tool="缓存监控">手动排查</button>
+            </div>
+          </li>
+          <li class="ai-panel-card ai-panel-card--compact">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex items-start gap-2">
+                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">5</span>
+                  <span class="text-sm text-gray-700">受影响客户列表与影响范围统计</span>
+                </div>
+                <div class="ai-tool-meta">
+                  <span>工具：客户影响面板</span>
+                  <span class="ai-tool-status" data-tool-status="客户影响面板">自动调用中</span>
+                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                </div>
+              </div>
+              <button class="ai-panel-chip" data-action="manual-check" data-tool="客户影响面板">手动排查</button>
+            </div>
+          </li>
+        </ol>
+      </div>
+      <div class="ai-panel-card">
+        <div class="ai-panel-title">需要同步给协作方的信息</div>
+        <div class="ai-panel-label">建议按以下顺序补齐：</div>
+        <ol class="ai-panel-list mt-2">
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">1</span>
+            <span>故障发生时间与首次上报时间</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">2</span>
+            <span>客户侧报错截图/错误码</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">3</span>
+            <span>影响范围（用户数/业务线/区域）</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">4</span>
+            <span>已执行动作与当前状态</span>
+          </li>
+        </ol>
+        <div class="ai-panel-label mt-3">协同方可直接发送的内容：</div>
+        <div class="ai-panel-card ai-panel-card--compact bg-slate-50 border border-slate-200" data-copy-source>
+          <div class="text-xs text-slate-600">【故障同步】</div>
+          <div class="text-sm text-slate-800 mt-1">1) 首次上报时间：2024-08-15 09:18；故障发生时间：2024-08-15 09:12。</div>
+          <div class="text-sm text-slate-800 mt-1">2) 报错信息：登录返回 502，疑似网关链路异常（客户截图待补充）。</div>
+          <div class="text-sm text-slate-800 mt-1">3) 影响范围：VIP 客户 3 个群组，多用户无法登录。</div>
+          <div class="text-sm text-slate-800 mt-1">4) 已执行动作：已通知值班工程师，切换备用节点进行观察。</div>
+        </div>
+        <div class="flex justify-end mt-2">
+          <button class="ai-panel-chip" data-action="copy-collab">复制</button>
+        </div>
+      </div>
+      <div class="ai-panel-banner info">建议优先完成 1-3 项，并同步公告口径。</div>
+    </div>
+  `
+  });
+  bindAssistCheckActions();
+}
+
+export function openFaultReportMock() {
+  const latest = getLatestCustomerMessageText();
+  openAiAssistantPanel();
+  hideRightSidebarOverlay();
+  setAiActionPanelContent({
+    titleText: '生成故障报告',
+    badgeText: '报告',
+    descText: '基于当前对话生成故障报告摘要。',
+    contentHtml: `
+    <div class="ai-panel-stack">
+      <div class="ai-panel-card">
+        <div class="ai-panel-title">故障报告摘要</div>
+        <div class="ai-panel-grid">
+          <div>客户ID：CUST-102984</div>
+          <div>客户名称：ABC 科技有限公司</div>
+        </div>
+        <div class="ai-panel-label">故障时间线（正序）</div>
+        <div class="ai-panel-list mt-2">
+          <div>2024.08.15 09:12:03 认证服务出现异常告警</div>
+          <div>2024.08.15 09:18:24 客户反馈多用户无法登录</div>
+          <div>2024.08.15 09:26:40 技术团队确认影响范围并介入</div>
+          <div>2024.08.15 09:38:15 切换备用节点并持续观察</div>
+        </div>
+        <div class="ai-panel-grid">
+          <div>影响范围：VIP客户 · 3 个群组</div>
+          <div>影响时长：28 分钟</div>
+          <div>故障级别：P1</div>
+          <div>修复状态：处理中</div>
+        </div>
+        <div class="ai-panel-banner info">处置动作：重启认证服务、切换备用节点、补发公告。</div>
+        <div class="ai-panel-meta">报告编号：INC-2024-0815-001 · 负责人：王工程师</div>
+      </div>
+    </div>
+  `
+  });
+}
+
+export function openTicketMock() {
+  const latest = getLatestCustomerMessageText();
+  const now = new Date();
+  const dateValue = now.toLocaleDateString('sv-SE');
+  const timeValue = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  const titleSuffix = latest ? latest.replace(/\s+/g, '').slice(0, 12) : '客户问题';
+  openAiAssistantPanel();
+  hideRightSidebarOverlay();
+  setAiActionPanelContent({
+    titleText: '创建工单',
+    badgeText: '表单',
+    descText: '自动填充工单信息，支持快速提交。',
+    contentHtml: `
+    <div class="ai-panel-stack ai-panel-stack-tight">
+      <div class="flex justify-end">
+        <button class="ai-panel-chip" data-action="open-ticket-management">工单管理</button>
+      </div>
+      <div class="ai-panel-form text-sm text-gray-700">
+        <div class="ai-form-block">
+          <div class="ai-form-row">
+            <label class="w-16" for="ticket-title">标题</label>
+            <input id="ticket-title" class="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="请输入标题">
+          </div>
+          <div class="ai-form-error hidden" data-error-for="ticket-title"></div>
+        </div>
+        <div class="ai-form-block">
+          <div class="ai-form-row ai-form-split">
+            <label class="w-16" for="ticket-detail">详情</label>
+            <textarea id="ticket-detail" rows="3" class="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="请输入问题详情与排查结果"></textarea>
+          </div>
+          <div class="ai-form-error hidden" data-error-for="ticket-detail"></div>
+        </div>
+        <div class="ai-form-block">
+          <div class="ai-form-row">
+            <label for="ticket-tags">添加标签</label>
+            <select id="ticket-tags" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+              <option value="">暂未添加</option>
+              <option value="network">网络异常</option>
+              <option value="auth">认证问题</option>
+              <option value="timeout">超时故障</option>
+            </select>
+          </div>
+          <div class="ai-form-error hidden" data-error-for="ticket-tags"></div>
+        </div>
+        <div class="ai-form-block">
+          <div class="ai-form-row">
+            <label>问题反馈时间</label>
+            <div class="ai-form-inline">
+              <input id="ticket-date" type="date" class="px-3 py-1 border border-gray-200 rounded-md text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+              <input id="ticket-time" type="time" class="px-3 py-1 border border-gray-200 rounded-md text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+            </div>
+          </div>
+          <div class="ai-form-error hidden" data-error-for="ticket-datetime"></div>
+        </div>
+        <div class="ai-form-block">
+          <div class="ai-form-row">
+            <label for="ticket-type">问题类型</label>
+            <select id="ticket-type" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+              <option value="">请选择</option>
+              <option value="investigation">问题排查</option>
+              <option value="bug">故障修复</option>
+              <option value="consult">咨询</option>
+            </select>
+          </div>
+          <div class="ai-form-error hidden" data-error-for="ticket-type"></div>
+        </div>
+        <div class="ai-form-block">
+          <div class="ai-form-row">
+            <label for="ticket-product">产品线</label>
+            <select id="ticket-product" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+              <option value="">请选择</option>
+              <option value="cloud">云主机</option>
+              <option value="storage">存储</option>
+              <option value="network">网络</option>
+              <option value="security">安全</option>
+            </select>
+          </div>
+          <div class="ai-form-error hidden" data-error-for="ticket-product"></div>
+        </div>
+        <div class="ai-form-block">
+          <div class="ai-form-row">
+            <label for="ticket-impact">受影响程度</label>
+            <select id="ticket-impact" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+              <option value="">请选择</option>
+              <option value="low">低</option>
+              <option value="medium">中</option>
+              <option value="high">高</option>
+            </select>
+          </div>
+          <div class="ai-form-error hidden" data-error-for="ticket-impact"></div>
+        </div>
+        <div class="ai-form-block">
+          <div class="ai-form-row">
+            <label for="ticket-incident">是否故障</label>
+            <select id="ticket-incident" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+              <option value="yes" selected>是</option>
+              <option value="no">否</option>
+            </select>
+          </div>
+          <div class="ai-form-error hidden" data-error-for="ticket-incident"></div>
+        </div>
+        <div class="ai-form-block">
+          <div class="ai-form-row">
+            <label for="ticket-company">客户公司名称</label>
+            <input id="ticket-company" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="请选择或输入">
+          </div>
+          <div class="ai-form-error hidden" data-error-for="ticket-company"></div>
+        </div>
+      </div>
+      <div class="mt-3">
+        <button class="w-full py-2.5 text-sm font-semibold text-white rounded-md bg-primary hover:bg-primary-dark" data-action="create-ticket">创建</button>
+      </div>
+    </div>
+  `
+  });
+  setTimeout(() => {
+    const titleInput = qs('#ticket-title');
+    const detailInput = qs('#ticket-detail');
+    const tagSelect = qs('#ticket-tags');
+    const dateInput = qs('#ticket-date');
+    const timeInput = qs('#ticket-time');
+    const typeSelect = qs('#ticket-type');
+    const productSelect = qs('#ticket-product');
+    const impactSelect = qs('#ticket-impact');
+    const incidentSelect = qs('#ticket-incident');
+    const companyInput = qs('#ticket-company');
+    const managementBtn = qs('[data-action="open-ticket-management"]');
+
+    const contextText = latest || '';
+    const aiTitle = `工单-${titleSuffix}-${dateValue.replace(/-/g, '')}`;
+    const aiDetail = `问题详情：${latest || '客户反馈出现异常，需要排查。'}\n本地排查：（AI 排查结果），辛苦协助排查。`;
+    const aiDate = dateValue;
+    const aiTime = timeValue;
+    const aiCompany = 'ABC 科技有限公司';
+    const tagValue = /登录|认证|账号|密码/.test(contextText)
+      ? 'auth'
+      : /连接|网络|超时|502|503/.test(contextText)
+        ? 'network'
+        : 'timeout';
+    const productValue = /网络|连接|网关/.test(contextText)
+      ? 'network'
+      : /存储|磁盘/.test(contextText)
+        ? 'storage'
+        : /安全|认证|权限/.test(contextText)
+          ? 'security'
+          : 'cloud';
+
+    if (titleInput) titleInput.value = aiTitle;
+    if (detailInput) detailInput.value = aiDetail;
+    if (tagSelect) tagSelect.value = tagValue;
+    if (dateInput) dateInput.value = aiDate;
+    if (timeInput) timeInput.value = aiTime;
+    if (typeSelect) typeSelect.value = 'investigation';
+    if (productSelect) productSelect.value = productValue;
+    if (impactSelect) impactSelect.value = 'low';
+    if (incidentSelect) incidentSelect.value = 'yes';
+    if (companyInput) companyInput.value = aiCompany;
+    if (managementBtn) {
+      managementBtn.addEventListener('click', () => {
+        openTicketManagementPanel();
+      });
+    }
+
+    bindTicketFormValidation();
+    bindTicketClarifyAction();
+  }, 0);
+}
+
+export function openTicketManagementPanel() {
+  openAiAssistantPanel();
+  hideRightSidebarOverlay();
+  renderTicketManagementPanel(getTicketManagementBaseList(), { showCreateButton: true });
+}
+
+function bindTicketFormValidation() {
+  const actionBody = qs('#ai-action-content');
+  if (!actionBody) {
+    return;
+  }
+
+  const fields = [
+    { el: qs('#ticket-title'), name: '标题', errorKey: 'ticket-title' },
+    { el: qs('#ticket-detail'), name: '详情', errorKey: 'ticket-detail' },
+    { el: qs('#ticket-tags'), name: '标签', errorKey: 'ticket-tags' },
+    { el: qs('#ticket-date'), name: '问题反馈时间（日期）', errorKey: 'ticket-datetime' },
+    { el: qs('#ticket-time'), name: '问题反馈时间（时间）', errorKey: 'ticket-datetime' },
+    { el: qs('#ticket-type'), name: '问题类型', errorKey: 'ticket-type' },
+    { el: qs('#ticket-product'), name: '产品线', errorKey: 'ticket-product' },
+    { el: qs('#ticket-impact'), name: '受影响程度', errorKey: 'ticket-impact' },
+    { el: qs('#ticket-incident'), name: '是否故障', errorKey: 'ticket-incident' },
+    { el: qs('#ticket-company'), name: '客户公司名称', errorKey: 'ticket-company' }
+  ];
+
+  const clearError = (el, errorKey) => {
+    if (!el) return;
+    el.classList.remove('border-red-400', 'ring-1', 'ring-red-200');
+    const errorEl = actionBody.querySelector(`[data-error-for="${errorKey}"]`);
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.classList.add('hidden');
+    }
+  };
+
+  const markError = (el, errorKey, message) => {
+    if (!el) return;
+    el.classList.add('border-red-400', 'ring-1', 'ring-red-200');
+    const errorEl = actionBody.querySelector(`[data-error-for="${errorKey}"]`);
+    if (errorEl) {
+      errorEl.textContent = message;
+      errorEl.classList.remove('hidden');
+    }
+  };
+
+  fields.forEach(({ el, errorKey }) => {
+    if (!el) return;
+    el.addEventListener('input', () => clearError(el, errorKey));
+    el.addEventListener('change', () => clearError(el, errorKey));
+  });
+
+  const createBtn = actionBody.querySelector('[data-action="create-ticket"]');
+  if (!createBtn) {
+    return;
+  }
+
+  createBtn.addEventListener('click', () => {
+    let hasError = false;
+    fields.forEach(({ el, name, errorKey }) => {
+      const value = el?.value?.trim?.() ?? '';
+      if (!value) {
+        markError(el, errorKey, `${name}不能为空`);
+        hasError = true;
+      } else {
+        clearError(el, errorKey);
+      }
+    });
+
+    if (hasError) {
+      return;
+    }
+    const ticketData = buildTicketSummary();
+    showNotification('已创建工单及群聊，请前往WPS协作查看', 'success');
+    renderTicketManagementPanel(ticketData.list, { showCreateButton: true });
+  });
+}
+
+function getTicketManagementBaseList() {
+  return [
+    {
+      id: 'TK20240815002',
+      title: '多用户登录失败排查',
+      summary: '排查认证服务与网关日志，已定位异常。',
+      customer: 'ABC 科技有限公司',
+      createdAt: '2024-08-15 09:10',
+      status: '处理中',
+      owner: '李工程师',
+      priority: 'P1'
+    },
+    {
+      id: 'TK20240814011',
+      title: '接口超时告警复盘',
+      summary: '复盘完成，等待确认补偿方案。',
+      customer: 'XYZ 智造科技',
+      createdAt: '2024-08-14 17:45',
+      status: '待确认',
+      owner: '陈工程师',
+      priority: 'P2'
+    }
+  ];
+}
+
+function buildTicketSummary() {
+  const title = qs('#ticket-title')?.value?.trim() || '客户问题';
+  const detail = qs('#ticket-detail')?.value?.trim() || '';
+  const date = qs('#ticket-date')?.value || '';
+  const time = qs('#ticket-time')?.value || '';
+  const company = qs('#ticket-company')?.value?.trim() || '客户';
+  const createdAt = date && time ? `${date} ${time}` : '刚刚';
+  const id = `TK${Date.now()}`;
+
+  const createdTicket = {
+    id,
+    title,
+    summary: detail ? detail.slice(0, 60) : '已创建工单，等待处理。',
+    customer: company,
+    createdAt,
+    status: '处理中',
+    owner: '王工程师',
+    priority: 'P1'
+  };
+
+  return {
+    list: [
+      createdTicket,
+      ...getTicketManagementBaseList()
+    ]
+  };
+}
+
+function renderTicketManagementPanel(tickets, options = {}) {
+  const { showCreateButton = false } = options;
+  const contentHtml = `
+    <div class="ai-panel-stack ai-panel-stack-tight">
+      ${showCreateButton
+        ? `<div class="flex justify-end">
+            <button class="ai-panel-chip" data-action="open-ticket-form">创建工单</button>
+          </div>`
+        : ''}
+      <div class="ai-panel-stack ai-panel-stack-tight">
+        ${tickets.map((ticket) => `
+          <button class="ticket-item ai-panel-card ai-panel-card--compact" data-ticket-id="${ticket.id}">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="ai-panel-title">${ticket.title}</div>
+                <div class="text-xs text-gray-500 mt-1">客户：${ticket.customer} · 创建时间：${ticket.createdAt}</div>
+                <div class="text-xs text-gray-600 mt-2">${ticket.summary}</div>
+              </div>
+              <span class="ticket-status-chip ${getTicketStatusClass(ticket.status)}">${ticket.status}</span>
+            </div>
+          </button>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  setAiActionPanelContent({
+    titleText: '工单管理',
+    badgeText: '工单',
+    descText: '查看工单状态与进展，点击查看详情。',
+    contentHtml
+  });
+
+  bindTicketListActions(tickets);
+}
+
+function getTicketStatusClass(status) {
+  if (status.includes('处理中')) return 'status-progress';
+  if (status.includes('待确认')) return 'status-warn';
+  return 'status-open';
+}
+
+function bindTicketListActions(tickets) {
+  const actionBody = qs('#ai-action-content');
+  if (!actionBody) return;
+
+  actionBody.onclick = (event) => {
+    const createBtn = event.target.closest('[data-action="open-ticket-form"]');
+    if (createBtn) {
+      openTicketMock();
+      return;
+    }
+    const item = event.target.closest('.ticket-item');
+    if (!item) return;
+    const ticketId = item.dataset.ticketId;
+    const ticket = tickets.find((t) => t.id === ticketId);
+    if (!ticket) return;
+    showActionModal({
+      title: `工单详情 · ${ticket.id}`,
+      bodyHtml: `
+        <div class="space-y-2">
+          <div><strong>标题：</strong>${ticket.title}</div>
+          <div><strong>客户：</strong>${ticket.customer}</div>
+          <div><strong>状态：</strong>${ticket.status}</div>
+          <div><strong>优先级：</strong>${ticket.priority}</div>
+          <div><strong>负责人：</strong>${ticket.owner}</div>
+          <div><strong>创建时间：</strong>${ticket.createdAt}</div>
+          <div><strong>摘要：</strong>${ticket.summary}</div>
+        </div>
+      `
+    });
+  };
+}
+
+function bindAssistCheckActions() {
+  const actionBody = qs('#ai-action-content');
+  if (!actionBody) return;
+
+  actionBody.onclick = (event) => {
+    const btn = event.target.closest('[data-action="manual-check"]');
+    if (btn) {
+      const toolName = btn.dataset.tool || '排查工具';
+      const statusEl = actionBody.querySelector(`[data-tool-status="${toolName}"]`);
+      if (statusEl) {
+        statusEl.textContent = '已手动触发';
+        statusEl.classList.add('is-manual');
+      }
+      showNotification(`已发起手动排查：${toolName}`, 'info');
+      return;
+    }
+
+    const copyBtn = event.target.closest('[data-action="copy-collab"]');
+    if (copyBtn) {
+      const source = actionBody.querySelector('[data-copy-source]');
+      const text = source?.innerText?.trim() || '';
+      if (!text) {
+        showNotification('暂无可复制内容', 'warning');
+        return;
+      }
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => showNotification('已复制协同信息', 'success'))
+          .catch(() => showNotification('复制失败，请手动复制', 'warning'));
+      } else {
+        showNotification('浏览器不支持自动复制，请手动复制', 'warning');
+      }
+      return;
+    }
+  };
+}
+
+function bindTicketClarifyAction() {
+  const actionBody = qs('#ai-action-content');
+  if (!actionBody) {
+    return;
+  }
+  const clarifyBtn = actionBody.querySelector('[data-action="clarify"]');
+  if (!clarifyBtn) {
+    return;
+  }
+  clarifyBtn.addEventListener('click', () => {
+    openClarifyPanel();
+  });
+}
+
+export function openClarifyPanel() {
+  openAiAssistantPanel();
+  hideRightSidebarOverlay();
+  const latest = getLatestCustomerMessageText();
+  const analysis = analyzeClarifyNeeds(latest);
+  if (analysis.needsClarify) {
+    setAiClarifyPanelContent(`
+      <div class="ai-panel-stack">
+        <div class="ai-panel-card">
+          <div class="ai-panel-title">问题澄清</div>
+          <div class="ai-panel-text">问题描述仍需澄清，建议补充以下信息：</div>
+          <ul class="ai-panel-list mt-2">
+          ${analysis.questions.map((item, index) => `
+            <li class="flex items-start gap-2">
+              <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">${index + 1}</span>
+              <span>${item}</span>
+            </li>
+          `).join('')}
+          </ul>
+        </div>
+        <div class="ai-panel-banner warn">建议先补齐关键信息，再进行内部问题定位。</div>
+      </div>
+    `);
+  } else {
+    setAiClarifyPanelContent(`
+      <div class="ai-panel-stack">
+        <div class="ai-panel-card">
+          <div class="ai-panel-title">问题澄清</div>
+          <div class="ai-panel-text">问题描述清晰，可执行内部问题定位。</div>
+        </div>
+        <div class="ai-panel-banner success">当前信息已覆盖时间、影响范围与关键报错，可进入排查流程。</div>
+      </div>
+    `);
+  }
+}
+
+function analyzeClarifyNeeds(latestMessage) {
+  const questions = [];
+  const text = latestMessage || '';
+
+  if (!/报错|错误|错误码|提示|截图/.test(text)) {
+    questions.push('请提供具体报错信息或截图。');
+  }
+  if (!/时间|今天|刚才|上午|下午|\d{1,2}:\d{2}/.test(text)) {
+    questions.push('问题出现的具体时间是什么时候？');
+  }
+  if (!/影响|多少|多用户|全部|部分|范围/.test(text)) {
+    questions.push('受影响范围如何？是否为全部用户或部分用户？');
+  }
+  if (!/环境|版本|ip|服务器|实例|节点/.test(text)) {
+    questions.push('涉及的环境/实例信息（如 IP、版本、实例名）是什么？');
+  }
+
+  return {
+    needsClarify: questions.length > 0,
+    questions
+  };
 }
 
 function initConversationList() {
   loadConversationList();
+}
+
+const CONVERSATION_NAME_OVERRIDES = {
+  'conv-001': '小米保障群',
+  'conv-002': '快手保障群',
+  'conv-003': '金山云服务告警',
+};
+
+const CUSTOMER_NAME_OVERRIDES = {
+  张三: '小米保障群',
+  李四: '快手保障群',
+  王五: '金山云服务告警',
+};
+
+function getConversationDisplayName(conv) {
+  if (!conv) return '客户';
+  const byName = CUSTOMER_NAME_OVERRIDES[conv.customerName];
+  return (
+    CONVERSATION_NAME_OVERRIDES[conv.conversationId] ||
+    byName ||
+    conv.groupName ||
+    conv.conversationName ||
+    conv.title ||
+    conv.customerName ||
+    '客户'
+  );
 }
 
 async function loadConversationList() {
@@ -95,11 +1138,12 @@ async function loadConversationList() {
       const mockConversations = [
         {
           conversationId: 'conv-001',
-          customerName: '张三',
+          customerName: '小米保障群',
           lastMessage: '我的系统突然报错，无法登录，这影响了我们的业务运营！',
+          aiSummary: '认证失败影响多用户，承诺 15 分钟恢复；需同步公告与补偿方案。',
           updatedAt: new Date(Date.now() - 3600000).toISOString(),
           channel: 'feishu',
-          slaLevel: 'SLA-金牌',
+          slaLevel: 'VIP',
           urgency: 'high',
           severity: 'high',
           unreadCount: 3,
@@ -107,11 +1151,12 @@ async function loadConversationList() {
         },
         {
           conversationId: 'conv-002',
-          customerName: '李四',
+          customerName: '快手保障群',
           lastMessage: '关于上个月的账单有一些疑问，想咨询一下',
+          aiSummary: '账单核验咨询，等待进一步核对信息。',
           updatedAt: new Date(Date.now() - 7200000).toISOString(),
           channel: 'qq',
-          slaLevel: 'SLA-银牌',
+          slaLevel: 'KA0',
           urgency: 'normal',
           severity: 'normal',
           unreadCount: 0,
@@ -119,11 +1164,12 @@ async function loadConversationList() {
         },
         {
           conversationId: 'conv-003',
-          customerName: '王五',
+          customerName: '金山云服务告警',
           lastMessage: '新功能使用很流畅，感谢你们的支持！',
+          aiSummary: '功能体验正向反馈，建议记录为改进建议。',
           updatedAt: new Date(Date.now() - 86400000).toISOString(),
           channel: 'wechat',
-          slaLevel: 'SLA-铜牌',
+          slaLevel: 'KA1',
           urgency: 'low',
           severity: 'low',
           unreadCount: 0,
@@ -131,11 +1177,12 @@ async function loadConversationList() {
         },
         {
           conversationId: 'conv-004',
-          customerName: '赵六',
+          customerName: '美团保障群',
           lastMessage: '需要申请新的API密钥，请问如何操作？',
+          aiSummary: '咨询类问题，询问API密钥申请流程。',
           updatedAt: new Date(Date.now() - 90000000).toISOString(),
           channel: 'feishu',
-          slaLevel: 'SLA-银牌',
+          slaLevel: 'KA0',
           urgency: 'normal',
           severity: 'normal',
           unreadCount: 1,
@@ -246,11 +1293,16 @@ function updateConversationSentiment(conversationId, sentiment) {
 }
 
 function createConversationMarkup(conv, isActive) {
-  const name = conv.customerName || '客户';
+  const name = getConversationDisplayName(conv);
   const initials = name.charAt(0) || '客';
-  const lastMessage = conv.lastMessage || '正在加载最新消息...';
-  const updatedAt = conv.updatedAt
-    ? new Date(conv.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const summaryText =
+    conv.aiSummary ||
+    conv.summary ||
+    conv.lastMessage ||
+    '正在加载最新消息...';
+  const updatedAtValue = conv.updatedAt || conv.lastMessageTime || conv.lastMessageAt || conv.createdAt;
+  const updatedAt = updatedAtValue
+    ? new Date(updatedAtValue).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '—';
   const channelLabel = (conv.channel || 'IM').toUpperCase();
   const severity = conv.severity || 'normal';
@@ -283,10 +1335,10 @@ function createConversationMarkup(conv, isActive) {
             </div>
             <span class="text-xs text-gray-400">${updatedAt}</span>
           </div>
-          <p class="text-[13px] text-gray-600 mt-1 line-clamp-2">${lastMessage}</p>
+          <p class="text-[13px] text-gray-600 mt-1 line-clamp-2">${summaryText}</p>
           <div class="mt-2 flex items-center justify-between text-[11px] text-gray-500">
             <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded-full ${badgeClass}">${conv.slaLevel || 'SLA 级别'}</span>
+              <span class="px-2 py-0.5 rounded-full ${badgeClass}">${conv.slaLevel || '客户等级'}</span>
               ${sentimentIcon ? `<span class="sentiment-icon" title="${sentiment?.label || '情绪识别中'}">${sentimentIcon}</span>` : ''}
             </div>
             <div class="flex items-center gap-2">
@@ -307,17 +1359,20 @@ function updateChatContent(conversationId) {
   const card = qs(`.conversation-item[data-id="${conversationId}"]`);
 
   // 修复：使用正确的选择器获取客户名称和摘要
-  const customerName = card?.querySelector('.text-sm.font-medium')?.textContent?.trim() || '客户';
+  const customerName =
+    card?.querySelector('.text-sm.font-medium')?.textContent?.trim() ||
+    CONVERSATION_NAME_OVERRIDES[conversationId] ||
+    '客户';
   const summary = card?.querySelector('.line-clamp-2')?.textContent?.trim() || '正在加载...';
   const slaNode = card?.querySelector('.px-2');
-  const sla = slaNode?.textContent?.trim() || 'SLA 未知';
+  const sla = slaNode?.textContent?.trim() || '客户等级未知';
 
   chatController?.setConversation(conversationId, {
     customerName,
     summary,
     sla,
     customerId: card?.getAttribute('data-customer-id') || conversationId,
-    company: '未知公司', // 可以从card中提取或使用默认值
+    company: card?.getAttribute('data-company') || '',
   });
   updateCustomerContext(conversationId);
 }
@@ -366,6 +1421,17 @@ export function sendMessage() {
     return;
   }
   chatController.sendInput();
+}
+
+export function toggleAiPlan() {
+  const panel = qs('#ai-plan-panel');
+  if (!panel) {
+    return;
+  }
+  panel.classList.toggle('hidden');
+  if (!panel.classList.contains('hidden')) {
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 }
 
 export function addMessage(type, content) {
@@ -581,7 +1647,7 @@ function initConversationFilters() {
     });
   }
 
-  // SLA筛选
+  // 客户等级筛选
   const slaSelect = qs('#filter-sla');
   if (slaSelect) {
     on(slaSelect, 'change', (e) => {
@@ -664,17 +1730,17 @@ function applyFilters() {
       }
     }
 
-    // SLA筛选
+    // 客户等级筛选
     if (filterState.sla) {
       const slaElement = item.querySelector('.px-2.py-0\\.5.rounded-full');
       const slaText = slaElement?.textContent?.toLowerCase() || '';
       let itemSla = '';
-      if (slaText.includes('金牌') || slaText.includes('gold')) {
-        itemSla = 'gold';
-      } else if (slaText.includes('银牌') || slaText.includes('silver')) {
-        itemSla = 'silver';
-      } else if (slaText.includes('铜牌') || slaText.includes('bronze')) {
-        itemSla = 'bronze';
+      if (slaText.includes('vip')) {
+        itemSla = 'vip';
+      } else if (slaText.includes('ka0')) {
+        itemSla = 'ka0';
+      } else if (slaText.includes('ka1')) {
+        itemSla = 'ka1';
       }
       if (itemSla !== filterState.sla) {
         shouldShow = false;

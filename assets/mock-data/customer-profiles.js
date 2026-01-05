@@ -10,7 +10,7 @@ export const MOCK_CUSTOMER_PROFILES = {
   'conv-001': {
     name: '张三',
     title: 'ABC科技有限公司 | 技术总监',
-    tags: ['金牌SLA', '重点客户', '近30天 3次服务'],
+    tags: ['VIP', '重点客户', '近30天 3次服务'],
     updatedAt: '2023-07-19 11:15',
     focus: '本周回访 + 验证补偿方案',
     contacts: {
@@ -18,7 +18,7 @@ export const MOCK_CUSTOMER_PROFILES = {
       email: 'zhang@abc-tech.com',
       wechat: 'ZhangSan_WX',
     },
-    sla: 'SLA-金牌服务',
+    sla: 'VIP',
     slaStatus: '有效',
     expire: '2023-12-31',
     products: ['企业ERP系统专业版', '数据分析平台', 'API集成服务'],
@@ -35,7 +35,7 @@ export const MOCK_CUSTOMER_PROFILES = {
       },
       {
         title: '服务体验：高价值客户，避免画像过期',
-        desc: '金牌SLA + 近 30 天 3 次服务，需保持画像新鲜度并记录关键联系人。',
+        desc: 'VIP 客户 + 近 30 天 3 次服务，需保持画像新鲜度并记录关键联系人。',
         action: '更新客户画像后再做外呼，提醒业务侧确认是否展示年龄/性别',
       },
       {
@@ -81,7 +81,7 @@ export const MOCK_CUSTOMER_PROFILES = {
         id: 'conv-001-msg1',
         time: '2023-07-19 10:30',
         channel: '飞书',
-        summary: '客户反馈认证失败，多用户无法登录',
+        summary: '认证失败影响多用户，承诺 15 分钟恢复；需同步公告与补偿方案。',
         detail: 'ERP登录认证失败，多个部门账号无法登录，影响业务运营',
         intent: '故障反馈',
         emotion: '紧急',

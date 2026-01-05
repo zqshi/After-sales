@@ -458,7 +458,7 @@ function commitmentStatusClass(status, risk) {
   return 'bg-gray-100 text-gray-800';
 }
 
-function getCurrentProfile() {
+export function getCurrentProfile() {
   return activeProfile;
 }
 

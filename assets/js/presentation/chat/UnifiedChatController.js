@@ -35,6 +35,7 @@ export class UnifiedChatController {
 
     // 存储消息与AI分析的映射关系
     this.messageAnalysisMap = new Map();
+    this.lastCustomerMessageId = null;
   }
 
   init() {
@@ -53,20 +54,6 @@ export class UnifiedChatController {
       this.escalationAction.addEventListener('click', () => {
         showNotification('已请求人工介入', 'warning');
         this.websocket?.sendInterrupt();
-      });
-    }
-
-    // 使用事件委托处理AI辅助icon点击
-    if (this.messagesContainer) {
-      this.messagesContainer.addEventListener('click', (event) => {
-        const aiIcon = event.target.closest('.ai-assist-icon');
-        if (aiIcon) {
-          const messageRow = aiIcon.closest('.message-row');
-          const messageId = messageRow?.dataset.messageId;
-          if (messageId) {
-            this.showAiAssistForMessage(messageId);
-          }
-        }
       });
     }
 
@@ -194,7 +181,59 @@ export class UnifiedChatController {
     });
     this.messagesContainer.appendChild(node);
 
+    if (message.role === 'customer') {
+      this.lastCustomerMessageId = finalMessageId;
+      if (message.sentiment) {
+        this.updateMessageIssueIndicator(finalMessageId, { sentiment: message.sentiment });
+      }
+    }
+
     return finalMessageId;
+  }
+
+  updateMessageIssueIndicator(messageId, analysisData) {
+    if (!this.messagesContainer || !messageId) return;
+    const messageRow = this.messagesContainer.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageRow || messageRow.dataset.senderRole !== 'customer') {
+      return;
+    }
+
+    const negativeEmotions = ['negative', 'angry', 'frustrated', 'anxious'];
+    const sentimentEmotion = analysisData?.sentiment?.emotion || analysisData?.lastCustomerSentiment?.emotion;
+    const hasIssue = analysisData?.detectedIssues?.length > 0 ||
+      negativeEmotions.includes(sentimentEmotion);
+
+    const issueTag = messageRow.querySelector('.issue-tag');
+    const messageEmotion = messageRow.dataset.sentiment || analysisData?.sentiment?.emotion || analysisData?.lastCustomerSentiment?.emotion;
+    const isNegativeEmotion = negativeEmotions.includes(messageEmotion) || (!messageEmotion && analysisData?.detectedIssues?.length > 0);
+    if (hasIssue) {
+      messageRow.dataset.hasIssue = 'true';
+      if (issueTag) {
+        issueTag.style.display = isNegativeEmotion ? 'inline-flex' : 'none';
+      }
+    } else {
+      delete messageRow.dataset.hasIssue;
+      if (issueTag) {
+        issueTag.style.display = 'none';
+      }
+    }
+  }
+
+  attachConversationIssueToLatestMessage(analysisData) {
+    if (!this.lastCustomerMessageId || !analysisData) {
+      return;
+    }
+    if (this.messageAnalysisMap.has(this.lastCustomerMessageId)) {
+      const existing = this.messageAnalysisMap.get(this.lastCustomerMessageId);
+      this.updateMessageIssueIndicator(this.lastCustomerMessageId, existing);
+      return;
+    }
+    const mappedAnalysis = {
+      ...analysisData,
+      sentiment: analysisData.sentiment || analysisData.lastCustomerSentiment,
+    };
+    this.messageAnalysisMap.set(this.lastCustomerMessageId, mappedAnalysis);
+    this.updateMessageIssueIndicator(this.lastCustomerMessageId, mappedAnalysis);
   }
 
   clearMessages() {
@@ -237,6 +276,7 @@ export class UnifiedChatController {
           // 如果有AI分析数据，存储映射
           if (entry.aiAnalysis) {
             this.messageAnalysisMap.set(messageId, entry.aiAnalysis);
+            this.updateMessageIssueIndicator(messageId, entry.aiAnalysis);
           }
         });
       }
@@ -326,75 +366,15 @@ export class UnifiedChatController {
       }
       // === 临时测试数据结束 ===
 
-      // 检查是否有问题需要显示AI辅助（新增逻辑）
+      // 检查是否有问题需要显示AI入口
       const hasIssue = analysisData.detectedIssues?.length > 0 ||
                        analysisData.lastCustomerSentiment?.emotion === 'negative';
 
-      if (!hasIssue) {
-        // 没有检测到问题，仅显示回复建议
-        console.log('[UnifiedChat] 未检测到问题，仅显示回复建议');
-        if (analysisData.replySuggestion) {
-          this.aiPanel?.updateReplySuggestion(analysisData.replySuggestion);
-          this.aiPanel?.show('normal');
-        } else {
-          this.aiPanel?.hide();
-        }
-        return;
+      if (hasIssue) {
+        this.attachConversationIssueToLatestMessage(analysisData);
       }
 
-      // 有问题，显示完整的AI辅助信息（问题模式）
-      this.aiPanel?.show('issue');
-
-      // 更新情感分析
-      if (analysisData.lastCustomerSentiment) {
-        this.aiPanel?.updateSentiment(analysisData.lastCustomerSentiment);
-      }
-
-      // 更新回复建议
-      if (analysisData.replySuggestion) {
-        this.aiPanel?.updateReplySuggestion(analysisData.replySuggestion);
-      }
-
-      // 自动生成解决步骤
-      if (analysisData.detectedIssues?.length > 0) {
-        const issueContext = {
-          description: analysisData.detectedIssues?.[0]?.description || '当前问题',
-          severity: analysisData.detectedIssues?.[0]?.severity || 'medium'
-        };
-        const solutionSteps = this.aiPanel?.generateSolutionSteps(issueContext);
-        if (solutionSteps) {
-          this.aiPanel?.updateSolutionSteps(solutionSteps);
-        }
-      }
-
-      // === 临时测试数据 - 后端API未返回知识库和工单，先用mock数据验证显示 ===
-      if (!analysisData.knowledgeRecommendations || analysisData.knowledgeRecommendations.length === 0) {
-        console.warn('[临时] 后端未返回知识库数据，使用测试数据');
-        analysisData.knowledgeRecommendations = [
-          { id: 'kb-001', title: '系统登录故障排查手册', category: '系统运维', score: 0.95, url: '/knowledge/kb-001' },
-          { id: 'kb-002', title: 'HTTP 502错误解决方案', category: '故障处理', score: 0.89, url: '/knowledge/kb-002' },
-          { id: 'kb-003', title: '网关服务重启操作指南', category: '运维手册', score: 0.82, url: '/knowledge/kb-003' }
-        ];
-      }
-      if (!analysisData.relatedTasks || analysisData.relatedTasks.length === 0) {
-        console.warn('[临时] 后端未返回工单数据，使用测试数据');
-        analysisData.relatedTasks = [
-          { id: 1234, title: '登录接口502错误 - 网关超时', priority: 'high', url: '/tasks/1234' },
-          { id: 5678, title: '用户反馈无法访问系统', priority: 'medium', url: '/tasks/5678' },
-          { id: 9012, title: '系统响应缓慢，部分功能不可用', priority: 'medium', url: '/tasks/9012' }
-        ];
-      }
-      // === 临时测试数据结束 ===
-
-      // 更新知识库推荐
-      if (analysisData.knowledgeRecommendations?.length > 0) {
-        this.aiPanel?.updateKnowledgeBase(analysisData.knowledgeRecommendations);
-      }
-
-      // 更新关联工单
-      if (analysisData.relatedTasks?.length > 0) {
-        this.aiPanel?.updateRelatedTasks(analysisData.relatedTasks);
-      }
+      this.aiPanel?.hide();
     } catch (error) {
       console.warn('[UnifiedChat] 无法加载AI分析', error);
 
@@ -428,41 +408,8 @@ export class UnifiedChatController {
         ]
       };
 
-      // 调用原有的显示逻辑
-      const hasIssue = mockAnalysis.detectedIssues?.length > 0 ||
-                       mockAnalysis.lastCustomerSentiment?.emotion === 'negative';
-
-      if (hasIssue) {
-        this.aiPanel?.show('issue');
-
-        if (mockAnalysis.lastCustomerSentiment) {
-          this.aiPanel?.updateSentiment(mockAnalysis.lastCustomerSentiment);
-        }
-
-        if (mockAnalysis.replySuggestion) {
-          this.aiPanel?.updateReplySuggestion(mockAnalysis.replySuggestion);
-        }
-
-        // 自动生成解决步骤
-        if (mockAnalysis.detectedIssues?.length > 0) {
-          const issueContext = {
-            description: mockAnalysis.detectedIssues?.[0]?.description || '当前问题',
-            severity: mockAnalysis.detectedIssues?.[0]?.severity || 'high'
-          };
-          const solutionSteps = this.aiPanel?.generateSolutionSteps(issueContext);
-          if (solutionSteps) {
-            this.aiPanel?.updateSolutionSteps(solutionSteps);
-          }
-        }
-
-        if (mockAnalysis.knowledgeRecommendations?.length > 0) {
-          this.aiPanel?.updateKnowledgeBase(mockAnalysis.knowledgeRecommendations);
-        }
-
-        if (mockAnalysis.relatedTasks?.length > 0) {
-          this.aiPanel?.updateRelatedTasks(mockAnalysis.relatedTasks);
-        }
-      }
+      this.attachConversationIssueToLatestMessage(mockAnalysis);
+      this.aiPanel?.hide();
 
       showNotification('后端AI分析暂不可用，已加载示例分析以便功能演示', 'warning');
     }
@@ -480,10 +427,15 @@ export class UnifiedChatController {
       this.setMode(details.mode, false);
     }
 
+    const title =
+      details.company && details.company !== '未知公司'
+        ? `${details.customerName || '客户'} - ${details.company}`
+        : details.customerName || '客户';
+
     this.updateHeader({
-      title: `${details.customerName || '客户'} - ${details.company || '未知公司'}`,
+      title,
       summary: details.summary || details.note || 'AgentScope 人机协同模式已激活',
-      sla: details.sla || 'SLA 未知',
+      sla: details.sla || '客户等级未知',
     });
     await this.loadConversation(this.conversationId);
   }
@@ -572,8 +524,17 @@ export class UnifiedChatController {
   updateMessageSentiment(message) {
     if (!this.messagesContainer || !message?.sentiment) return;
 
-    const messages = this.messagesContainer.querySelectorAll('.message-bubble');
-    const lastMessage = messages[messages.length - 1];
+    const customerRows = this.messagesContainer.querySelectorAll('.message-row[data-sender-role="customer"]');
+    const lastCustomerRow = customerRows[customerRows.length - 1];
+    const lastMessage = lastCustomerRow?.querySelector('.message-bubble');
+
+    if (lastCustomerRow && message.sentiment?.emotion) {
+      lastCustomerRow.dataset.sentiment = message.sentiment.emotion;
+      const messageId = lastCustomerRow.dataset.messageId;
+      if (messageId) {
+        this.updateMessageIssueIndicator(messageId, { sentiment: message.sentiment });
+      }
+    }
 
     if (lastMessage) {
       const badge = document.createElement('span');
@@ -752,11 +713,7 @@ export class UnifiedChatController {
       this.aiPanel?.updateRelatedTasks(analysisData.relatedTasks);
     }
 
-    // 滚动到AI辅助面板
-    const panel = this.aiPanel?.panel;
-    if (panel) {
-      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    // 动态面板改为由快捷功能触发显示
   }
 
   /**

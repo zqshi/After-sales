@@ -11,7 +11,7 @@ import { taskController } from '../presentation/task/TaskController.js';
 
 const qualityProfiles = {
   'conv-001': {
-    title: 'ERP登录中断 - 张三',
+    title: 'ERP登录中断 - 小米保障群',
     score: 92,
     summary: '响应及时且补偿到位，建议补充复盘与复测日志，关注二次反馈。',
     dimensions: [
@@ -47,11 +47,11 @@ const qualityProfiles = {
 
 const conversationQcProfiles = {
   'conv-001': {
-    title: 'ABC科技 · ERP登录中断',
+    title: '小米保障群 · ERP登录中断',
     urgency: '高紧急',
     urgencyClass: 'chip-urgent',
     tone: 'urgent',
-    sla: 'SLA-金牌',
+    sla: 'VIP',
     impact: '业务受阻',
     channel: '飞书',
     time: '10:30',
@@ -77,7 +77,7 @@ const conversationQcProfiles = {
     urgency: '处理中',
     urgencyClass: 'chip-soft',
     tone: 'soft',
-    sla: 'SLA-银牌',
+    sla: 'KA0',
     impact: '等待确认',
     channel: '企业QQ',
     time: '09:45',
@@ -103,7 +103,7 @@ const conversationQcProfiles = {
     urgency: '已解决',
     urgencyClass: 'chip-neutral',
     tone: 'neutral',
-    sla: 'SLA-银牌',
+    sla: 'KA1',
     impact: '体验优化',
     channel: '微信',
     time: '昨天',
@@ -1211,7 +1211,7 @@ async function renderQualityDrawer(conversationId, shouldOpen = false, useLean =
   setTextContent('analysis-case-title', data.title);
   setTextContent('analysis-case-summary', `智能摘要：${data.summary}`);
   applyAnalysisChip('analysis-urgency-chip', data.urgency, data.urgencyClass);
-  applyAnalysisChip('analysis-sla-chip', data.sla || 'SLA', 'chip-sla');
+  applyAnalysisChip('analysis-sla-chip', data.sla || '客户等级', 'chip-sla');
   applyAnalysisChip('analysis-impact-chip', data.impact || '影响未标注', 'chip-impact');
   setTextContent('analysis-metric-urgency', data.metrics?.urgency || '--');
   setTextContent('analysis-metric-emotion', `${data.dimensions?.emotion?.score ?? '--'}%`);

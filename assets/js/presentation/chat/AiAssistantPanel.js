@@ -10,18 +10,17 @@ export class AiAssistantPanel {
     // 缓存所有DOM元素，避免重复查询
     this.elements = {
       panel: qs('#ai-assistant-panel'),
-      sentimentSection: qs('#sentiment-analysis'),
-      sentimentContent: qs('#sentiment-content'),
-      replySection: qs('#reply-suggestion'),
-      replyContent: qs('#reply-content'),
-      useSuggestionBtn: qs('#use-suggestion-btn'),
-      solutionSection: qs('#solution-steps'),
-      solutionContent: qs('#solution-content'),
-      referenceSection: qs('#reference-materials'),
-      knowledgeSection: qs('#knowledge-base'),
-      knowledgeContent: qs('#knowledge-content'),
-      tasksSection: qs('#related-tasks'),
-      tasksContent: qs('#tasks-content'),
+      sentimentSection: qs('#ai-panel-sentiment'),
+      sentimentContent: qs('#ai-sentiment-content'),
+      replySection: qs('#ai-panel-reply'),
+      replyList: qs('#ai-reply-list'),
+      solutionSection: qs('#ai-panel-solution'),
+      solutionContent: qs('#ai-solution-steps'),
+      referenceSection: qs('#ai-panel-reference'),
+      knowledgeSection: qs('#ai-panel-knowledge'),
+      knowledgeContent: qs('#ai-knowledge-content'),
+      tasksSection: qs('#ai-panel-tasks'),
+      tasksContent: qs('#ai-tasks-content'),
       messageInput: qs('#message-input')
     };
 
@@ -40,22 +39,10 @@ export class AiAssistantPanel {
     this.mode = 'normal';
 
     this.initEventListeners();
-    this.initToggleButton();
   }
 
   initEventListeners() {
-    // 使用建议按钮
-    if (this.elements.useSuggestionBtn) {
-      this.elements.useSuggestionBtn.addEventListener('click', () => {
-        if (this.elements.replyContent && this.elements.messageInput) {
-          const text = this.elements.replyContent.textContent.trim();
-          if (text) {
-            this.elements.messageInput.value = text;
-            this.elements.messageInput.focus();
-          }
-        }
-      });
-    }
+    // 采纳按钮由统一事件代理处理（chat/index.js）
   }
 
   /**
@@ -145,6 +132,7 @@ export class AiAssistantPanel {
 
     // 默认展开状态
     this.expand();
+    this.syncSuggestionGrid();
   }
 
   /**
@@ -167,39 +155,27 @@ export class AiAssistantPanel {
 
     // 情感图标和颜色映射
     const emotionMap = {
-      positive: { icon: '😊', label: '积极', class: 'sentiment-positive' },
-      neutral: { icon: '😐', label: '中性', class: 'sentiment-neutral' },
-      negative: { icon: '😟', label: '消极', class: 'sentiment-negative' }
+      positive: { icon: '😊', label: '积极', class: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      neutral: { icon: '😐', label: '中性', class: 'bg-slate-100 text-slate-700 border-slate-200' },
+      negative: { icon: '😟', label: '消极', class: 'bg-rose-50 text-rose-700 border-rose-200' }
     };
 
     const emotionInfo = emotionMap[emotion] || emotionMap.neutral;
 
     if (this.elements.sentimentContent) {
       this.elements.sentimentContent.innerHTML = `
-        <div class="flex items-center gap-3">
-          <span class="sentiment-badge ${emotionInfo.class}">
-            ${emotionInfo.icon} ${emotionInfo.label}
-          </span>
-          <div class="flex-1">
-            <div class="text-xs text-gray-500 mb-1">情感分值</div>
-            <div class="flex items-center gap-2">
-              <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div class="h-full ${emotion === 'positive' ? 'bg-green-500' : emotion === 'negative' ? 'bg-red-500' : 'bg-gray-400'}"
-                     style="width: ${Math.round(score * 100)}%"></div>
-              </div>
-              <span class="text-xs font-semibold">${Math.round(score * 100)}%</span>
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="text-xs text-gray-500">置信度</div>
-            <div class="text-sm font-semibold">${Math.round(confidence * 100)}%</div>
-          </div>
+        <div class="ai-panel-grid">
+          <div>情绪：<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs ${emotionInfo.class}">${emotionInfo.icon} ${emotionInfo.label}</span></div>
+          <div>置信度：<span class="font-semibold text-slate-700">${Math.round(confidence * 100)}%</span></div>
+          <div>情感分值：<span class="font-semibold text-slate-700">${Math.round(score * 100)}%</span></div>
+          <div>建议：<span class="text-slate-600">${emotion === 'negative' ? '需要优先跟进并同步进展' : '保持常规跟进与反馈'}</span></div>
         </div>
       `;
     }
 
     this.sentimentSection.classList.remove('hidden');
     this.show();
+    this.syncSuggestionGrid();
   }
 
   /**
@@ -210,25 +186,35 @@ export class AiAssistantPanel {
     if (!suggestion || !this.replySection) return;
 
     const { suggestedReply, confidence, needsHumanReview } = suggestion;
+    const normalizedReply = (suggestedReply || '')
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .join('\n');
 
-    if (this.elements.replyContent) {
+    if (this.elements.replyList) {
       const reviewBadge = needsHumanReview
-        ? '<span class="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded ml-2">需人工审核</span>'
+        ? '<span class="reply-review-badge">需人工审核</span>'
         : '';
 
-      this.elements.replyContent.innerHTML = `
-        <div>
-          <div class="mb-2">
-            <span class="text-xs text-gray-500">置信度: ${Math.round(confidence * 100)}%</span>
-            ${reviewBadge}
+      this.elements.replyList.innerHTML = `
+        <div class="ai-panel-card">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-xs text-gray-400 mb-1">AI建议 · 置信度 ${Math.round(confidence * 100)}%</div>
+              ${reviewBadge}
+              <p class="text-sm text-gray-700 mt-1">${this.escapeHtml(normalizedReply)}</p>
+            </div>
+            <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="${this.escapeHtml(normalizedReply)}">采纳</button>
           </div>
-          <div class="text-gray-800">${this.escapeHtml(suggestedReply)}</div>
         </div>
       `;
     }
 
     this.replySection.classList.remove('hidden');
     this.show();
+    this.syncSuggestionGrid();
   }
 
   /**
@@ -250,11 +236,14 @@ export class AiAssistantPanel {
 
     if (this.elements.knowledgeContent) {
       this.elements.knowledgeContent.innerHTML = knowledgeList.map(item => `
-        <div class="knowledge-item" onclick="window.open('${item.url}', '_blank')">
-          <div class="knowledge-item-title">${this.escapeHtml(item.title)}</div>
-          <div class="flex items-center justify-between knowledge-item-meta">
-            <span>📂 ${this.escapeHtml(item.category)}</span>
-            <span class="knowledge-score">匹配度 ${Math.round(item.score * 100)}%</span>
+        <div class="ai-panel-card ai-panel-card--compact">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-sm font-semibold text-gray-800">${this.escapeHtml(item.title)}</div>
+              <div class="text-xs text-gray-500 mt-1">分类：${this.escapeHtml(item.category)}</div>
+              <div class="text-[11px] text-gray-400 mt-1">匹配度 ${Math.round(item.score * 100)}%</div>
+            </div>
+            <button class="ai-panel-chip" onclick="window.open('${item.url}', '_blank')">查看</button>
           </div>
         </div>
       `).join('');
@@ -284,7 +273,7 @@ export class AiAssistantPanel {
                            step.status === 'in_progress' ? 'text-blue-600' : 'text-gray-400';
 
         return `
-          <div class="solution-step-item" data-step="${stepNumber}">
+          <li>
             <div class="flex items-start gap-3">
               <div class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
                 ${stepNumber}
@@ -297,7 +286,7 @@ export class AiAssistantPanel {
                 <p class="text-xs text-gray-600">${this.escapeHtml(step.description)}</p>
               </div>
             </div>
-          </div>
+          </li>
         `;
       }).join('');
     }
@@ -378,16 +367,23 @@ export class AiAssistantPanel {
 
     if (this.elements.tasksContent) {
       this.elements.tasksContent.innerHTML = tasksList.map(task => {
-        const priorityClass = `task-priority-${task.priority}`;
         const priorityLabel = task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低';
+        const priorityClass = task.priority === 'high'
+          ? 'chip-urgent'
+          : task.priority === 'medium'
+            ? 'chip-soft'
+            : 'chip-neutral';
 
         return `
-          <div class="task-item" onclick="window.open('${task.url}', '_blank')">
-            <div class="task-item-title">${this.escapeHtml(task.title)}</div>
-            <div class="flex items-center justify-between mt-1">
-              <span class="task-priority ${priorityClass}">优先级: ${priorityLabel}</span>
-              <span class="text-xs text-gray-500">工单 #${task.id}</span>
+          <div class="ai-panel-card ai-panel-card--compact">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-gray-800">${this.escapeHtml(task.title)}</div>
+                <div class="text-xs text-gray-500 mt-1">工单 #${task.id}</div>
+              </div>
+              <span class="analysis-chip ${priorityClass}">优先级 ${priorityLabel}</span>
             </div>
+            <button class="text-xs text-primary hover:underline mt-2" onclick="window.open('${task.url}', '_blank')">查看详情</button>
           </div>
         `;
       }).join('');
@@ -439,7 +435,16 @@ export class AiAssistantPanel {
     if (this.referenceSection) this.referenceSection.classList.add('hidden');
     if (this.knowledgeSection) this.knowledgeSection.classList.add('hidden');
     if (this.tasksSection) this.tasksSection.classList.add('hidden');
+    this.syncSuggestionGrid();
     this.hide();
+  }
+
+  syncSuggestionGrid() {
+    if (!this.replySection || !this.sentimentSection) return;
+    const replyVisible = !this.replySection.classList.contains('hidden');
+    const sentimentVisible = !this.sentimentSection.classList.contains('hidden');
+    this.replySection.classList.toggle('full-span', replyVisible && !sentimentVisible);
+    this.sentimentSection.classList.toggle('full-span', sentimentVisible && !replyVisible);
   }
 
   /**

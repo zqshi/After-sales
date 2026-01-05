@@ -6,25 +6,27 @@ export function initTools() {
 }
 
 function bindToolsEvents() {
-  const toolsTab = qs('#tools-tab');
-  if (!toolsTab) {
-    return;
-  }
+  // 支持分析面板和左侧Dock导航中的工具标签页
+  const toolsTabs = qsa('#tools-tab, #workspace-tools-tab');
+  
+  toolsTabs.forEach(tab => {
+    if (tab) {
+      // 使用事件委托处理所有工具按钮
+      on(tab, 'click', (event) => {
+        const target = event.target.closest('[data-click]');
+        if (!target) {
+          return;
+        }
 
-  // 使用事件委托处理所有工具按钮
-  on(toolsTab, 'click', (event) => {
-    const target = event.target.closest('[data-click]');
-    if (!target) {
-      return;
-    }
+        const action = target.getAttribute('data-click');
+        const label = target.getAttribute('data-label') || '';
 
-    const action = target.getAttribute('data-click');
-    const label = target.getAttribute('data-label') || '';
-
-    if (action === 'tool') {
-      handleToolAction(label, target);
-    } else if (action === 'quick') {
-      handleQuickAction(label, target);
+        if (action === 'tool') {
+          handleToolAction(label, target);
+        } else if (action === 'quick') {
+          handleQuickAction(label, target);
+        }
+      });
     }
   });
 }

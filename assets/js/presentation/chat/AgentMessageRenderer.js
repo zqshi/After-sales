@@ -1,3 +1,5 @@
+import { getCurrentProfile } from '../../customer/index.js';
+
 function escapeHtml(value) {
   if (!value) return '';
   return value
@@ -17,6 +19,15 @@ function formatTime(timestamp) {
   return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
 
+function getPurchasedProductLabel() {
+  const profile = typeof getCurrentProfile === 'function' ? getCurrentProfile() : null;
+  const products = Array.isArray(profile?.products) ? profile.products.filter(Boolean) : [];
+  if (!products.length) {
+    return '未标注';
+  }
+  return products[products.length - 1];
+}
+
 export function buildMessageNode({ role, author = '客户', content, timestamp, metadata = {}, messageId = null, sentiment = null }) {
   const wrapper = document.createElement('div');
   const normalizedRole = role === 'agent' ? 'agent' : role === 'human' ? 'human' : 'customer';
@@ -26,10 +37,25 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
   wrapper.dataset.senderRole = normalizedRole;
   if (isAIAgent) wrapper.dataset.aiAgent = 'true';
   if (messageId) wrapper.dataset.messageId = messageId;
+  if (sentiment?.emotion) wrapper.dataset.sentiment = sentiment.emotion;
 
   const avatar = document.createElement('div');
   avatar.className = `avatar ${isAIAgent ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`;
   avatar.textContent = isAIAgent ? '🤖' : ((author || '??').charAt(0) || '·');
+
+  const displayAuthor = isAIAgent ? 'AI助手' : author;
+
+  const header = document.createElement('div');
+  header.className = `message-header ${normalizedRole === 'agent' ? 'message-header-right' : 'message-header-left'}`;
+
+  const headerText = document.createElement('div');
+  headerText.className = 'message-header-text';
+  headerText.innerHTML = `
+    <span class="message-author">${escapeHtml(displayAuthor)}</span>
+    <span class="message-time">${formatTime(timestamp)}</span>
+  `;
+  header.appendChild(headerText);
+  header.appendChild(avatar);
 
   const bubble = document.createElement('div');
   bubble.className = `message-bubble ${normalizedRole === 'agent' ? 'agent' : 'customer'} ${isAIAgent ? 'ai-agent-message' : ''}`;
@@ -64,15 +90,17 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
     bubble.appendChild(confidenceBar);
   }
 
-  const meta = document.createElement('div');
-  meta.className = 'message-meta flex justify-between items-center';
-  const displayAuthor = isAIAgent ? 'AI助手' : author;
+  let meta = null;
+  if (normalizedRole === 'customer') {
+    meta = document.createElement('div');
+    meta.className = 'message-meta-line';
+  }
 
   // 构建meta内容，为客户消息添加情绪icon
-  let metaContent = `<span>${formatTime(timestamp)}</span>`;
+  let metaContent = '';
 
   // 为客户消息添加情绪icon（在时间戳右侧）
-  if (sentiment && normalizedRole === 'customer') {
+  if (meta && sentiment) {
     console.log('[buildMessageNode] 渲染情绪icon:', sentiment);
 
     // 根据情绪类型选择图标和标签
@@ -119,7 +147,6 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      margin-left: 8px;
       padding: 2px 8px;
       background: ${bgColor};
       border-radius: 12px;
@@ -161,34 +188,30 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
     </span>`;
   }
 
-  metaContent += `<span>${escapeHtml(displayAuthor)}</span>`;
-  meta.innerHTML = metaContent;
+  if (meta) {
+    const issueProductLabel = escapeHtml(getPurchasedProductLabel());
+    metaContent += `<span class="issue-tag" style="
+      display: none;
+      align-items: center;
+      padding: 2px 8px;
+      background: #ede9fe;
+      color: #6d28d9;
+      border: 1px solid #ddd6fe;
+      border-radius: 9999px;
+      font-size: 11px;
+    ">问题产品定位：${issueProductLabel}</span>`;
+    meta.innerHTML = metaContent;
+  }
 
   const contentWrapper = document.createElement('div');
   contentWrapper.className = 'message-content-wrapper';
+  contentWrapper.appendChild(header);
   contentWrapper.appendChild(bubble);
-  contentWrapper.appendChild(meta);
-
-  // 为客户消息添加AI辅助icon（hover显示）
-  if (normalizedRole === 'customer') {
-    const aiIcon = document.createElement('button');
-    aiIcon.className = 'ai-assist-icon';
-    aiIcon.innerHTML = `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-      </svg>
-    `;
-    aiIcon.title = '查看AI辅助';
-    contentWrapper.appendChild(aiIcon);
+  if (meta) {
+    contentWrapper.appendChild(meta);
   }
 
-  if (normalizedRole === 'agent') {
-    wrapper.appendChild(contentWrapper);
-    wrapper.appendChild(avatar);
-  } else {
-    wrapper.appendChild(avatar);
-    wrapper.appendChild(contentWrapper);
-  }
+  wrapper.appendChild(contentWrapper);
 
   return wrapper;
 }

@@ -105,126 +105,147 @@
   </script>
 </head>
 
-<body class="bg-bg-light font-sans text-text-primary">
-  <div class="app-container flex h-screen overflow-hidden">
+<body class="bg-bg-light font-sans text-text-primary flex flex-col h-screen">
+  <header class="global-header flex items-center justify-between px-4 sm:px-6 h-14 bg-white border-b border-gray-200">
+    <div class="flex items-center gap-3">
+      <img src="assets/images/logo.svg" alt="智能售后" class="h-8 w-8" width="32" height="32" decoding="async">
+      <span class="text-lg font-semibold text-primary">智能售后工作台</span>
+    </div>
+
+    <!-- 用户信息区域 -->
+    <div class="relative">
+      <button id="user-menu-button" class="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-3 py-1.5 transition-colors">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">王</div>
+        <div class="text-left">
+          <div class="text-sm font-medium text-gray-900">王工程师</div>
+          <div class="text-xs text-green-500 flex items-center">
+            <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+            在线
+          </div>
+        </div>
+        <i class="fa fa-chevron-down text-gray-400 text-xs"></i>
+      </button>
+
+      <!-- 用户菜单浮层 -->
+      <div id="user-menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+        <button id="logout-button" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+          <i class="fa fa-sign-out text-gray-400"></i>
+          <span>退出</span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <div class="app-container flex flex-1 min-h-0 overflow-hidden">
+    <!-- Dock导航栏 -->
+    <div class="dock-nav w-16 bg-white border-r border-gray-200 flex flex-col items-center py-4 gap-3 h-full">
+      <div class="dock-item">
+        <button class="dock-btn dock-active" data-dock-tab="messages" title="消息">
+          <i class="fa fa-comments text-gray-500 text-lg"></i>
+          <span>消息</span>
+        </button>
+        <div class="dock-submenu">
+          <button class="dock-submenu-item" data-dock-parent="messages" data-dock-subtab="dialog">对话</button>
+          <button class="dock-submenu-item" data-dock-parent="messages" data-dock-subtab="tasks">任务</button>
+        </div>
+      </div>
+      <div class="dock-item">
+        <button class="dock-btn" data-dock-tab="knowledge" title="知识">
+          <i class="fa fa-book text-gray-500 text-lg"></i>
+          <span>知识</span>
+        </button>
+        <div class="dock-submenu">
+          <button class="dock-submenu-item" data-dock-parent="knowledge" data-dock-subtab="knowledge-management">知识管理</button>
+          <button class="dock-submenu-item" data-dock-parent="knowledge" data-dock-subtab="knowledge-application">知识应用</button>
+        </div>
+      </div>
+      <button class="dock-btn" data-dock-tab="tools" title="工具">
+        <i class="fa fa-th-large text-gray-500 text-lg"></i>
+        <span>工具</span>
+      </button>
+    </div>
     <!-- 左侧导航栏 -->
     <div class="sidebar left-sidebar w-96 bg-white border-r border-gray-200 flex flex-col h-full">
-      <!-- 顶部Logo -->
-      <div class="p-4 border-b border-gray-200 flex items-center">
-        <img
-          src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/e0e55ccd160142938892e80cc21782cd~tplv-a9rns2rl98-image.image?rcl=202512041658460DBDD2A62AEA3305CF3B&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1767430771&x-signature=DKAFfTewq2zAmUwyQPA33GF9iDE%3D"
-          alt="Logo" class="h-8 w-8">
-        <h1 class="ml-2 text-lg font-semibold text-primary">智能售后工作台</h1>
-      </div>
-
-      <div class="p-3 border-b border-gray-200">
+      <div>
         <div class="grid grid-cols-2 gap-2">
-          <button class="tab-btn sidebar-tab tab-active" data-tab="dialog" data-tab-group="sidebar"
-            data-sync-group="workspace" data-sync-tab="workspace-dialog">对话</button>
-          <button class="tab-btn sidebar-tab" data-tab="tasks" data-tab-group="sidebar" data-sync-group="workspace"
-            data-sync-tab="workspace-tasks">任务</button>
           <button id="tab-reports-btn" class="tab-btn sidebar-tab hidden" data-tab="reports" data-tab-group="sidebar"
             data-sync-group="workspace" data-sync-tab="workspace-reports">报表</button>
         </div>
-
       </div>
 
       <div class="tab-content active flex flex-col flex-1" id="dialog-tab" data-tab-group="sidebar">
-        <!-- 搜索栏 -->
-        <div class="p-3 border-b border-gray-200">
+        <div class="p-4 flex flex-col gap-3 bg-white">
+          <!-- 搜索栏 -->
           <div class="relative">
             <input id="conversation-search-input" type="text" placeholder="搜索客户或对话..."
-              class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-            <i class="fa fa-search absolute left-3 top-3 text-gray-400"></i>
-          </div>
-        </div>
-
-        <!-- 筛选面板 -->
-        <div class="p-3 border-b border-gray-200">
-          <div class="flex flex-wrap gap-2">
-            <button id="filter-status-all" class="px-3 py-1 bg-primary text-white rounded-full text-sm flex items-center" data-status="all">
-              <span>全部</span>
-              <span
-                class="ml-1 bg-white text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="all">8</span>
-            </button>
-            <button id="filter-status-pending" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm flex items-center" data-status="pending">
-              <span>待处理</span>
-              <span
-                class="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="pending">3</span>
-            </button>
-            <button id="filter-status-active" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm" data-status="active">进行中</button>
-            <button id="filter-status-completed" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm" data-status="completed">已完成</button>
+              class="w-full pl-10 pr-4 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm placeholder:text-xs">
+            <i class="fa fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
           </div>
 
-          <!-- 高级筛选 -->
-          <div class="mt-2 flex flex-wrap gap-2">
-            <div class="relative">
-              <select id="filter-channel"
-                class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
-                <option value="">所有渠道</option>
-                <option value="feishu">飞书</option>
-                <option value="qq">企业QQ</option>
-                <option value="wechat">微信</option>
-              </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <i class="fa fa-chevron-down text-xs"></i>
-              </div>
+          <!-- 筛选面板 -->
+          <div class="space-y-2 mb-[0px]">
+            <div class="flex flex-wrap gap-2">
+              <button id="filter-status-all" class="px-3 py-1 bg-primary text-white rounded-full text-sm flex items-center" data-status="all">
+                <span>全部</span>
+                <span
+                  class="ml-1 bg-white text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="all">8</span>
+              </button>
+              <button id="filter-status-pending" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm flex items-center" data-status="pending">
+                <span>待处理</span>
+                <span
+                  class="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="pending">3</span>
+              </button>
+              <button id="filter-status-active" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm" data-status="active">进行中</button>
             </div>
 
-            <div class="relative">
-              <select id="filter-urgency"
-                class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
-                <option value="">所有紧急度</option>
-                <option value="high">紧急</option>
-                <option value="normal">普通</option>
-                <option value="low">已解决</option>
-              </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <i class="fa fa-chevron-down text-xs"></i>
+            <!-- 高级筛选 -->
+            <div class="flex flex-wrap gap-2">
+              <div class="relative">
+                <select id="filter-channel"
+                  class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
+                  <option value="">渠道</option>
+                  <option value="feishu">飞书</option>
+                  <option value="qq">企业QQ</option>
+                  <option value="wechat">微信</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <i class="fa fa-chevron-down text-xs"></i>
+                </div>
               </div>
-            </div>
 
-            <div class="relative">
-              <select id="filter-sla"
-                class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
-                <option value="">所有SLA</option>
-                <option value="gold">SLA-金牌</option>
-                <option value="silver">SLA-银牌</option>
-                <option value="bronze">SLA-铜牌</option>
-              </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <i class="fa fa-chevron-down text-xs"></i>
+              <div class="relative">
+                <select id="filter-urgency"
+                  class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
+                  <option value="">紧急度</option>
+                  <option value="high">紧急</option>
+                  <option value="normal">普通</option>
+                  <option value="low">已解决</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <i class="fa fa-chevron-down text-xs"></i>
+                </div>
+              </div>
+
+              <div class="relative">
+                <select id="filter-sla"
+                  class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
+                  <option value="">客户等级</option>
+                  <option value="vip">VIP</option>
+                  <option value="ka0">KA0</option>
+                  <option value="ka1">KA1</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <i class="fa fa-chevron-down text-xs"></i>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- 对话列表 -->
-        <div class="conversation-list flex-1 overflow-y-auto p-3">
+        <div class="conversation-list flex-1 overflow-y-auto px-3 pb-3 pt-0">
           <!-- 对话项将由JavaScript动态生成 -->
         </div>
 
-        <!-- 底部用户信息 -->
-        <div class="p-3 border-t border-gray-200">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <img
-                src="https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/3d339dd405514120981d214d61b637da~tplv-a9rns2rl98-image.image?rcl=202512041658460DBDD2A62AEA3305CF3B&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1767430771&x-signature=2dSOd5mBa%2FFN5Q4qgr0ZrS1viaw%3D"
-                alt="工程师" class="w-8 h-8 rounded-full">
-              <div class="ml-2">
-                <div class="text-sm font-medium">王工程师</div>
-                <div class="text-xs text-green-500 flex items-center">
-                  <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                  在线
-                </div>
-              </div>
-            </div>
-
-            <button class="text-gray-500 hover:text-primary">
-              <i class="fa fa-cog"></i>
-            </button>
-          </div>
-        </div>
       </div>
 
       <div class="tab-content hidden flex flex-col flex-1" id="tasks-tab" data-tab-group="sidebar">
@@ -270,34 +291,6 @@
             </div>
           </div>
         </div>
-        <!-- 底部状态栏 -->
-        <div class="p-3 border-t border-gray-200 flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center">
-              <img
-                src="https://p9-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/3d339dd405514120981d214d61b637da~tplv-a9rns2rl98-image.image?rcl=202512041658460DBDD2A62AEA3305CF3B&rk3s=8e244e95&rrcfp=f06b921b&x-expires=1767430771&x-signature=2dSOd5mBa%2FFN5Q4qgr0ZrS1viaw%3D"
-                alt="工程师" class="w-8 h-8 rounded-full">
-              <div class="ml-2">
-                <div class="text-sm font-medium">王工程师</div>
-                <div class="text-xs text-green-500 flex items-center">
-                  <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                  在线
-                </div>
-              </div>
-            </div>
-
-            <button class="text-gray-500 hover:text-primary">
-              <i class="fa fa-cog"></i>
-            </button>
-          </div>
-          <div class="relative">
-            <select id="role-switcher"
-              class="w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-primary">
-              <option value="quality_specialist">当前角色：质量专员</option>
-              <option value="leadership">当前角色：领导班子</option>
-            </select>
-          </div>
-        </div>
       </div>
 
       <div class="tab-content hidden flex flex-col flex-1" id="reports-tab" data-tab-group="sidebar">
@@ -334,16 +327,14 @@
 
     <!-- 中间对话区 -->
     <div class="main-content flex-1 flex flex-col h-full bg-white">
-      <div class="tab-content active chat-panel flex-1 flex flex-col h-full" id="workspace-dialog-tab"
-        data-tab-group="workspace">
-        <div
-          class="chat-header p-4 border-b border-gray-200 flex justify-between items-center glass-effect sticky top-0 z-10">
+      <div class="tab-content active chat-panel flex-1 flex flex-col h-full" id="workspace-dialog-tab" data-tab-group="workspace">
+        <div class="chat-header p-4 border-b border-gray-200 flex justify-between items-center glass-effect sticky top-0 z-10">
           <div class="flex-1 flex flex-col gap-2">
             <div class="flex items-center space-x-3">
-              <div class="flex items-center">
-                <h2 id="chat-header-title" class="text-lg font-semibold">张三 - ABC科技有限公司</h2>
-                <span id="chat-header-sla" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">SLA-金牌</span>
-              </div>
+                  <div class="flex items-center">
+                    <h2 id="chat-header-title" class="text-lg font-semibold">小米保障群</h2>
+                    <span id="chat-header-sla" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">VIP</span>
+                  </div>
               <div id="chat-mode-control" class="chat-mode-control flex items-center gap-2">
                 <button data-chat-mode="agent_auto" class="chat-mode-pill active">Agent自动</button>
                 <button data-chat-mode="agent_supervised" class="chat-mode-pill">Agent监督</button>
@@ -358,13 +349,10 @@
               <span id="agent-status-pill" class="agent-status-pill agent-status-offline">Agent 未连接</span>
             </div>
           </div>
-
           <div class="flex space-x-3">
-            <button
-              class="flex items-center px-3 py-2 bg-primary text-white rounded-full text-xs hover:bg-primary-dark transition-colors"
-              onclick="openFullAnalysisPanel()">
+            <button class="flex items-center px-3 py-2 bg-primary text-white rounded-full text-xs hover:bg-primary-dark transition-colors" onclick="openFullAnalysisPanel()">
               <i class="fa fa-columns mr-2"></i>
-              <span>打开分析面板</span>
+              <span>分析面板</span>
             </button>
           </div>
         </div>
@@ -562,85 +550,6 @@
           </div>
         </div>
 
-        <!-- AI辅助面板 -->
-        <div id="ai-assistant-panel" class="ai-assistant-panel">
-          <div class="p-4">
-            <!-- 情感分析 -->
-            <div id="sentiment-analysis" class="sentiment-section mb-3 hidden">
-              <div class="flex items-center justify-between mb-2">
-                <h4 class="text-sm font-semibold text-gray-700 flex items-center">
-                  <span class="mr-2">😊</span>
-                  <span>情感分析</span>
-                </h4>
-              </div>
-              <div id="sentiment-content" class="text-sm text-gray-600">
-                <!-- 动态填充情感分析内容 -->
-              </div>
-            </div>
-
-            <!-- 回复建议 -->
-            <div id="reply-suggestion" class="reply-section mb-3 hidden">
-              <div class="flex items-center justify-between mb-2">
-                <h4 class="text-sm font-semibold text-gray-700 flex items-center">
-                  <span class="mr-2">💡</span>
-                  <span>AI回复建议</span>
-                </h4>
-                <button id="use-suggestion-btn" class="text-xs px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
-                  使用建议
-                </button>
-              </div>
-              <div id="reply-content" class="text-sm bg-white p-3 rounded border border-gray-200">
-                <!-- 动态填充回复建议 -->
-              </div>
-            </div>
-
-            <!-- 解决方案区块 -->
-            <div id="solution-steps" class="solution-section mb-4 hidden">
-              <div class="section-header">
-                <h4 class="section-title">
-                  <span class="section-icon">🔧</span>
-                  <span>解决步骤</span>
-                </h4>
-              </div>
-              <div id="solution-content" class="section-content space-y-2">
-                <!-- 动态填充解决步骤 -->
-              </div>
-            </div>
-
-            <!-- 参考资料区块 -->
-            <div id="reference-materials" class="reference-section mb-3 hidden">
-              <div class="section-header section-header-secondary">
-                <h4 class="section-title section-title-small">
-                  <span class="section-icon">📖</span>
-                  <span>参考资料</span>
-                </h4>
-              </div>
-
-              <!-- 知识库子区块 -->
-              <div id="knowledge-base" class="knowledge-section mt-3 hidden">
-                <h5 class="subsection-title">
-                  <span class="mr-1.5">📚</span>
-                  <span>知识库文档</span>
-                </h5>
-                <div id="knowledge-content" class="space-y-2 mt-2">
-                  <!-- 动态填充知识库推荐 -->
-                </div>
-              </div>
-
-              <!-- 历史工单子区块 -->
-              <div id="related-tasks" class="tasks-section mt-3 hidden">
-                <h5 class="subsection-title">
-                  <span class="mr-1.5">📋</span>
-                  <span>相似工单</span>
-                </h5>
-                <div id="tasks-content" class="space-y-2 mt-2">
-                  <!-- 动态填充关联工单 -->
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- 输入区域 -->
         <div class="chat-input p-4 border-t border-gray-200">
           <!-- 低置信度警告 -->
@@ -656,20 +565,15 @@
             </div>
           </div>
 
-          <!-- 文本提示区域 -->
-          <div class="text-tips mb-3 flex flex-wrap gap-2">
-            <span
-              class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full cursor-pointer hover:bg-blue-100 transition-colors"
-              onclick="insertText('非常抱歉给您带来不便。')">非常抱歉给您带来不便。</span>
-            <span
-              class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full cursor-pointer hover:bg-blue-100 transition-colors"
-              onclick="insertText('我们的技术团队正在全力修复。')">我们的技术团队正在全力修复。</span>
-            <span
-              class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full cursor-pointer hover:bg-blue-100 transition-colors"
-              onclick="insertText('预计将在15分钟内恢复正常。')">预计将在15分钟内恢复正常。</span>
-            <span
-              class="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-full cursor-pointer hover:bg-blue-100 transition-colors"
-              onclick="insertText('感谢您的理解与支持。')">感谢您的理解与支持。</span>
+          <!-- 快捷功能 -->
+          <div class="mb-3 flex flex-nowrap gap-2 overflow-x-auto">
+            <button class="px-3 py-1.5 text-xs bg-primary text-white rounded-full hover:bg-primary-dark transition-colors shadow-sm" onclick="openTicketManagementPanel()">工单管理</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAiReplyPanel()">回复建议</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openClarifyPanel()">问题澄清</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAiSolutionPanel()">AI解决方案</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAssistCheckMock()">辅助排查</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openTicketMock()">创建工单</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openFaultReportMock()">生成故障报告</button>
           </div>
 
           <!-- 输入框 -->
@@ -744,6 +648,316 @@
         </div>
       </div>
 
+      <div class="tab-content hidden flex flex-col flex-1 min-h-0" id="workspace-knowledge-tab" data-tab-group="workspace">
+        <div class="border-b border-gray-200 bg-white sticky top-0 z-10">
+          <div class="p-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="text-xs text-gray-500 uppercase tracking-wide">知识管理</div>
+              <h2 class="text-lg font-semibold text-gray-900">知识库总览</h2>
+            </div>
+          </div>
+          <div class="px-4 pb-2 flex items-center gap-6">
+            <button id="knowledge-tab-doc"
+              class="pb-2 text-sm font-semibold text-primary border-b-2 border-primary">文档库</button>
+            <button id="knowledge-tab-faq"
+              class="pb-2 text-sm font-semibold text-gray-500 border-b-2 border-transparent">FAQ</button>
+          </div>
+        </div>
+        <div id="knowledge-panel" class="flex-1 overflow-y-auto p-4 bg-bg-light">
+          <div class="knowledge-page bg-white border border-gray-200 rounded-xl p-4 flex flex-col lg:flex-row gap-4 min-h-0">
+            <aside class="w-full lg:w-72 border border-gray-200 rounded-xl bg-gray-50 p-3 flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-semibold text-gray-800">知识分类</div>
+                <span class="text-[11px] text-gray-400">目录树</span>
+              </div>
+              <div class="relative">
+                <input id="knowledge-tree-search" type="text" placeholder="搜索分类..."
+                  class="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary">
+                <i class="fa fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+              </div>
+              <div id="knowledge-tree" class="flex-1 overflow-y-auto rounded-lg border border-gray-200 bg-white">
+              </div>
+            </aside>
+
+            <section class="knowledge-content flex-1 flex flex-col gap-4 min-h-0">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="text-xs text-gray-500" id="knowledge-breadcrumb">全部分类</div>
+              </div>
+
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex-1">
+                  <div id="knowledge-doc-search-wrap" class="relative">
+                    <input id="knowledge-doc-search" type="text" placeholder="搜索文档标题..."
+                      class="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary">
+                    <i class="fa fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+                  </div>
+                  <div id="knowledge-faq-search-wrap" class="relative hidden">
+                    <input id="knowledge-faq-search" type="text" placeholder="搜索FAQ问题..."
+                      class="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-primary">
+                    <i class="fa fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button id="knowledge-add-btn"
+                    class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">上传文档</button>
+                  <button id="knowledge-faq-add-btn"
+                    class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark hidden">新增FAQ</button>
+                </div>
+              </div>
+
+              <div id="knowledge-doc-section" class="flex flex-col gap-3 min-h-0">
+                <div id="knowledge-doc-panel" class="knowledge-table border border-gray-200 rounded-xl overflow-hidden">
+                  <div class="knowledge-table-header">
+                    <div>文档信息</div>
+                    <div>分类</div>
+                    <div>状态</div>
+                    <div>更新时间</div>
+                    <div class="text-right">操作</div>
+                  </div>
+                  <div id="knowledge-doc-list" class="knowledge-table-body"></div>
+                </div>
+                <div id="knowledge-empty-state" class="hidden border border-dashed border-gray-200 rounded-xl p-6 text-center text-sm text-gray-500">
+                  暂无文档，请先上传知识文档。
+                  <button id="knowledge-empty-add" class="ml-2 text-primary hover:underline">立即上传</button>
+                </div>
+              </div>
+
+              <div id="knowledge-faq-section" class="hidden flex flex-col gap-3 min-h-0">
+                <div id="knowledge-faq-panel" class="border border-gray-200 rounded-xl overflow-hidden">
+                  <div class="grid grid-cols-5 gap-2 px-4 py-3 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
+                    <div class="col-span-2">问题与答案</div>
+                    <div>状态</div>
+                    <div>更新时间</div>
+                    <div class="text-right">操作</div>
+                  </div>
+                  <div id="knowledge-faq-list" class="divide-y divide-gray-100"></div>
+                </div>
+                <div id="knowledge-faq-empty-state" class="hidden border border-dashed border-gray-200 rounded-xl p-6 text-center text-sm text-gray-500">
+                  暂无FAQ，请先创建常见问题。
+                  <button id="knowledge-faq-empty-add" class="ml-2 text-primary hover:underline">立即新增</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content hidden flex flex-col flex-1 min-h-0" id="workspace-knowledge-application-tab" data-tab-group="workspace">
+        <div class="p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="text-xs text-gray-500 uppercase tracking-wide">知识应用</div>
+              <h2 class="text-lg font-semibold text-gray-900">场景检索与落地</h2>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 overflow-y-auto bg-white">
+          <div id="knowledge-application" class="knowledge-application max-w-4xl mx-auto py-12 px-6 flex flex-col gap-8">
+
+            <!-- 顶部标题区 -->
+            <div class="knowledge-app-header text-center">
+              <h3 class="text-3xl font-semibold text-gray-900 mb-3">以客户为中心</h3>
+              <p class="text-sm text-gray-500 max-w-2xl mx-auto">输入客户问题关键词，AI将为您匹配最相关的知识库内容与解决方案</p>
+            </div>
+
+            <!-- 搜索框 -->
+            <div class="knowledge-app-search w-full mx-auto">
+              <div class="relative flex items-center gap-2">
+                <div class="flex-1 relative">
+                  <input id="knowledge-app-search-input" type="text"
+                    placeholder="描述客户问题，例如：无法登录、系统报错、账单异常..."
+                    class="w-full border-2 border-gray-300 rounded-full pl-12 pr-12 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-sm hover:shadow-md">
+                  <i class="fa fa-search absolute left-4 top-4 text-gray-400"></i>
+                  <button id="knowledge-app-clear-input" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fa fa-times-circle text-lg"></i>
+                  </button>
+                </div>
+                <button id="knowledge-app-search-btn"
+                  class="px-6 py-3.5 text-sm rounded-full bg-primary text-white hover:bg-primary-dark transition-colors shadow-sm hover:shadow-md font-medium">
+                  检索
+                </button>
+              </div>
+            </div>
+
+            <!-- 场景问题快捷入口 -->
+            <div id="knowledge-app-shortcuts" class="w-full mx-auto">
+              <div class="flex items-center gap-2 mb-4">
+                <i class="fa fa-bolt text-amber-500 text-sm"></i>
+                <span class="text-sm font-medium text-gray-700">场景问题</span>
+                <div class="relative inline-block">
+                  <i class="fa fa-question-circle text-gray-400 text-sm cursor-help knowledge-tooltip-trigger"></i>
+                  <div class="knowledge-tooltip hidden absolute left-0 top-full mt-2 z-50 whitespace-nowrap">
+                    <div class="bg-gray-800 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+                      Agent根据近30天常见问题自行总结
+                      <div class="absolute -top-1 left-4 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button class="knowledge-shortcut-btn" data-keyword="登录失败">
+                  <i class="fa fa-sign-in text-blue-600"></i>
+                  <span>登录问题</span>
+                </button>
+                <button class="knowledge-shortcut-btn" data-keyword="账号锁定">
+                  <i class="fa fa-lock text-amber-600"></i>
+                  <span>账号锁定</span>
+                </button>
+                <button class="knowledge-shortcut-btn" data-keyword="系统报错">
+                  <i class="fa fa-exclamation-triangle text-red-600"></i>
+                  <span>系统报错</span>
+                </button>
+                <button class="knowledge-shortcut-btn" data-keyword="账单异常">
+                  <i class="fa fa-file-text-o text-green-600"></i>
+                  <span>账单问题</span>
+                </button>
+                <button class="knowledge-shortcut-btn" data-keyword="权限申请">
+                  <i class="fa fa-user-plus text-purple-600"></i>
+                  <span>权限申请</span>
+                </button>
+                <button class="knowledge-shortcut-btn" data-keyword="数据同步">
+                  <i class="fa fa-refresh text-cyan-600"></i>
+                  <span>数据同步</span>
+                </button>
+                <button class="knowledge-shortcut-btn" data-keyword="性能优化">
+                  <i class="fa fa-dashboard text-indigo-600"></i>
+                  <span>性能问题</span>
+                </button>
+                <button class="knowledge-shortcut-btn" data-keyword="配置变更">
+                  <i class="fa fa-cog text-gray-600"></i>
+                  <span>配置变更</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 搜索结果区域 -->
+            <div id="knowledge-app-results" class="knowledge-app-results hidden w-full">
+              <div class="mb-4">
+                <div class="flex items-center justify-between">
+                  <span id="knowledge-app-count" class="text-sm text-gray-600"></span>
+                </div>
+              </div>
+              <div class="knowledge-app-layout">
+                <div id="knowledge-app-list" class="space-y-3"></div>
+                <div id="knowledge-app-detail" class="knowledge-app-detail hidden border border-gray-200 rounded-xl bg-white shadow-sm p-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <h4 id="knowledge-app-detail-title" class="text-base font-semibold text-gray-900">知识预览</h4>
+                      <p id="knowledge-app-detail-category" class="text-xs text-gray-500 mt-1">分类：-</p>
+                    </div>
+                    <button id="knowledge-app-detail-copy" type="button" class="px-3 py-1.5 text-xs rounded-full border border-gray-200 text-gray-600 hover:border-primary hover:text-primary transition-colors">
+                      复制内容
+                    </button>
+                  </div>
+                  <div id="knowledge-app-detail-updated" class="mt-1 text-[11px] text-gray-400">更新于：-</div>
+                  <div id="knowledge-app-detail-summary" class="mt-3 text-sm text-gray-600">点击“查看详情”在右侧查看知识摘要。</div>
+                  <div id="knowledge-app-detail-content" class="mt-3 text-sm text-gray-600 whitespace-pre-line max-h-[220px] overflow-y-auto border border-dashed border-gray-200 rounded-lg p-3 bg-gray-50">
+                    系统会在此展示知识内容，便于快速理解与复制。
+                  </div>
+                  <div id="knowledge-app-detail-tags" class="mt-3 flex flex-wrap gap-2"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 空状态提示 -->
+            <div id="knowledge-app-empty" class="hidden text-center py-8">
+              <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                <i class="fa fa-search text-gray-400 text-2xl"></i>
+              </div>
+              <p class="text-sm text-gray-500">未找到匹配的知识内容</p>
+              <p class="text-xs text-gray-400 mt-1">请尝试调整关键词或使用更通用的描述</p>
+            </div>
+
+            <!-- 使用提示 -->
+            <div id="knowledge-app-tips" class="w-full mx-auto">
+              <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-100 rounded-xl p-4">
+                <div class="flex items-start gap-3">
+                  <i class="fa fa-info-circle text-blue-600 mt-0.5"></i>
+                  <div class="flex-1 text-xs text-gray-600 space-y-1">
+                    <p><strong class="text-gray-700">使用技巧：</strong></p>
+                    <ul class="list-disc list-inside space-y-0.5 ml-2">
+                      <li>输入客户描述的问题关键词即可快速检索</li>
+                      <li>支持模糊匹配，系统会自动联想相关知识</li>
+                      <li>点击场景问题可快速查看对应解决方案</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content hidden flex flex-col flex-1 min-h-0" id="workspace-tools-tab" data-tab-group="workspace">
+        <div class="p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="text-xs text-gray-500 uppercase tracking-wide">工具中心</div>
+              <h2 class="text-lg font-semibold text-gray-900">常用工具与快捷动作</h2>
+            </div>
+            <span class="text-xs text-gray-500">集中处理系统巡检、诊断与工单协作</span>
+          </div>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-5 bg-bg-light">
+          <div class="panel-card">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-semibold text-gray-800">系统工具</h3>
+              <span class="text-xs text-gray-500">一键执行</span>
+            </div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <button class="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="服务状态监控">
+                <i class="fa fa-server text-blue-600 text-2xl mb-2"></i>
+                <span class="text-xs">服务状态监控</span>
+              </button>
+              <button class="bg-green-50 hover:bg-green-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="数据库管理">
+                <i class="fa fa-database text-green-600 text-2xl mb-2"></i>
+                <span class="text-xs">数据库管理</span>
+              </button>
+              <button class="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="用户权限管理">
+                <i class="fa fa-user-plus text-purple-600 text-2xl mb-2"></i>
+                <span class="text-xs">用户权限管理</span>
+              </button>
+              <button class="bg-orange-50 hover:bg-orange-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="数据备份">
+                <i class="fa fa-database text-orange-600 text-2xl mb-2"></i>
+                <span class="text-xs">数据备份</span>
+              </button>
+              <button class="bg-red-50 hover:bg-red-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="错误日志分析">
+                <i class="fa fa-bug text-red-600 text-2xl mb-2"></i>
+                <span class="text-xs">错误日志分析</span>
+              </button>
+              <button class="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="系统配置">
+                <i class="fa fa-cogs text-indigo-600 text-2xl mb-2"></i>
+                <span class="text-xs">系统配置</span>
+              </button>
+            </div>
+          </div>
+          <div class="panel-card">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-semibold text-gray-800">快捷动作</h3>
+              <span class="text-xs text-gray-500">跨系统联动</span>
+            </div>
+            <div class="grid md:grid-cols-2 gap-2">
+              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="发送系统通知">
+                <span>发送系统通知</span>
+                <i class="fa fa-paper-plane-o"></i>
+              </button>
+              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="创建事件工单">
+                <span>创建事件工单</span>
+                <i class="fa fa-plus-square-o"></i>
+              </button>
+              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="升级问题">
+                <span>升级问题</span>
+                <i class="fa fa-arrow-up"></i>
+              </button>
+              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="生成报告">
+                <span>生成报告</span>
+                <i class="fa fa-file-text-o"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 任务工作区：对齐对话逻辑，左侧任务 / 中间指令对话 / 右侧预览 -->
       <div class="tab-content hidden task-main flex-1 overflow-hidden" id="workspace-tasks-tab"
         data-tab-group="workspace">
@@ -808,7 +1022,7 @@
                     <div class="customer-row flex items-center justify-between text-sm">
                       <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <span class="font-medium text-gray-800">ABC科技 · conv-001</span>
+                          <span class="font-medium text-gray-800">小米保障群 · conv-001</span>
                         <span
                           class="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">高紧急</span>
                       </div>
@@ -871,11 +1085,11 @@
                         张</div>
                       <div class="flex-1">
                         <div class="flex items-center gap-2">
-                          <span class="font-medium">ABC科技 · conv-001</span>
+                            <span class="font-medium">小米保障群 · conv-001</span>
                           <span
                             class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">高紧急</span>
                         </div>
-                        <p class="text-xs text-gray-600 mt-1">客户反馈认证失败，多用户受影响；需15分钟内恢复并同步公告。</p>
+                        <p class="text-xs text-gray-600 mt-1">认证失败影响多用户，承诺 15 分钟恢复；需同步公告与补偿方案。</p>
                       </div>
                       <div class="flex flex-col items-end gap-1">
                         <span class="text-[11px] text-gray-500">10:30</span>
@@ -983,27 +1197,23 @@
 
     <!-- 右侧信息栏（抽屉） -->
     <div id="right-sidebar"
-      class="sidebar right-sidebar analysis-drawer w-full lg:w-[72vw] max-w-6xl bg-white border-l border-gray-200 flex flex-col h-full fixed top-0 right-0 transform translate-x-full transition-transform duration-300 z-40 shadow-2xl">
+      class="sidebar right-sidebar analysis-drawer w-full sm:w-[360px] lg:w-[380px] max-w-none bg-white border-l border-gray-200 flex flex-col h-full fixed top-0 right-0 transform translate-x-full transition-transform duration-300 z-40 shadow-2xl">
       <div id="right-drawer-resizer" class="drawer-resizer" title="拖拽调整宽度"></div>
+      <div id="analysis-panel" class="analysis-panel flex flex-col h-full">
 
       <!-- 顶部概要与操作 -->
       <div class="analysis-header flex items-start justify-between gap-4 border-b border-gray-200 p-4">
         <div>
-          <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">对话分析工作台</div>
           <div class="flex flex-wrap items-center gap-2">
-            <h3 class="text-lg font-semibold" id="analysis-case-title">ABC科技 · ERP登录中断</h3>
+              <h3 class="text-lg font-semibold" id="analysis-case-title">小米保障群 · ERP登录中断</h3>
             <span class="analysis-chip chip-urgent" id="analysis-urgency-chip">高紧急</span>
-            <span class="analysis-chip chip-sla" id="analysis-sla-chip">SLA-金牌</span>
+            <span class="analysis-chip chip-sla" id="analysis-sla-chip">VIP</span>
             <span class="analysis-chip chip-impact" id="analysis-impact-chip">业务受阻</span>
           </div>
-          <p class="text-sm text-gray-600 mt-2 max-w-3xl" id="analysis-case-summary">
-            智能摘要：客户反馈认证失败导致多人无法登录；需15分钟内恢复并同步补偿方案。</p>
+          <p class="text-sm text-gray-600 mt-2 w-full" id="analysis-case-summary">
+            智能摘要：认证失败影响多用户，承诺 15 分钟恢复；需同步公告与补偿方案。</p>
         </div>
         <div class="flex flex-shrink-0 items-center gap-2">
-          <button
-            class="px-3 py-2 text-xs bg-gray-100 rounded-full text-gray-700 hover:bg-gray-200 flex items-center gap-2">
-            <i class="fa fa-file-text-o"></i> 导出摘要
-          </button>
           <button
             class="px-3 py-2 text-xs bg-primary text-white rounded-full hover:bg-primary-dark flex items-center gap-2"
             onclick="toggleRightSidebar(false)">
@@ -1012,479 +1222,115 @@
         </div>
       </div>
 
-      <div class="analysis-body grid grid-cols-1 xl:grid-cols-[340px_1fr] flex-1 overflow-hidden min-h-0">
-        <!-- 左侧能力与摘要纵栏 -->
-        <div class="analysis-rail overflow-y-auto border-r border-gray-100 p-4 space-y-4 min-h-0">
-          <div class="rail-card">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-sm font-semibold text-gray-800">工单脉络</h4>
-              <span class="analysis-chip chip-neutral">读写分离</span>
-            </div>
-            <ul class="rail-list space-y-2 text-xs text-gray-600">
-              <li>• ERP登录认证失败，覆盖多个用户与部门</li>
-              <li>• 已承诺 15 分钟恢复；需同步补偿方案</li>
-              <li>• 建议立即重启认证服务并验证备节点</li>
-            </ul>
-          </div>
-
-          <div class="rail-card" id="rail-card-metrics">
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="text-sm font-semibold text-gray-800">关键指标</h4>
-              <span class="text-[11px] text-gray-500">实时</span>
-            </div>
-            <div class="analysis-metrics grid grid-cols-3 gap-3 text-center">
-              <div>
-                <div class="text-xl font-semibold text-red-600" id="analysis-metric-urgency">85%</div>
-                <div class="text-[11px] text-gray-500">紧急度</div>
-              </div>
-              <div>
-                <div class="text-xl font-semibold text-yellow-600" id="analysis-metric-emotion">65%</div>
-                <div class="text-[11px] text-gray-500">情绪不满</div>
-              </div>
-              <div>
-                <div class="text-xl font-semibold text-blue-700" id="analysis-metric-eta">15min</div>
-                <div class="text-[11px] text-gray-500">恢复承诺</div>
-              </div>
-            </div>
-            <div class="mt-3 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700"
-              id="analysis-tip">
-              建议：优先执行“认证服务重启”，同时准备备用节点切换。
-            </div>
-          </div>
-
-          <div class="rail-card">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-sm font-semibold text-gray-800">对话质检概览</h4>
-              <span class="text-[11px] text-gray-500">情绪 / 处理质量 / 满意度</span>
-            </div>
-            <div class="space-y-2 text-sm text-gray-700">
-              <div class="flex items-center justify-between">
-                <span class="flex items-center gap-2"><i class="fa fa-smile-o text-emerald-500"></i> 情绪</span>
-                <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  id="rail-emotion-value">平稳</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="flex items-center gap-2"><i class="fa fa-check-circle text-blue-500"></i> 处理质量</span>
-                <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200"
-                  id="rail-quality-value">合规·完整</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="flex items-center gap-2"><i class="fa fa-heart text-amber-500"></i> 客户满意度</span>
-                <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200"
-                  id="rail-satisfaction-value">待回访</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="rail-card" id="rail-card-history">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-sm font-semibold text-gray-800">历史对话回放</h4>
-              <span class="text-[11px] text-gray-500">最近 3 条</span>
-            </div>
-            <div class="space-y-3 text-sm text-gray-700">
-              <div class="border border-gray-200 rounded-lg p-3">
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">conv-001 · 高紧急</span>
-                  <span class="text-[11px] text-gray-500">10:30</span>
-                </div>
-                <p class="text-xs text-gray-600 mt-1">客户反馈认证失败，多用户受影响；请求15分钟恢复。</p>
-                <div class="mt-2 flex flex-wrap gap-2 text-[11px]">
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">情绪：平稳</span>
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">处理质量：合规/完整</span>
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">满意度：待回访</span>
-                </div>
-              </div>
-              <div class="border border-gray-200 rounded-lg p-3">
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">conv-002 · 处理中</span>
-                  <span class="text-[11px] text-gray-500">09:45</span>
-                </div>
-                <p class="text-xs text-gray-600 mt-1">账单核验问题待确认，账单指引已推送，等待反馈。</p>
-                <div class="mt-2 flex flex-wrap gap-2 text-[11px]">
-                  <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">情绪：关注</span>
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">处理质量：部分完整</span>
-                  <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">满意度：待跟进</span>
-                </div>
-              </div>
-              <div class="border border-gray-200 rounded-lg p-3">
-                <div class="flex items-center justify-between">
-                  <span class="font-medium">conv-003 · 已解决</span>
-                  <span class="text-[11px] text-gray-500">昨天</span>
-                </div>
-                <p class="text-xs text-gray-600 mt-1">功能体验反馈已处理，待确认最终满意度并收集建议。</p>
-                <div class="mt-2 flex flex-wrap gap-2 text-[11px]">
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">情绪：积极</span>
-                  <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">处理质量：完整</span>
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">满意度：待记录</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- 右侧主区域 -->
+      <div class="analysis-body flex flex-col flex-1 overflow-hidden min-h-0">
         <div class="analysis-main flex flex-col h-full min-h-0">
-          <div id="qc-lean-container" class="hidden flex flex-col h-full">
-            <div id="qc-focus-panel" class="qc-panel border-b border-gray-200 bg-white px-4 py-3">
-              <div class="flex flex-col gap-3">
-                <div class="flex flex-col md:flex-row md:items-start justify-between gap-3">
-                  <div class="flex-1">
-                    <div class="text-[11px] uppercase tracking-wide text-gray-500 mb-1">任务 · 对话质检</div>
-                    <div class="flex items-center flex-wrap gap-2">
-                      <h4 id="qc-title" class="text-base font-semibold text-gray-900">ABC科技 · ERP登录中断</h4>
-                      <span id="qc-urgency" class="qc-chip qc-chip-urgent">高紧急</span>
-                      <span id="qc-channel" class="qc-chip qc-chip-soft">飞书</span>
-                      <span id="qc-time" class="qc-chip qc-chip-ghost">最近 5 分钟</span>
-                    </div>
-                    <p id="qc-summary" class="text-xs text-gray-600 mt-1">客户反馈认证失败导致多人无法登录；需15分钟内恢复并同步补偿方案。</p>
-                    <div id="qc-tags" class="flex flex-wrap gap-2 mt-2 text-[11px] text-gray-600"></div>
-                  </div>
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full sm:w-[440px]">
-                    <div class="qc-dim-card">
-                      <div class="flex items-center justify-between text-[11px] text-gray-500">
-                        <span>情绪</span><span id="qc-emotion-score" class="font-semibold text-emerald-600">65%</span>
-                      </div>
-                      <div class="qc-dim-bar">
-                        <div id="qc-emotion-bar" style="width:65%"></div>
-                      </div>
-                      <div class="qc-dim-label" id="qc-emotion-label">不满回落</div>
-                    </div>
-                    <div class="qc-dim-card">
-                      <div class="flex items-center justify-between text-[11px] text-gray-500">
-                        <span>处理质量</span><span id="qc-quality-score" class="font-semibold text-blue-700">92</span>
-                      </div>
-                      <div class="qc-dim-bar">
-                        <div id="qc-quality-bar" style="width:92%"></div>
-                      </div>
-                      <div class="qc-dim-label" id="qc-quality-label">合规 · 需补充证据</div>
-                    </div>
-                    <div class="qc-dim-card">
-                      <div class="flex items-center justify-between text-[11px] text-gray-500">
-                        <span>客户满意度</span><span id="qc-satisfaction-score"
-                          class="font-semibold text-amber-600">3.8/5</span>
-                      </div>
-                      <div class="qc-dim-bar">
-                        <div id="qc-satisfaction-bar" style="width:76%"></div>
-                      </div>
-                      <div class="qc-dim-label" id="qc-satisfaction-label">需回访确认</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex flex-wrap gap-2 text-[11px] text-gray-600">
-                  <span class="qc-chip qc-chip-ghost">数据刷新：<span id="qc-updated-at">刚刚</span></span>
-                  <span class="qc-chip qc-chip-ghost">来源：对话记录 & 质检引擎</span>
-                  <div class="ml-auto flex gap-2">
-                    <button class="qc-filter-btn" data-qc-mode="conversation">只看对话</button>
-                    <button class="qc-filter-btn" data-qc-mode="analysis">只看分析</button>
-                    <button class="qc-filter-btn active" data-qc-mode="mixed">对话+分析</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="qc-lean-body flex-1 overflow-y-auto">
-              <div class="qc-lean-grid">
-                <section class="qc-thread-card mb-3" style="grid-column: 1 / -1;">
-                  <h4 class="text-xs font-semibold text-gray-700 mb-2">关键指标</h4>
-                  <div class="grid grid-cols-6 gap-2">
-                    <div class="p-2 bg-red-50 rounded-lg border border-red-100 text-center">
-                      <div class="text-[10px] text-gray-500">紧急度</div>
-                      <div class="text-sm font-bold text-red-600" id="tm-urgency">高</div>
-                    </div>
-                    <div class="p-2 bg-blue-50 rounded-lg border border-blue-100 text-center">
-                      <div class="text-[10px] text-gray-500">响应时效</div>
-                      <div class="text-sm font-bold text-blue-600" id="tm-response">2m</div>
-                    </div>
-                    <div class="p-2 bg-amber-50 rounded-lg border border-amber-100 text-center">
-                      <div class="text-[10px] text-gray-500">情绪指标</div>
-                      <div class="text-sm font-bold text-amber-600" id="tm-emotion">焦虑</div>
-                    </div>
-                  </div>
-                </section>
-                <section id="qc-thread-wrap" class="qc-thread-card">
-                  <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
-                    <span id="qc-thread-title">对话节选</span>
-                    <div class="flex gap-2">
-                      <button type="button" class="text-[11px] text-primary hover:underline">展开全量</button>
-                      <button type="button" class="text-[11px] text-gray-500 hover:text-primary">复制对话</button>
-                    </div>
-                  </div>
-                  <div id="qc-thread" class="space-y-2"></div>
-                </section>
-
-                <section id="qc-analysis-wrap" class="qc-insights-card">
-                  <div class="flex items-center justify-between mb-2">
-                    <div class="text-xs text-gray-500">质检分析</div>
-                    <span class="qc-chip qc-chip-ghost">情绪 / 处理质量 / 满意度</span>
-                  </div>
-                  <div class="qc-dim-grid">
-                    <div class="qc-dim-card compact">
-                      <div class="flex items-center justify-between text-[11px] text-gray-500">
-                        <span>情绪</span><span id="qc-emotion-score-compact"
-                          class="font-semibold text-emerald-600">65%</span>
-                      </div>
-                      <div class="qc-dim-bar">
-                        <div id="qc-emotion-bar-compact" style="width:65%"></div>
-                      </div>
-                      <div class="qc-dim-label" id="qc-emotion-label-compact">不满回落</div>
-                    </div>
-                    <div class="qc-dim-card compact">
-                      <div class="flex items-center justify-between text-[11px] text-gray-500">
-                        <span>处理质量</span><span id="qc-quality-score-compact"
-                          class="font-semibold text-blue-700">92</span>
-                      </div>
-                      <div class="qc-dim-bar">
-                        <div id="qc-quality-bar-compact" style="width:92%"></div>
-                      </div>
-                      <div class="qc-dim-label" id="qc-quality-label-compact">合规 · 需补充证据</div>
-                    </div>
-                    <div class="qc-dim-card compact">
-                      <div class="flex items-center justify-between text-[11px] text-gray-500">
-                        <span>客户满意度</span><span id="qc-satisfaction-score-compact"
-                          class="font-semibold text-amber-600">3.8/5</span>
-                      </div>
-                      <div class="qc-dim-bar">
-                        <div id="qc-satisfaction-bar-compact" style="width:76%"></div>
-                      </div>
-                      <div class="qc-dim-label" id="qc-satisfaction-label-compact">需回访确认</div>
-                    </div>
-                  </div>
-                  <div class="mt-3 text-xs text-gray-500">洞察与建议</div>
-                  <div id="qc-insights-list" class="space-y-2 mt-1"></div>
-                </section>
-              </div>
-
-              <div class="qc-action-bar">
-                <div class="flex items-center gap-2">
-                  <button class="qc-chip qc-chip-soft">重点：优先处理高紧急对话</button>
-                  <button class="qc-chip qc-chip-ghost" id="qc-action-tip">建议：同步公告 + 回访</button>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                  <button class="qc-action-btn primary" onclick="analyzeConversation()">重新分析</button>
-                  <button class="qc-action-btn" onclick="createRelatedTask('login-diagnosis','生成处置单')">生成报告</button>
-                  <button class="qc-action-btn" onclick="submitSatisfaction && submitSatisfaction()">标记已回访</button>
-                  <button class="qc-action-btn" onclick="addToSuggestion && addToSuggestion()">同步公告</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div id="analysis-classic" class="flex-1 overflow-y-auto">
             <div class="tabs flex border-b border-gray-200 items-center px-4">
-              <div class="flex-1 grid grid-cols-3 md:grid-cols-6 gap-2">
-                <button class="tab-btn py-3 text-center text-sm font-medium tab-active" data-tab="customer"
-                  data-tab-group="analysis">客户信息</button>
-                <button class="tab-btn py-3 text-center text-sm font-medium" data-tab="history"
-                  data-tab-group="analysis">历史记录</button>
-                <button class="tab-btn py-3 text-center text-sm font-medium" data-tab="knowledge"
-                  data-tab-group="analysis">知识库</button>
-                <button class="tab-btn py-3 text-center text-sm font-medium" data-tab="tools"
-                  data-tab-group="analysis">工具箱</button>
-                <button class="tab-btn py-3 text-center text-sm font-medium" data-tab="requirements"
-                  data-tab-group="analysis">需求统计</button>
-                <button class="tab-btn py-3 text-center text-sm font-medium" data-tab="ai-solutions"
-                  data-tab-group="analysis">AI方案</button>
+              <div class="flex-1 grid grid-cols-2 gap-2">
+                <button class="tab-btn py-3 text-center text-sm font-medium tab-active" data-tab="customer" data-tab-group="analysis">客户信息</button>
+                <button class="tab-btn py-3 text-center text-sm font-medium" data-tab="history" data-tab-group="analysis">历史对话记录</button>
               </div>
             </div>
 
             <div class="tab-panels flex-1 overflow-y-auto p-4 min-h-0">
-              <!-- 客户信息标签页 -->
-              <div class="tab-content active space-y-6" id="customer-tab" data-tab-group="analysis">
-                <div class="grid gap-4 lg:grid-cols-3">
-                  <div class="panel-card lg:col-span-2">
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="flex items-start gap-3">
-                        <div
-                          class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-primary font-semibold">
-                          张</div>
-                        <div>
-                          <div class="text-base font-semibold" id="customer-name">张三</div>
-                          <div class="text-sm text-gray-600" id="customer-title">ABC科技有限公司 | 技术总监</div>
-                          <div class="mt-2 flex flex-wrap gap-2 text-xs" id="customer-tags"></div>
-                        </div>
-                      </div>
-                      <div class="text-right">
-                        <div class="text-[11px] text-gray-500" id="customer-updated-at">数据刷新：--</div>
-                        <span
-                          class="px-2 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] inline-flex items-center gap-1">
-                          <i class="fa fa-plug text-xs"></i> 画像平台对接中
-                        </span>
-                      </div>
-                    </div>
-                    <div class="mt-3 grid sm:grid-cols-3 gap-3 text-sm">
-                      <div class="flex items-center gap-2">
-                        <i class="fa fa-phone text-gray-500 w-4"></i><span id="customer-phone">138****5678</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <i class="fa fa-envelope text-gray-500 w-4"></i><span
-                          id="customer-email">zhang@abc-tech.com</span>
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <i class="fa fa-wechat text-gray-500 w-4"></i><span id="customer-wechat">ZhangSan_WX</span>
-                      </div>
-                    </div>
-                    <div class="mt-3 flex items-start justify-between gap-3 text-xs text-gray-500">
-                      <p>个人属性（年龄/性别）默认隐藏，待业务确认是否展示，避免敏感信息滥用。</p>
-                      <span class="text-[11px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">画像新鲜度需校验</span>
-                    </div>
-                  </div>
-
-                  <div class="panel-card">
-                    <div class="flex items-center justify-between">
-                      <h4 class="text-sm font-medium text-gray-700">关键健康指标</h4>
-                      <span class="text-[11px] text-gray-500">合同：<span id="contract-range">-</span></span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
-                      <div class="stat-tile">
-                        <p class="text-[11px] text-gray-500">年度合同金额</p>
-                        <p class="text-base font-semibold text-primary" id="customer-contract-amount">¥128,000</p>
-                      </div>
-                      <div class="stat-tile">
-                        <p class="text-[11px] text-gray-500">客户满意度</p>
-                        <p class="text-base font-semibold text-green-600" id="customer-satisfaction">4.5/5.0</p>
-                      </div>
-                      <div class="stat-tile">
-                        <p class="text-[11px] text-gray-500">合作时长</p>
-                        <p class="text-base font-semibold text-purple-600" id="customer-duration">2年3个月</p>
-                      </div>
-                      <div class="stat-tile">
-                        <p class="text-[11px] text-gray-500">SLA/到期</p>
-                        <p class="text-sm font-semibold flex items-center gap-2"><span
-                            id="customer-sla">SLA-金牌服务</span><span
-                            class="text-[11px] px-2 py-0.5 rounded-full bg-green-100 text-green-800"
-                            id="customer-sla-status">有效</span></p>
-                        <p class="text-[11px] text-gray-500 mt-1">到期：<span id="customer-expire">2023-12-31</span></p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="grid gap-4 lg:grid-cols-3">
-                  <div class="panel-card lg:col-span-2">
-                    <div class="flex items-start justify-between gap-2">
+              <div class="tab-content active space-y-4" id="customer-tab" data-tab-group="analysis">
+                <div class="panel-card">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-primary font-semibold">张</div>
                       <div>
-                        <h4 class="text-sm font-medium text-gray-700">潜在诉求与推荐动作</h4>
-                        <p class="text-xs text-gray-500 mt-1">结合行为/服务记录预测，突出 2-3 条当前最需要关注的方向。</p>
+                        <div class="text-base font-semibold" id="customer-name">张三</div>
+                        <div class="text-sm text-gray-600" id="customer-title">ABC科技有限公司 | 技术总监</div>
+                        <div class="mt-2 flex flex-wrap gap-2 text-xs" id="customer-tags"></div>
                       </div>
-                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">自动+手动标注</span>
                     </div>
-                    <div id="customer-insights" class="space-y-3 mt-3"></div>
+                    <div class="text-right">
+                      <div class="text-[11px] text-gray-500" id="customer-updated-at">数据刷新：--</div>
+                      <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-600 text-[11px] inline-flex items-center gap-1">
+                        <i class="fa fa-plug text-xs"></i> 画像平台对接中
+                      </span>
+                    </div>
                   </div>
-
-                  <div class="panel-card">
-                    <div class="flex items-center justify-between">
-                      <h4 class="text-sm font-medium text-gray-700">客户画像数据占位</h4>
-                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">未对接</span>
+                  <div class="mt-3 grid sm:grid-cols-3 gap-3 text-sm">
+                    <div class="flex items-center gap-2">
+                      <i class="fa fa-phone text-gray-500 w-4"></i><span id="customer-phone">138****5678</span>
                     </div>
-                    <div class="placeholder-card mt-3">
-                      <p class="text-xs text-gray-600 leading-relaxed">客户画像平台尚未对接，预留展示位用于后续的统一画像输出。</p>
-                      <ul class="list-disc pl-4 mt-2 text-[11px] text-gray-600 space-y-1">
-                        <li>显性标签：地域/行业/客户等级/权益</li>
-                        <li>行为标签：近7/30/90天浏览、加购、退货、客诉</li>
-                        <li>预测标签：复购倾向、流失风险、价格敏感度</li>
-                        <li>个人属性（年龄/性别）展示需业务确认后开启</li>
-                      </ul>
+                    <div class="flex items-center gap-2">
+                      <i class="fa fa-envelope text-gray-500 w-4"></i><span id="customer-email">zhang@abc-tech.com</span>
                     </div>
-                    <div class="mt-3 text-[11px] text-gray-500 leading-relaxed">
-                      输出格式：卡片/标签/指标区，需标注来源与更新时间，并提供展开全文入口。
+                    <div class="flex items-center gap-2">
+                      <i class="fa fa-wechat text-gray-500 w-4"></i><span id="customer-wechat">ZhangSan_WX</span>
                     </div>
+                  </div>
+                  <div class="mt-4 flex items-center justify-between text-xs text-gray-500">
+                    <span>合同周期：<span id="contract-range">-</span></span>
+                    <span class="text-[11px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">画像新鲜度需校验</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 mt-4 text-sm">
+                    <div class="stat-tile">
+                      <p class="text-[11px] text-gray-500">年度合同金额</p>
+                      <p class="text-base font-semibold text-primary" id="customer-contract-amount">¥128,000</p>
+                    </div>
+                    <div class="stat-tile">
+                      <p class="text-[11px] text-gray-500">客户满意度</p>
+                      <p class="text-base font-semibold text-green-600" id="customer-satisfaction">4.5/5.0</p>
+                    </div>
+                    <div class="stat-tile">
+                      <p class="text-[11px] text-gray-500">合作时长</p>
+                      <p class="text-base font-semibold text-purple-600" id="customer-duration">2年3个月</p>
+                    </div>
+                    <div class="stat-tile">
+                      <p class="text-[11px] text-gray-500">客户等级/到期</p>
+                      <p class="text-sm font-semibold flex items-center gap-2">
+                        <span id="customer-sla">VIP</span>
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-green-100 text-green-800" id="customer-sla-status">有效</span>
+                      </p>
+                      <p class="text-[11px] text-gray-500 mt-1">到期：<span id="customer-expire">2023-12-31</span></p>
+                    </div>
+                  </div>
+                  <div class="mt-3 text-sm">
+                    <div class="font-medium">已购产品：</div>
+                    <ul class="list-disc pl-5 mt-1 text-xs space-y-1" id="customer-products"></ul>
                   </div>
                 </div>
 
                 <div class="grid gap-4 lg:grid-cols-2">
                   <div class="panel-card">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">服务与合同</h4>
-                    <div class="bg-blue-50 p-3 rounded-lg">
-                      <div class="flex justify-between items-center">
-                        <span class="text-sm font-medium" id="customer-sla-duplicate">SLA-金牌服务</span>
-                        <span class="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full"
-                          id="customer-sla-status-duplicate">有效</span>
-                      </div>
-                      <div class="text-xs text-gray-600 mt-1">到期日：<span id="customer-expire-duplicate">2023-12-31</span>
-                      </div>
-                      <div class="mt-2 text-sm">
-                        <div class="font-medium">已购产品：</div>
-                        <ul class="list-disc pl-5 mt-1 text-xs space-y-1" id="customer-products"></ul>
-                      </div>
+                    <div class="flex items-center justify-between">
+                      <h4 class="text-sm font-medium text-gray-700">群公告</h4>
+                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">最新</span>
                     </div>
+                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">认证服务出现波动，预计 15 分钟内恢复。请勿重复提交重置请求。</p>
                   </div>
-
                   <div class="panel-card">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">健康关注</h4>
-                    <div class="space-y-2">
-                      <div class="stat-row">
-                        <span>重点关注</span><span class="font-medium text-amber-600" id="customer-focus">保持本周触达</span>
-                      </div>
-                      <div class="stat-row">
-                        <span>画像更新时间</span><span class="font-medium" id="customer-updated-at-secondary">--</span>
-                      </div>
-                      <div class="stat-row">
-                        <span>续约/到期</span><span class="font-medium" id="customer-expire-secondary">2023-12-31</span>
-                      </div>
+                    <div class="flex items-center justify-between">
+                      <h4 class="text-sm font-medium text-gray-700">群备注</h4>
+                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">内部</span>
                     </div>
+                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">客户为企业ERP核心系统群聊，需同步公告并保持每 10 分钟进度更新。</p>
                   </div>
                 </div>
 
                 <div class="panel-card">
-                  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                    <div>
-                      <h4 class="text-sm font-medium text-gray-700">最近互动</h4>
-                      <p class="text-xs text-gray-500 mt-1">聚焦近7~14天关键互动，验证画像是否过期；数据稀疏时可收起。</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                      <select id="interaction-range-filter" class="text-xs border border-gray-300 rounded px-2 py-1">
-                        <option value="7d">近7天</option>
-                        <option value="30d">近30天</option>
-                        <option value="90d">近90天</option>
-                        <option value="all">全部</option>
-                      </select>
-                      <select id="interaction-type-filter" class="text-xs border border-gray-300 rounded px-2 py-1">
-                        <option value="全部">全部类型</option>
-                        <option value="服务">服务</option>
-                        <option value="沟通">沟通</option>
-                        <option value="营销">营销</option>
-                      </select>
-                    </div>
+                  <div class="flex items-center justify-between gap-2">
+                    <h4 class="text-sm font-medium text-gray-700">当前客情摘要</h4>
+                    <button class="text-xs text-primary hover:underline" onclick="document.querySelector('[data-tab=&quot;history&quot;][data-tab-group=&quot;analysis&quot;]').click()">查看历史对话</button>
                   </div>
-                  <div class="grid gap-3 md:grid-cols-3" id="customer-interactions"></div>
+                  <p class="mt-2 text-sm text-gray-700 leading-relaxed">客户反馈系统登录认证失败，多用户受影响；当前情绪急切，需要快速给出处理进展。</p>
+                  <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
+                    <span class="px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-100">客情状态：紧急</span>
+                    <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">情绪：急切</span>
+                    <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">建议：15分钟内同步进展</span>
+                  </div>
                 </div>
               </div>
 
-              <!-- 历史记录标签页 -->
               <div class="tab-content hidden space-y-4" id="history-tab" data-tab-group="analysis">
-                <div class="panel-card space-y-3">
-                  <div class="flex justify-between items-start gap-3">
-                    <div>
-                      <h3 class="text-sm font-medium text-gray-700">历史分层视图</h3>
-                      <p class="text-xs text-gray-500 mt-1">沟通记录看诉求，服务记录看履约，承诺视图看达成度与风险。</p>
-                    </div>
-                  </div>
-                  <div class="grid md:grid-cols-3 gap-3 text-xs text-gray-600">
-                    <div class="history-legend-item">
-                      <span class="legend-dot bg-primary"></span>沟通记录用于理解诉求、触发的服务动作和情绪变化。
-                    </div>
-                    <div class="history-legend-item">
-                      <span class="legend-dot bg-green-500"></span>服务记录展示动作、证据与对应的合同承诺/SLA。
-                    </div>
-                    <div class="history-legend-item">
-                      <span class="legend-dot bg-amber-500"></span>承诺视图汇总达成度、剩余额度及预警，定义仍在客户信息页。
-                    </div>
-                  </div>
-                </div>
-
                 <div class="panel-card space-y-3" id="conversation-section">
                   <div class="flex justify-between items-center">
                     <div>
-                      <h3 class="text-sm font-medium text-gray-700">沟通记录（时间线）</h3>
-                      <p class="text-xs text-gray-500 mt-1">仅展示沟通上下文，不直接代表履约；可跳转关联服务动作。</p>
+                      <h3 class="text-sm font-medium text-gray-700">历史对话记录（时间线）</h3>
+                      <p class="text-xs text-gray-500 mt-1">仅展示沟通上下文，支持定位到当前对话。</p>
                     </div>
                     <select class="text-xs border border-gray-300 rounded px-2 py-1">
                       <option>最近30天</option>
@@ -1494,467 +1340,121 @@
                   </div>
                   <div id="conversation-timeline" class="history-timeline space-y-4"></div>
                 </div>
-
-                <div class="panel-card space-y-3" id="commitment-section">
-                  <div class="flex justify-between items-start gap-2">
-                    <div>
-                      <h3 class="text-sm font-medium text-gray-700">承诺达成度</h3>
-                      <p class="text-xs text-gray-500 mt-1">承诺定义存放在客户信息/合同页，这里只呈现履约进度与异常。</p>
-                    </div>
-                    <span class="analysis-chip chip-neutral text-xs">按承诺聚合</span>
-                  </div>
-                  <div id="commitment-summary" class="grid md:grid-cols-3 gap-3"></div>
-                  <div id="commitment-alerts" class="space-y-2"></div>
-                </div>
-
-                <div class="panel-card space-y-3" id="service-section">
-                  <div class="flex justify-between items-center">
-                    <div>
-                      <h3 class="text-sm font-medium text-gray-700">服务履约记录（映射承诺）</h3>
-                      <p class="text-xs text-gray-500 mt-1">展示具体服务动作、状态、证据，并标注其对应的合同承诺。</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <select class="text-xs border border-gray-300 rounded px-2 py-1" id="service-status-filter">
-                        <option value="全部">全部状态</option>
-                        <option value="已完成">已完成</option>
-                        <option value="进行中">进行中</option>
-                        <option value="未开始">未开始</option>
-                      </select>
-                      <select class="text-xs border border-gray-300 rounded px-2 py-1" id="service-commitment-filter">
-                        <option value="全部">全部承诺</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div id="service-records" class="space-y-3"></div>
-                </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-              <!-- 知识库标签页 -->
-              <div class="tab-content hidden space-y-5" id="knowledge-tab" data-tab-group="analysis">
-                <!-- 全局搜索 -->
-                <div class="panel-card">
-                  <div class="relative mb-4">
-                    <div class="flex">
-                      <input id="knowledge-search-input" type="text" placeholder="搜索知识库..."
-                        class="flex-1 pl-10 pr-4 py-2 rounded-l-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                      <button id="knowledge-search-btn" class="bg-primary text-white px-3 py-2 rounded-r-lg hover:bg-primary-dark">
-                        <i class="fa fa-search"></i>
-                      </button>
-                    </div>
-                    <i class="fa fa-search absolute left-3 top-3 text-gray-400"></i>
-                    <div class="flex flex-wrap gap-1 mt-2">
-                      <span
-                        class="knowledge-quick-tag text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200" data-keyword="认证失败">认证失败</span>
-                      <span
-                        class="knowledge-quick-tag text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200" data-keyword="ERP系统">ERP系统</span>
-                      <span
-                        class="knowledge-quick-tag text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200" data-keyword="登录问题">登录问题</span>
-                      <span
-                        class="knowledge-quick-tag text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full cursor-pointer hover:bg-gray-200" data-keyword="服务中断">服务中断</span>
-                    </div>
-                  </div>
+      <div id="ai-assistant-drawer" class="ai-assistant-drawer hidden flex flex-col h-full">
+        <div class="ai-assistant-header flex items-start justify-between gap-4 border-b border-gray-200 p-4">
+          <div>
+            <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">AI辅助面板</div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 id="ai-assistant-title" class="text-lg font-semibold text-gray-900">智能建议中心</h3>
+              <span id="ai-assistant-badge" class="analysis-chip chip-info">待选择</span>
+            </div>
+            <p id="ai-assistant-desc" class="text-sm text-gray-600 mt-2 w-full">点击下方快捷功能展示回复话术或解决步骤。</p>
+          </div>
+          <div class="flex flex-shrink-0 items-center gap-2">
+            <button class="px-3 py-2 text-xs bg-primary text-white rounded-full hover:bg-primary-dark flex items-center gap-2" onclick="toggleRightSidebar(false)">
+              <i class="fa fa-compress"></i> 收起
+            </button>
+          </div>
+        </div>
+        <div class="ai-assistant-body flex flex-col flex-1 overflow-hidden min-h-0 p-4">
+          <div id="ai-assistant-panel" class="ai-assistant-panel panel-card">
+            <div class="p-4 space-y-4">
+              <div id="ai-panel-reply" class="space-y-3 ai-panel-stack reply-section">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-semibold text-gray-700 flex items-center">
+                    <span class="mr-2">💬</span>
+                    <span>回复建议</span>
+                  </h4>
+                  <span class="text-[11px] text-gray-500">根据当前会话自动生成</span>
                 </div>
-
-                <!-- 知识预览区，默认收起，点击“查看详情”时在面板内阅读原文 -->
-                <div id="knowledge-preview"
-                  class="knowledge-preview panel-card hidden border border-primary/40 bg-gradient-to-br from-blue-50 via-white to-white relative overflow-hidden">
-                  <div
-                    class="knowledge-preview-fade absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-white to-transparent pointer-events-none">
-                  </div>
-                  <div class="flex items-start justify-between gap-3">
-                    <div>
-                      <div class="flex items-center gap-2">
-                        <span id="knowledge-preview-type"
-                          class="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">文档</span>
-                        <span id="knowledge-preview-updated" class="text-[11px] text-gray-500">更新于：-</span>
-                      </div>
-                      <div id="knowledge-preview-title" class="text-base font-semibold text-gray-900 mt-1">知识原文预览</div>
-                      <p id="knowledge-preview-source" class="text-xs text-gray-500 mt-1">来源：内部知识库</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <button class="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        id="knowledge-preview-collapse">
-                        折叠
-                      </button>
-                      <button class="text-gray-400 hover:text-primary" onclick="closeKnowledgePreview()" title="收起预览">
-                        <i class="fa fa-times"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <div id="knowledge-preview-body"
-                    class="knowledge-preview-body mt-3 text-sm text-gray-700 leading-relaxed">
-                    <p class="text-xs text-gray-500">点击右侧知识卡片后，这里会展开原文预览，避免跳转窗口。</p>
-                  </div>
-                  <div class="mt-3 flex items-center justify-between flex-wrap gap-2">
-                    <div id="knowledge-preview-tags" class="flex flex-wrap gap-2 text-xs text-gray-600"></div>
-                    <div class="flex items-center gap-2">
-                      <button id="knowledge-preview-open"
-                        class="px-3 py-1 text-xs bg-primary text-white rounded-lg hover:bg-primary-dark" type="button">
-                        <i class="fa fa-angle-down mr-1"></i>展开全文
-                      </button>
-                      <button id="knowledge-preview-newtab"
-                        class="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">新标签打开</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="grid xl:grid-cols-2 gap-4">
-                  <div class="panel-card space-y-3">
-                    <div class="flex justify-between items-center">
-                      <h3 class="text-sm font-medium text-gray-700">对话相关知识</h3>
-                      <span class="text-xs text-blue-600">自动匹配</span>
-                    </div>
-                    <div id="knowledge-card-container" class="space-y-3">
-                      <div
-                        class="bg-white border border-gray-200 p-3 rounded-lg hover:shadow-md transition-shadow knowledge-card">
-                        <div class="flex items-start">
-                          <div
-                            class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                            <i class="fa fa-file-text-o"></i>
-                          </div>
-                          <div class="ml-2 flex-1">
-                            <h4 class="text-sm font-medium">企业ERP系统登录问题排查指南</h4>
-                            <p class="text-xs text-gray-600 mt-1">详细介绍了常见的登录失败原因及解决方案。</p>
-                            <div class="flex justify-between items-center mt-2">
-                              <span class="text-xs text-gray-500">更新于：2023-06-15</span>
-                              <button class="text-xs text-primary hover:underline" data-click="knowledge-detail"
-                                data-label="企业ERP系统登录问题排查指南" data-url="https://kb.example.com/erp-login-troubleshoot"
-                                data-preview="常见认证失败场景：证书/密钥失效、时间不同步、限流。提供日志定位及恢复步骤。" data-type="文档"
-                                data-updated="2023-06-15" data-tags="ERP,登录,认证,故障排查"
-                                data-full="常见认证失败场景：证书/密钥失效、时间不同步、限流。提供日志定位及恢复步骤。覆盖：\n1. 入口排查：三层流转、Nginx鉴权、后端STS。\n2. 观察指标：401/403比率、QPS抖动、RT异常、限流命中。\n3. 恢复步骤：清理失效证书、同步服务器时间、临时关闭灰度限流。\n4. 验证清单：登录成功率≥99%、关键链路无告警、监控恢复正常。">查看详情</button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        class="bg-white border border-gray-200 p-3 rounded-lg hover:shadow-md transition-shadow knowledge-card">
-                        <div class="flex items-start">
-                          <div
-                            class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                            <i class="fa fa-play-circle-o"></i>
-                          </div>
-                          <div class="ml-2 flex-1">
-                            <h4 class="text-sm font-medium">视频教程：如何处理认证服务故障</h4>
-                            <p class="text-xs text-gray-600 mt-1">技术专家演示如何快速诊断和解决认证服务问题。</p>
-                            <div class="flex justify-between items-center mt-2">
-                              <span class="text-xs text-gray-500">时长：12:35</span>
-                              <button class="text-xs text-primary hover:underline" data-click="knowledge-video"
-                                data-label="视频教程：认证服务故障" data-url="https://kb.example.com/video/auth-incident"
-                                data-preview="视频包含日志定位、重启与回退操作的全流程演示，可直接跟随操作。" data-type="视频" data-updated="2023-07-02"
-                                data-tags="视频,认证,演示"
-                                data-full="视频内容提纲：\n- 5分钟：常见认证失败现象快速识别\n- 3分钟：关键日志抓取与分析（Auth模块、网关、后端链路）\n- 2分钟：重启/回退演示与注意事项\n- 2分钟：恢复后验证与告警复位\n建议在业务低峰操作，跟随视频指引完成。">观看视频</button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="panel-card">
-                    <h3 class="text-sm font-medium text-gray-700 mb-3">相关知识图谱</h3>
-                    <div class="bg-white border border-gray-200 rounded-lg p-3">
-                      <div class="relative h-40 bg-gray-50 rounded-lg flex items-center justify-center">
-                        <div class="text-center">
-                          <i class="fa fa-sitemap text-gray-400 text-3xl mb-2"></i>
-                          <p class="text-xs text-gray-500">认证服务相关知识图谱</p>
-                        </div>
-                      </div>
-                      <div class="mt-3 text-center">
-                        <button class="text-xs text-primary hover:underline" data-click="knowledge-graph"
-                          data-label="查看知识图谱">查看完整图谱</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 工具箱标签页 -->
-              <div class="tab-content hidden space-y-4" id="tools-tab" data-tab-group="analysis">
-                <div class="panel-card">
-                  <h3 class="text-sm font-medium text-gray-700 mb-3">系统工具</h3>
-                  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <button
-                      class="bg-blue-50 hover:bg-blue-100 p-3 rounded-lg flex flex-col items-center justify-center transition-colors"
-                      data-click="tool" data-label="服务状态监控">
-                      <i class="fa fa-server text-blue-600 text-xl mb-2"></i>
-                      <span class="text-xs">服务状态监控</span>
-                    </button>
-                    <button
-                      class="bg-green-50 hover:bg-green-100 p-3 rounded-lg flex flex-col items-center justify-center transition-colors"
-                      data-click="tool" data-label="数据库管理">
-                      <i class="fa fa-database text-green-600 text-xl mb-2"></i>
-                      <span class="text-xs">数据库管理</span>
-                    </button>
-                    <button
-                      class="bg-purple-50 hover:bg-purple-100 p-3 rounded-lg flex flex-col items-center justify-center transition-colors"
-                      data-click="tool" data-label="用户权限管理">
-                      <i class="fa fa-user-plus text-purple-600 text-xl mb-2"></i>
-                      <span class="text-xs">用户权限管理</span>
-                    </button>
-                    <button
-                      class="bg-orange-50 hover:bg-orange-100 p-3 rounded-lg flex flex-col items-center justify-center transition-colors"
-                      data-click="tool" data-label="数据备份">
-                      <i class="fa fa-database text-orange-600 text-xl mb-2"></i>
-                      <span class="text-xs">数据备份</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="grid lg:grid-cols-2 gap-4">
-                  <div class="panel-card">
-                    <h4 class="text-sm font-medium mb-2">登录问题诊断</h4>
-                    <p class="text-xs text-gray-600 mb-3">自动检测和修复常见的登录认证问题</p>
-                    <button class="w-full py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark"
-                      data-click="tool" data-label="运行登录诊断">
-                      运行诊断
-                    </button>
-                  </div>
-                  <div class="panel-card">
-                    <h4 class="text-sm font-medium mb-2">系统日志分析</h4>
-                    <p class="text-xs text-gray-600 mb-3">快速分析系统日志，定位错误原因</p>
-                    <div class="flex space-x-2">
-                      <input type="text" placeholder="输入时间段..."
-                        class="flex-1 text-xs border border-gray-300 rounded-lg px-2 py-1">
-                      <button class="px-3 py-1 bg-primary text-white text-xs rounded-lg hover:bg-primary-dark"
-                        data-click="tool" data-label="查询日志">
-                        查询
-                      </button>
-                    </div>
-                  </div>
-                  <div class="panel-card">
-                    <h4 class="text-sm font-medium mb-2">用户会话管理</h4>
-                    <p class="text-xs text-gray-600 mb-3">查看和管理用户当前活跃会话</p>
-                    <button class="w-full py-2 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark"
-                      data-click="tool" data-label="查看会话">
-                      查看会话
-                    </button>
-                  </div>
-                </div>
-
-                <div class="panel-card">
-                  <h3 class="text-sm font-medium text-gray-700 mb-3">快捷操作</h3>
-                  <div class="grid md:grid-cols-2 gap-2">
-                    <button
-                      class="w-full flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                      data-click="quick" data-label="发送系统通知">
-                      <span class="text-sm">发送系统通知</span>
-                      <i class="fa fa-bell text-gray-500"></i>
-                    </button>
-                    <button
-                      class="w-full flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                      data-click="quick" data-label="创建事件工单">
-                      <span class="text-sm">创建事件工单</span>
-                      <i class="fa fa-ticket text-gray-500"></i>
-                    </button>
-                    <button
-                      class="w-full flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                      data-click="quick" data-label="升级问题">
-                      <span class="text-sm">升级问题</span>
-                      <i class="fa fa-arrow-up text-gray-500"></i>
-                    </button>
-                    <button
-                      class="w-full flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-                      data-click="quick" data-label="生成报告">
-                      <span class="text-sm">生成报告</span>
-                      <i class="fa fa-file-text-o text-gray-500"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 需求统计标签页 -->
-              <div class="tab-content hidden space-y-4" id="requirements-tab" data-tab-group="analysis">
-                <div class="panel-card space-y-3">
-                  <div class="flex justify-between items-start gap-2">
-                    <div>
-                      <h3 class="text-sm font-medium text-gray-700">需求统计 · 当前会话客户</h3>
-                      <p class="text-xs text-gray-500 mt-1">合同起始：<span id="contract-range">-</span> · 客户：张三</p>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                      <button id="requirements-rescan"
-                        class="text-xs px-3 py-2 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 flex items-center gap-1">
-                        <i class="fa fa-search"></i> 重新扫描对话需求
-                      </button>
-                      <button id="requirements-refresh"
-                        class="text-xs text-primary hover:underline flex items-center gap-1">
-                        <i class="fa fa-refresh"></i> 刷新数据
-                      </button>
-                    </div>
-                  </div>
-                  <div class="grid md:grid-cols-4 gap-3">
-                    <div class="bg-white border border-gray-200 rounded-lg p-3">
-                      <p class="text-xs text-gray-500">累计需求</p>
-                      <p class="text-xl font-semibold text-primary" id="req-total-count">0</p>
-                      <p class="text-[11px] text-gray-500">合同起始至今</p>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-3">
-                      <p class="text-xs text-gray-500">待处理</p>
-                      <p class="text-xl font-semibold text-amber-600" id="req-pending-count">0</p>
-                      <p class="text-[11px] text-gray-500">内部需求平台</p>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-3">
-                      <p class="text-xs text-gray-500">已完成</p>
-                      <p class="text-xl font-semibold text-green-600" id="req-done-count">0</p>
-                      <p class="text-[11px] text-gray-500">完成卡片</p>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-3">
-                      <p class="text-xs text-gray-500">未建卡</p>
-                      <p class="text-xl font-semibold text-red-600" id="req-uncreated-count">0</p>
-                      <p class="text-[11px] text-gray-500">待提交到平台</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="panel-card">
-                  <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-sm font-medium text-gray-700">AI识别未建卡需求</h4>
-                    <span class="text-xs text-gray-500">尚未同步至内部需求平台</span>
-                  </div>
-                  <div id="unprocessed-requirements-list" class="space-y-3"></div>
-                </div>
-
-                <div class="panel-card">
-                  <div class="flex justify-between items-center mb-3">
-                    <h4 class="text-sm font-medium text-gray-700">已创建需求卡片</h4>
-                    <select id="requirement-status-filter" class="text-xs border border-gray-300 rounded px-2 py-1">
-                      <option>全部状态</option>
-                      <option>待处理</option>
-                      <option>处理中</option>
-                      <option>已完成</option>
-                      <option>已拒绝</option>
-                    </select>
-                  </div>
-                  <div id="processed-requirements-list" class="space-y-3"></div>
-                </div>
-              </div>
-
-              <!-- AI方案标签页 -->
-              <div class="tab-content hidden space-y-4" id="ai-solutions-tab" data-tab-group="analysis">
-                <div class="panel-card">
-                  <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-sm font-medium text-gray-700">AI解决方案</h3>
-                    <button class="text-xs text-primary hover:underline flex items-center"
-                      onclick="analyzeConversation()">
-                      <i class="fa fa-refresh mr-1"></i> 重新分析
-                    </button>
-                  </div>
-                  <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-                    <h4 class="text-sm font-medium mb-3">对话分析</h4>
-                    <div class="space-y-3">
+                <div id="ai-reply-list" class="space-y-3">
+                  <div class="ai-panel-card">
+                    <div class="flex items-start justify-between gap-3">
                       <div>
-                        <div class="flex justify-between text-xs mb-1"><span>问题紧急度</span><span
-                            class="font-medium text-red-600">高</span></div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                          <div class="bg-red-500 h-2 rounded-full" style="width: 85%"></div>
-                        </div>
+                        <div class="text-xs text-gray-400 mb-1">方案 A · 稳定情绪</div>
+                        <p class="text-sm text-gray-700">非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。</p>
                       </div>
+                      <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。">采纳</button>
+                    </div>
+                  </div>
+                  <div class="ai-panel-card">
+                    <div class="flex items-start justify-between gap-3">
                       <div>
-                        <div class="flex justify-between text-xs mb-1"><span>客户情绪</span><span
-                            class="font-medium text-yellow-600">不满</span></div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                          <div class="bg-yellow-500 h-2 rounded-full" style="width: 65%"></div>
-                        </div>
+                        <div class="text-xs text-gray-400 mb-1">方案 B · 明确排查</div>
+                        <p class="text-sm text-gray-700">我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。</p>
                       </div>
+                      <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。">采纳</button>
+                    </div>
+                  </div>
+                  <div class="ai-panel-card">
+                    <div class="flex items-start justify-between gap-3">
                       <div>
-                        <div class="flex justify-between text-xs mb-1"><span>解决复杂度</span><span
-                            class="font-medium text-blue-600">中等</span></div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                          <div class="bg-blue-500 h-2 rounded-full" style="width: 50%"></div>
-                        </div>
+                        <div class="text-xs text-gray-400 mb-1">方案 C · 安抚 + 补偿口径</div>
+                        <p class="text-sm text-gray-700">我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。</p>
                       </div>
-                    </div>
-                    <div class="mt-4">
-                      <h5 class="text-xs font-medium mb-2">关键信息提取</h5>
-                      <div class="flex flex-wrap gap-2">
-                        <span class="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full">ERP系统</span>
-                        <span class="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full">登录失败</span>
-                        <span class="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full">认证错误</span>
-                        <span class="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full">多用户受影响</span>
-                        <span class="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-full">业务中断</span>
-                      </div>
+                      <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。">采纳</button>
                     </div>
                   </div>
-
-                  <div class="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-                    <h4 class="text-sm font-medium mb-3">推荐解决方案</h4>
-                    <div class="space-y-4">
-                      <div
-                        class="solution-item p-3 border border-gray-200 rounded-lg hover:border-primary transition-colors">
-                        <div class="flex items-start">
-                          <div
-                            class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                            <i class="fa fa-check-circle"></i>
-                          </div>
-                          <div class="ml-3 flex-1">
-                            <div class="flex justify-between items-center">
-                              <h5 class="text-sm font-medium">认证服务重启</h5>
-                              <span class="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">高匹配度</span>
-                            </div>
-                            <p class="text-xs text-gray-600 mt-1">根据历史数据，90%的类似问题可通过重启认证服务解决。预计耗时：5分钟。</p>
-                            <div class="mt-2 flex justify-between">
-                              <button class="text-xs text-primary hover:underline">查看详细步骤</button>
-                              <button
-                                class="text-xs px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark">执行操作</button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        class="solution-item p-3 border border-gray-200 rounded-lg hover:border-primary transition-colors">
-                        <div class="flex items-start">
-                          <div
-                            class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                            <i class="fa fa-exchange"></i>
-                          </div>
-                          <div class="ml-3 flex-1">
-                            <div class="flex justify-between items-center">
-                              <h5 class="text-sm font-medium">切换到备用认证服务器</h5>
-                              <span class="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">中等匹配度</span>
-                            </div>
-                            <p class="text-xs text-gray-600 mt-1">如果重启无效，可切换到备用认证服务器。预计耗时：10分钟。</p>
-                            <div class="mt-2 flex justify-between">
-                              <button class="text-xs text-primary hover:underline">查看详细步骤</button>
-                              <button
-                                class="text-xs px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">执行操作</button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                </div>
+              </div>
+              <div id="ai-panel-solution" class="hidden space-y-4 ai-panel-stack solution-section">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-semibold text-gray-700 flex items-center">
+                    <span class="mr-2">🧭</span>
+                    <span>排查建议解决步骤</span>
+                  </h4>
+                  <span class="text-[11px] text-gray-500">仅提供建议</span>
+                </div>
+                <div class="ai-panel-card ai-panel-card--compact">
+                  <ol id="ai-solution-steps" class="list-decimal pl-5 space-y-2 text-sm text-gray-700">
+                  </ol>
+                </div>
+                <div>
+                  <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">参考资料</h5>
+                  <div id="ai-solution-references" class="mt-2 space-y-2">
+                  </div>
+                </div>
+              </div>
+              <div id="ai-panel-sentiment" class="hidden space-y-3 ai-panel-stack sentiment-section">
+                <div class="ai-panel-card">
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-semibold text-gray-700 flex items-center">
+                      <span class="mr-2">😊</span>
+                      <span>情绪分析</span>
+                    </h4>
+                    <span class="text-[11px] text-gray-500">实时更新</span>
+                  </div>
+                  <div id="ai-sentiment-content" class="text-sm text-gray-600 mt-2"></div>
+                </div>
+              </div>
+              <div id="ai-panel-reference" class="hidden space-y-3 ai-panel-stack reference-section">
+                <div class="ai-panel-card ai-panel-card--compact">
+                  <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">参考资料</div>
+                  <div class="grid gap-4 lg:grid-cols-2 mt-2">
+                    <div id="ai-panel-knowledge" class="hidden">
+                      <div class="text-sm font-semibold text-gray-700">知识库文档</div>
+                      <div id="ai-knowledge-content" class="mt-2 space-y-2"></div>
+                    </div>
+                    <div id="ai-panel-tasks" class="hidden">
+                      <div class="text-sm font-semibold text-gray-700">相似工单</div>
+                      <div id="ai-tasks-content" class="mt-2 space-y-2"></div>
                     </div>
                   </div>
-
-                  <div class="bg-white border border-gray-200 rounded-lg p-4">
-                    <h4 class="text-sm font-medium mb-3">预期效果</h4>
-                    <div class="space-y-3">
-                      <div class="flex items-center">
-                        <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                          <i class="fa fa-clock-o"></i>
-                        </div>
-                        <div class="ml-3">
-                          <h5 class="text-sm">解决时间</h5>
-                          <p class="text-xs text-gray-600">预计15分钟内解决问题</p>
-                        </div>
-                      </div>
-                      <div class="flex items-center">
-                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><i
-                            class="fa fa-line-chart"></i></div>
-                        <div class="ml-3">
-                          <h5 class="text-sm">客户满意度</h5>
-                          <p class="text-xs text-gray-600">预计可提升客户满意度20%</p>
-                        </div>
-                      </div>
-                      <div class="flex items-center">
-                        <div
-                          class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                          <i class="fa fa-shield"></i>
-                        </div>
-                        <div class="ml-3">
-                          <h5 class="text-sm">预防措施</h5>
-                          <p class="text-xs text-gray-600">建议设置认证服务自动监控和故障转移</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                </div>
+              </div>
+              <div id="ai-panel-action" class="hidden space-y-3 ai-panel-stack">
+                <div id="ai-action-content" class="space-y-3">
+                </div>
+              </div>
+              <div id="ai-panel-clarify" class="hidden space-y-3 ai-panel-stack">
+                <div id="ai-clarify-content" class="space-y-3">
                 </div>
               </div>
             </div>
@@ -1983,8 +1483,207 @@
       </div>
     </div>
 
+    <!-- 知识库详情弹窗 -->
+    <div id="knowledge-detail-modal" class="hidden fixed inset-0 bg-black/40 z-[120] flex items-center justify-center px-4">
+      <div class="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <div class="flex items-center gap-3">
+            <h3 id="knowledge-detail-title" class="text-base font-semibold text-gray-900">知识详情</h3>
+            <span id="knowledge-detail-status" class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"></span>
+          </div>
+          <button id="knowledge-detail-close" class="text-gray-500 hover:text-primary">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="p-4 space-y-3 text-sm text-gray-700">
+          <div class="grid md:grid-cols-2 gap-3 text-xs text-gray-500">
+            <div>分类：<span id="knowledge-detail-category" class="text-gray-700"></span></div>
+            <div>标签：<span id="knowledge-detail-tags" class="text-gray-700"></span></div>
+            <div>负责人：<span id="knowledge-detail-owner" class="text-gray-700"></span></div>
+            <div>来源：<span id="knowledge-detail-source" class="text-gray-700"></span></div>
+            <div>创建时间：<span id="knowledge-detail-created" class="text-gray-700"></span></div>
+            <div>更新时间：<span id="knowledge-detail-updated" class="text-gray-700"></span></div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500">摘要</div>
+            <div id="knowledge-detail-summary" class="mt-1 text-sm text-gray-700"></div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-500">内容</div>
+            <div id="knowledge-detail-content" class="mt-1 text-sm text-gray-700 whitespace-pre-line"></div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
+          <button id="knowledge-detail-dismiss" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 知识新增弹窗 -->
+    <div id="knowledge-add-modal" class="hidden fixed inset-0 bg-black/40 z-[120] flex items-center justify-center px-4">
+      <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <h3 class="text-base font-semibold text-gray-900">新增知识文档</h3>
+          <button id="knowledge-add-close" class="text-gray-500 hover:text-primary">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="p-4 space-y-4 text-sm text-gray-700">
+          <div>
+            <label class="text-xs text-gray-500">文档标题</label>
+            <input id="knowledge-add-title" type="text" readonly class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600 cursor-not-allowed" placeholder="上传后自动生成">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">分类</label>
+            <select id="knowledge-add-category" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <option value="">请选择分类</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">上传文件</label>
+            <div id="knowledge-add-dropzone" class="mt-2 border border-dashed border-gray-300 rounded-lg px-4 py-5 text-center text-xs text-gray-500 bg-gray-50 hover:bg-gray-100 cursor-pointer">
+              <div class="text-sm text-gray-600">拖拽文件到此处上传</div>
+              <div class="mt-1 text-xs text-gray-400">或点击选择文件（支持多选）</div>
+            </div>
+            <input id="knowledge-add-files" type="file" multiple class="hidden">
+            <div id="knowledge-add-file-list" class="mt-2 space-y-2 text-xs text-gray-600"></div>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-gray-600">
+            <input id="knowledge-faq-mining-toggle" type="checkbox" class="rounded">
+            <label for="knowledge-faq-mining-toggle">生成FAQ建议</label>
+          </div>
+          <div id="knowledge-faq-mining-settings" class="hidden">
+            <label class="text-xs text-gray-500">FAQ生成数量</label>
+            <input id="knowledge-faq-mining-count" type="number" min="1" max="20" value="5" class="mt-1 w-24 border border-gray-200 rounded-lg px-2 py-1 text-sm">
+          </div>
+          <div id="knowledge-add-error" class="text-xs text-red-600"></div>
+        </div>
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
+          <button id="knowledge-add-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
+          <button id="knowledge-add-submit" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">提交</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 知识删除确认 -->
+    <div id="knowledge-delete-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200">
+          <h3 class="text-sm font-semibold text-gray-900">删除确认</h3>
+        </div>
+        <div class="p-4 text-sm text-gray-700">
+          <div id="knowledge-delete-message"></div>
+        </div>
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
+          <button id="knowledge-delete-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
+          <button id="knowledge-delete-confirm" class="px-3 py-2 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700">确认删除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ 编辑弹窗 -->
+    <div id="knowledge-faq-modal" class="hidden fixed inset-0 bg-black/40 z-[130] flex items-center justify-center px-4">
+      <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <h3 id="knowledge-faq-modal-title" class="text-base font-semibold text-gray-900">FAQ详情</h3>
+          <button id="knowledge-faq-close" class="text-gray-500 hover:text-primary">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="p-4 space-y-4 text-sm text-gray-700">
+          <div id="knowledge-faq-status-wrap">
+            <label class="text-xs text-gray-500">状态</label>
+            <select id="knowledge-faq-status" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <option value="active">active</option>
+              <option value="archived">archived</option>
+              <option value="deprecated">deprecated</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">问题</label>
+            <input id="knowledge-faq-question" type="text" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">答案</label>
+            <textarea id="knowledge-faq-answer" rows="4" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"></textarea>
+          </div>
+          <div id="knowledge-faq-error" class="text-xs text-red-600"></div>
+          <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
+            <div class="flex items-center justify-between">
+              <div class="text-xs text-gray-500">相似问题建议</div>
+              <button id="knowledge-faq-detect" class="text-xs text-primary hover:underline">检测</button>
+            </div>
+            <div id="knowledge-faq-detect-results" class="mt-2 space-y-2 text-xs text-gray-600"></div>
+            <div class="mt-3 flex items-center gap-2">
+              <input id="knowledge-faq-similar-input" type="text" class="flex-1 border border-gray-200 rounded-lg px-2 py-1 text-xs" placeholder="添加相似问题">
+              <button id="knowledge-faq-similar-add" class="px-2 py-1 text-xs rounded-lg border border-gray-200">添加</button>
+              <button id="knowledge-faq-similar-generate" class="px-2 py-1 text-xs rounded-lg border border-gray-200">生成</button>
+            </div>
+            <div id="knowledge-faq-similar-list" class="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-600"></div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
+          <button id="knowledge-faq-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
+          <button id="knowledge-faq-save" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ 删除确认 -->
+    <div id="knowledge-faq-delete-modal" class="hidden fixed inset-0 bg-black/40 z-[130] flex items-center justify-center px-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200">
+          <h3 class="text-sm font-semibold text-gray-900">删除FAQ</h3>
+        </div>
+        <div class="p-4 text-sm text-gray-700">
+          <div id="knowledge-faq-delete-message"></div>
+        </div>
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
+          <button id="knowledge-faq-delete-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
+          <button id="knowledge-faq-delete-confirm" class="px-3 py-2 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700">确认删除</button>
+        </div>
+      </div>
+    </div>
+
     <!-- JavaScript -->
     <script type="module" src="assets/js/main.js"></script>
+
+    <!-- 用户菜单功能 -->
+    <script>
+      // 用户菜单下拉功能
+      document.addEventListener('DOMContentLoaded', function() {
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userMenuDropdown = document.getElementById('user-menu-dropdown');
+        const logoutButton = document.getElementById('logout-button');
+
+        // 切换下拉菜单显示/隐藏
+        userMenuButton.addEventListener('click', function(e) {
+          e.stopPropagation();
+          userMenuDropdown.classList.toggle('hidden');
+        });
+
+        // 点击页面其他地方关闭下拉菜单
+        document.addEventListener('click', function(e) {
+          if (!userMenuButton.contains(e.target) && !userMenuDropdown.contains(e.target)) {
+            userMenuDropdown.classList.add('hidden');
+          }
+        });
+
+        // 退出登录功能
+        logoutButton.addEventListener('click', function() {
+          // 清除可能存在的认证信息
+          if (window.config) {
+            window.config.authToken = null;
+          }
+          localStorage.removeItem('authToken');
+          sessionStorage.clear();
+
+          // 跳转到登录页
+          window.location.href = 'login.html';
+        });
+
+      });
+    </script>
 
 </body>
 

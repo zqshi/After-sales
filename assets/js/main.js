@@ -1,4 +1,5 @@
-import { initLayout, toggleRightSidebar, openFullAnalysisPanel } from './ui/layout.js';
+import { initLayout, toggleRightSidebar, openFullAnalysisPanel, openAiAssistantPanel } from './ui/layout.js';
+import { initDockNavigation } from './ui/dock.js';
 import {
   initChat,
   sendMessage,
@@ -8,6 +9,14 @@ import {
   insertEmoji,
   addToSuggestion,
   submitSatisfaction,
+  toggleAiPlan,
+  openAiReplyPanel,
+  openAiSolutionPanel,
+  openAssistCheckMock,
+  openClarifyPanel,
+  openFaultReportMock,
+  openTicketMock,
+  openTicketManagementPanel,
 } from './chat/index.js';
 import {
   initKnowledgeBase,
@@ -16,6 +25,7 @@ import {
   closeKnowledgePreview,
   openKnowledgeSource,
 } from './knowledge/index.js';
+import { initKnowledgeApplication } from './knowledge/application.js';
 import {
   initRequirementsTab,
   loadRequirementsData,
@@ -56,11 +66,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     initChat();
     initCustomerProfile();
     initKnowledgeBase();
+    initKnowledgeApplication();
     initRequirementsTab();
     initRightPanelActions();
     initAiSolutions();
     initAgentTasks();
     initTools();
+    initDockNavigation();
+    initUserMenu();
     scrollToBottom();
 
     const actionOverlay = document.getElementById('action-modal-overlay');
@@ -90,6 +103,7 @@ window.addEventListener('load', () => {
 // 兼容现有的内联事件（可逐步移除）
 window.toggleRightSidebar = toggleRightSidebar;
 window.openFullAnalysisPanel = openFullAnalysisPanel;
+window.openAiAssistantPanel = openAiAssistantPanel;
 window.openKnowledgePreview = openKnowledgePreview;
 window.toggleKnowledgePreviewExpand = toggleKnowledgePreviewExpand;
 window.closeKnowledgePreview = closeKnowledgePreview;
@@ -107,6 +121,14 @@ window.insertText = insertText;
 window.insertEmoji = insertEmoji;
 window.addToSuggestion = addToSuggestion;
 window.submitSatisfaction = submitSatisfaction;
+window.toggleAiPlan = toggleAiPlan;
+window.openAiReplyPanel = openAiReplyPanel;
+window.openAiSolutionPanel = openAiSolutionPanel;
+window.openAssistCheckMock = openAssistCheckMock;
+window.openClarifyPanel = openClarifyPanel;
+window.openFaultReportMock = openFaultReportMock;
+window.openTicketMock = openTicketMock;
+window.openTicketManagementPanel = openTicketManagementPanel;
 
 window.initAiSolutions = initAiSolutions;
 window.analyzeConversation = analyzeConversation;
@@ -115,3 +137,50 @@ window.loadRequirementsData = loadRequirementsData;
 window.updateCustomerContext = updateCustomerContext;
 window.openHistoryDetail = openHistoryDetail;
 window.openAnalysisPanelClassic = openAnalysisPanelClassic;
+
+function initUserMenu() {
+  const toggle = document.getElementById('user-menu-toggle');
+  const menu = document.getElementById('user-menu');
+  const logoutButton = document.getElementById('logout-button');
+
+  if (!toggle || !menu) {
+    return;
+  }
+
+  const syncExpanded = () => {
+    toggle.setAttribute('aria-expanded', String(!menu.classList.contains('hidden')));
+  };
+
+  const closeMenu = () => {
+    if (!menu.classList.contains('hidden')) {
+      menu.classList.add('hidden');
+      syncExpanded();
+    }
+  };
+
+  toggle.addEventListener('click', (event) => {
+    event.stopPropagation();
+    menu.classList.toggle('hidden');
+    syncExpanded();
+  });
+
+  menu.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
+
+  document.addEventListener('click', () => {
+    closeMenu();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeMenu();
+    }
+  });
+
+  if (logoutButton) {
+    logoutButton.addEventListener('click', () => {
+      window.location.href = 'login.html';
+    });
+  }
+}

@@ -4,6 +4,29 @@ let isDragging = false;
 let activeResizer = null;
 let startX = 0;
 let startWidth = 0;
+let drawer = null;
+let overlay = null;
+
+function setDrawerMode(mode = 'analysis') {
+  if (!drawer) {
+    drawer = qs('#right-sidebar');
+  }
+  if (!drawer) {
+    return;
+  }
+  const analysisPanel = qs('#analysis-panel');
+  const aiPanel = qs('#ai-assistant-drawer');
+
+  if (analysisPanel) {
+    analysisPanel.classList.toggle('hidden', mode === 'ai');
+  }
+  if (aiPanel) {
+    aiPanel.classList.toggle('hidden', mode !== 'ai');
+  }
+
+  drawer.classList.toggle('drawer-mode-ai', mode === 'ai');
+  drawer.classList.toggle('drawer-mode-analysis', mode !== 'ai');
+}
 
 export function initLayout() {
   initTabs();
@@ -171,9 +194,6 @@ function stopResize() {
   }
 }
 
-let drawer;
-let overlay;
-
 function initDrawer() {
   drawer = qs('#right-sidebar');
   overlay = qs('#right-sidebar-overlay');
@@ -183,6 +203,16 @@ function initDrawer() {
   }
 
   initDrawerResizer();
+  syncDrawerWidth();
+  setDrawerMode('analysis');
+}
+
+function syncDrawerWidth() {
+  if (!drawer) {
+    return;
+  }
+  const width = drawer.offsetWidth || 0;
+  document.documentElement.style.setProperty('--drawer-width', `${width}px`);
 }
 
 function initDrawerResizer() {
@@ -209,10 +239,10 @@ function initDrawerResizer() {
     }
     const clientX = event.clientX || event.touches?.[0]?.clientX || 0;
     const delta = startClientX - clientX;
-    // 允许覆盖对话窗口：上限随视口变化，预留少量边距
-    const viewportMax = Math.max(900, window.innerWidth - 120);
+    const viewportMax = Math.min(520, window.innerWidth - 120);
     const width = Math.min(Math.max(startDrawerWidth + delta, minWidth), viewportMax);
     drawer.style.width = `${width}px`;
+    syncDrawerWidth();
   };
 
   const endResize = () => {
@@ -244,11 +274,15 @@ export function toggleRightSidebar(forceState) {
   if (shouldOpen) {
     drawer.classList.remove('translate-x-full');
     overlay.classList.remove('hidden');
+    document.body.classList.add('drawer-open');
+    syncDrawerWidth();
   } else {
     drawer.classList.add('translate-x-full');
     overlay.classList.add('hidden');
     // Always clear restricted mode on close to reset state
     drawer.classList.remove('analysis-restricted');
+    setDrawerMode('analysis');
+    document.body.classList.remove('drawer-open');
   }
 }
 
@@ -256,6 +290,7 @@ export function openFullAnalysisPanel() {
   console.log('[Layout] ========== openFullAnalysisPanel 调用开始 ==========');
 
   const drawer = qs('#right-sidebar');
+  setDrawerMode('analysis');
   if (drawer) {
     const beforeClasses = drawer.className;
     drawer.classList.remove('analysis-restricted');
@@ -313,6 +348,10 @@ export function openFullAnalysisPanel() {
 
   // 先打开侧边栏
   toggleRightSidebar(true);
+  const overlayEl = qs('#right-sidebar-overlay');
+  if (overlayEl) {
+    overlayEl.classList.add('hidden');
+  }
 
   // 在下一个事件循环中再次确保状态正确，防止被其他代码覆盖
   setTimeout(() => {
@@ -338,4 +377,9 @@ export function openFullAnalysisPanel() {
   }, 50);
 
   console.log('[Layout] ========== openFullAnalysisPanel 调用结束 ==========');
+}
+
+export function openAiAssistantPanel() {
+  setDrawerMode('ai');
+  toggleRightSidebar(true);
 }
