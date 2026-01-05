@@ -450,12 +450,15 @@ export function openAssistCheckMock() {
                   <span class="text-sm text-gray-700">认证服务状态与告警是否异常</span>
                 </div>
                 <div class="ai-tool-meta">
-                  <span>工具：监控告警中心</span>
-                  <span class="ai-tool-status" data-tool-status="监控告警中心">自动调用中</span>
-                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                  <div class="ai-tool-meta-line">
+                    <span>工具：监控告警中心</span>
+                  </div>
+                  <div class="ai-tool-meta-line">
+                    <span class="ai-tool-status" data-tool-status="监控告警中心">自动调用中</span>
+                    <button class="ai-panel-chip" data-action="manual-check" data-tool="监控告警中心">手动排查</button>
+                  </div>
                 </div>
               </div>
-              <button class="ai-panel-chip" data-action="manual-check" data-tool="监控告警中心">手动排查</button>
             </div>
           </li>
           <li class="ai-panel-card ai-panel-card--compact">
@@ -466,12 +469,15 @@ export function openAssistCheckMock() {
                   <span class="text-sm text-gray-700">网关/登录接口日志中是否有 401/502 峰值</span>
                 </div>
                 <div class="ai-tool-meta">
-                  <span>工具：网关日志检索</span>
-                  <span class="ai-tool-status" data-tool-status="网关日志检索">自动调用中</span>
-                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                  <div class="ai-tool-meta-line">
+                    <span>工具：网关日志检索</span>
+                  </div>
+                  <div class="ai-tool-meta-line">
+                    <span class="ai-tool-status" data-tool-status="网关日志检索">自动调用中</span>
+                    <button class="ai-panel-chip" data-action="manual-check" data-tool="网关日志检索">手动排查</button>
+                  </div>
                 </div>
               </div>
-              <button class="ai-panel-chip" data-action="manual-check" data-tool="网关日志检索">手动排查</button>
             </div>
           </li>
           <li class="ai-panel-card ai-panel-card--compact">
@@ -482,12 +488,15 @@ export function openAssistCheckMock() {
                   <span class="text-sm text-gray-700">最近 30 分钟是否发生配置变更或发布</span>
                 </div>
                 <div class="ai-tool-meta">
-                  <span>工具：变更审计台</span>
-                  <span class="ai-tool-status" data-tool-status="变更审计台">自动调用中</span>
-                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                  <div class="ai-tool-meta-line">
+                    <span>工具：变更审计台</span>
+                  </div>
+                  <div class="ai-tool-meta-line">
+                    <span class="ai-tool-status" data-tool-status="变更审计台">自动调用中</span>
+                    <button class="ai-panel-chip" data-action="manual-check" data-tool="变更审计台">手动排查</button>
+                  </div>
                 </div>
               </div>
-              <button class="ai-panel-chip" data-action="manual-check" data-tool="变更审计台">手动排查</button>
             </div>
           </li>
           <li class="ai-panel-card ai-panel-card--compact">
@@ -498,12 +507,15 @@ export function openAssistCheckMock() {
                   <span class="text-sm text-gray-700">缓存服务健康度与命中率</span>
                 </div>
                 <div class="ai-tool-meta">
-                  <span>工具：缓存监控</span>
-                  <span class="ai-tool-status" data-tool-status="缓存监控">自动调用中</span>
-                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                  <div class="ai-tool-meta-line">
+                    <span>工具：缓存监控</span>
+                  </div>
+                  <div class="ai-tool-meta-line">
+                    <span class="ai-tool-status" data-tool-status="缓存监控">自动调用中</span>
+                    <button class="ai-panel-chip" data-action="manual-check" data-tool="缓存监控">手动排查</button>
+                  </div>
                 </div>
               </div>
-              <button class="ai-panel-chip" data-action="manual-check" data-tool="缓存监控">手动排查</button>
             </div>
           </li>
           <li class="ai-panel-card ai-panel-card--compact">
@@ -514,12 +526,15 @@ export function openAssistCheckMock() {
                   <span class="text-sm text-gray-700">受影响客户列表与影响范围统计</span>
                 </div>
                 <div class="ai-tool-meta">
-                  <span>工具：客户影响面板</span>
-                  <span class="ai-tool-status" data-tool-status="客户影响面板">自动调用中</span>
-                  <span class="text-[11px] text-gray-400">失败可手动</span>
+                  <div class="ai-tool-meta-line">
+                    <span>工具：客户影响面板</span>
+                  </div>
+                  <div class="ai-tool-meta-line">
+                    <span class="ai-tool-status" data-tool-status="客户影响面板">自动调用中</span>
+                    <button class="ai-panel-chip" data-action="manual-check" data-tool="客户影响面板">手动排查</button>
+                  </div>
                 </div>
               </div>
-              <button class="ai-panel-chip" data-action="manual-check" data-tool="客户影响面板">手动排查</button>
             </div>
           </li>
         </ol>

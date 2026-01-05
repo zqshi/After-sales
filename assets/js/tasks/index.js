@@ -55,22 +55,22 @@ const conversationQcProfiles = {
     impact: '业务受阻',
     channel: '飞书',
     time: '10:30',
-    summary: '认证失败影响多用户，承诺 15 分钟恢复；需同步公告与补偿方案。',
-    tags: ['认证失败', '多用户受影响', '需公告', '补偿说明'],
+    summary: '群聊客户与业务用户集中反馈认证失败，已承诺 15 分钟恢复；需同步公告与补偿口径。',
+    tags: ['认证失败', '群聊集中反馈', '响应时效', '补偿说明'],
     metrics: { urgency: '85%', emotion: 65, eta: '15min' },
     dimensions: {
-      emotion: { score: 65, label: '不满回落', bar: 65 },
-      quality: { score: 92, label: '合规 · 待补证据', bar: 92 },
-      satisfaction: { score: 3.8, label: '需回访确认', bar: 76 },
+      emotion: { score: 72, label: '情感态度 · 安抚有效', bar: 72 },
+      quality: { score: 88, label: '回复质量 · 关键信息齐全', bar: 88 },
+      satisfaction: { score: 76, label: '响应时效 · 偏紧张', bar: 76 },
     },
-    tip: '建议优先重启认证服务并准备备用节点切换。',
+    tip: '建议固定 10 分钟节奏同步进展，并补充复测证据与补偿口径。',
     threadTitle: '对话节选 · conv-001',
     thread: [
       { role: '客户', text: '系统报错无法登录，多人受影响，影响业务。', sentiment: '😡 不满', tag: '高紧急' },
       { role: '工程师', text: '已收到告警，正在重启认证服务并核对备节点。', sentiment: '🛠️ 处理中', tag: '已响应' },
       { role: '客户', text: '收到，麻烦 10 分钟内给进展，先发公告说明。', sentiment: '🙂 回落', tag: '待公告' },
     ],
-    insights: ['情绪已回落，但需 10 分钟内同步最新进展', '补充复测截图与告警恢复证据', '回访并记录满意度，补偿方案需明确生效时间'],
+    insights: ['群聊集中反馈需同步时间点与责任人，避免多头回复', '响应节奏需固定，防止用户重复追问', '回复质量需补充复测证据与补偿生效时间'],
   },
   'conv-002': {
     title: '恒星数据 · 账单核验',
@@ -81,22 +81,22 @@ const conversationQcProfiles = {
     impact: '等待确认',
     channel: '企业QQ',
     time: '09:45',
-    summary: '账单核验问题待确认，已推送账单指引，客户等待反馈。',
-    tags: ['账单核验', '需回执', '等待客户'],
+    summary: '群聊内多名用户关注账单差异，已推送核验指引，等待客户反馈。',
+    tags: ['账单核验', '群聊咨询', '响应时效', '待回执'],
     metrics: { urgency: '62%', emotion: 48, eta: '—' },
     dimensions: {
-      emotion: { score: 48, label: '关注 · 需致歉', bar: 48 },
-      quality: { score: 86, label: '完整度需补充账期变更', bar: 86 },
-      satisfaction: { score: 3.5, label: '需跟进确认', bar: 70 },
+      emotion: { score: 56, label: '情感态度 · 需致歉安抚', bar: 56 },
+      quality: { score: 82, label: '回复质量 · 账期说明不足', bar: 82 },
+      satisfaction: { score: 68, label: '响应时效 · 等待偏长', bar: 68 },
     },
-    tip: '提醒补充致歉话术，并附加账期变更说明。',
+    tip: '建议在群内补充致歉话术，并统一账期变更说明模板。',
     threadTitle: '对话节选 · conv-002',
     thread: [
       { role: '客户', text: '上个月账单有差异，请帮忙核对。', sentiment: '😐 关注', tag: '待核验' },
       { role: '工程师', text: '已推送账单核验指引，请按步骤反馈异常截图。', sentiment: '📨 已响应', tag: '指引已发' },
       { role: '客户', text: '收到，等我核对后回复。', sentiment: '🙂 中性', tag: '等待反馈' },
     ],
-    insights: ['需在 2 小时内二次跟进，避免长等待', '补充致歉语与账期变更说明', '记录潜在账期调整需求，避免重复咨询'],
+    insights: ['需在 2 小时内二次跟进，降低群内等待焦虑', '补充致歉语与账期变更说明，提升回复质量', '记录账期调整需求并同步FAQ'],
   },
   'conv-003': {
     title: '万象互动 · 功能体验反馈',
@@ -107,22 +107,22 @@ const conversationQcProfiles = {
     impact: '体验优化',
     channel: '微信',
     time: '昨天',
-    summary: '功能体验反馈已处理，等待回访确认满意度并收集改进建议。',
-    tags: ['体验反馈', '已解决', '待回访'],
+    summary: '群聊内体验反馈已处理，待回访确认满意度并收集改进建议。',
+    tags: ['体验反馈', '群聊收集', '响应时效', '待回访'],
     metrics: { urgency: '30%', emotion: 82, eta: '—' },
     dimensions: {
-      emotion: { score: 82, label: '积极', bar: 82 },
-      quality: { score: 90, label: '完整 · 待给时间表', bar: 90 },
-      satisfaction: { score: 4.4, label: '待记录', bar: 88 },
+      emotion: { score: 84, label: '情感态度 · 正向', bar: 84 },
+      quality: { score: 88, label: '回复质量 · 待补时间表', bar: 88 },
+      satisfaction: { score: 82, label: '响应时效 · 稳定', bar: 82 },
     },
-    tip: '沉淀反馈为知识库草稿，并明确改版时间表。',
+    tip: '建议回访确认满意度，并补充改版时间表与跟进节点。',
     threadTitle: '对话节选 · conv-003',
     thread: [
       { role: '客户', text: '新功能体验不错，但希望加个快捷入口。', sentiment: '😊 积极', tag: '建议' },
       { role: '工程师', text: '感谢反馈，已记录并会在下个版本评估上线时间。', sentiment: '🤝 确认', tag: '待排期' },
       { role: '客户', text: '好的，期待更新。', sentiment: '🙂 满意', tag: '待回访' },
     ],
-    insights: ['安排回访并记录满意度得分', '输出知识库草稿，补充上线时间表', '将需求同步到需求统计，避免遗漏'],
+    insights: ['安排回访并记录满意度得分，形成群内闭环', '输出知识库草稿并补充上线时间表', '将需求同步到需求统计，避免遗漏'],
   },
 };
 
@@ -942,17 +942,33 @@ function setupTaskConversationFlow() {
     conversationArea?.classList.remove('hidden');
     qualityView?.classList.add('hidden');
     workspace?.classList.add('task-conversation-active');
+    if (startBtn) {
+      startBtn.textContent = '返回质检概览';
+    }
+  };
+  const closeConversation = () => {
+    conversationArea?.classList.add('hidden');
+    qualityView?.classList.remove('hidden');
+    workspace?.classList.remove('task-conversation-active');
+    if (startBtn) {
+      startBtn.textContent = '对话驱动任务';
+    }
   };
 
   if (backBtn) {
     on(backBtn, 'click', () => {
-      conversationArea?.classList.add('hidden');
-      qualityView?.classList.remove('hidden');
-      workspace?.classList.remove('task-conversation-active');
+      closeConversation();
     });
   }
   if (startBtn) {
-    on(startBtn, 'click', openConversation);
+    on(startBtn, 'click', () => {
+      const isHidden = conversationArea?.classList.contains('hidden');
+      if (isHidden) {
+        openConversation();
+      } else {
+        closeConversation();
+      }
+    });
   }
   qcButtons.forEach((btn) => {
     on(btn, 'click', () => {
@@ -1315,11 +1331,11 @@ function renderDimensions(dimensions) {
     return;
   }
   setTextContent('qc-emotion-score', dimensions.emotion ? `${dimensions.emotion.score}%` : '--');
-  setTextContent('qc-quality-score', dimensions.quality ? `${dimensions.quality.score}` : '--');
-  setTextContent('qc-satisfaction-score', dimensions.satisfaction ? `${dimensions.satisfaction.score}/5` : '--');
+  setTextContent('qc-quality-score', dimensions.quality ? `${dimensions.quality.score}%` : '--');
+  setTextContent('qc-satisfaction-score', dimensions.satisfaction ? `${dimensions.satisfaction.score}%` : '--');
   setTextContent('qc-emotion-score-compact', dimensions.emotion ? `${dimensions.emotion.score}%` : '--');
-  setTextContent('qc-quality-score-compact', dimensions.quality ? `${dimensions.quality.score}` : '--');
-  setTextContent('qc-satisfaction-score-compact', dimensions.satisfaction ? `${dimensions.satisfaction.score}/5` : '--');
+  setTextContent('qc-quality-score-compact', dimensions.quality ? `${dimensions.quality.score}%` : '--');
+  setTextContent('qc-satisfaction-score-compact', dimensions.satisfaction ? `${dimensions.satisfaction.score}%` : '--');
   setTextContent('qc-emotion-label', dimensions.emotion?.label || '--');
   setTextContent('qc-quality-label', dimensions.quality?.label || '--');
   setTextContent('qc-satisfaction-label', dimensions.satisfaction?.label || '--');
