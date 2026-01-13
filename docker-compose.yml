@@ -110,6 +110,8 @@ services:
     volumes:
       - ./assets:/app/assets
       - ./index.html:/app/index.html
+      - ./login.html:/app/login.html
+      - ./app.html:/app/app.html
       - ./vite.config.js:/app/vite.config.js
       - /app/node_modules
     networks:

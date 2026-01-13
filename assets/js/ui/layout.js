@@ -288,7 +288,7 @@ export function toggleRightSidebar(forceState) {
   if (shouldOpen) {
     setDrawerWidth(getDrawerMaxWidth());
     drawer.classList.remove('translate-x-full');
-    overlay.classList.remove('hidden');
+    overlay.classList.add('hidden');
     document.body.classList.add('drawer-open');
   } else {
     drawer.classList.add('translate-x-full');

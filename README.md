@@ -64,7 +64,9 @@ npm run build
 
 ```
 After-sales/
-├── index.html                    # 主入口文件
+├── index.html                    # 登录页面（默认页）
+├── login.html                    # 登录入口（兼容跳转）
+├── app.html                      # 工作台主界面
 ├── assets/
 │   ├── js/
 │   │   ├── api.js                # 统一API层

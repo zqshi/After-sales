@@ -1424,16 +1424,32 @@ function toggleQcLayout(useLean) {
 
   if (lean) {
     lean.classList.toggle('hidden', !useLean);
+    if (useLean) {
+      lean.style.display = '';
+      lean.style.visibility = '';
+    } else {
+      lean.style.display = 'none';
+      lean.style.visibility = 'hidden';
+    }
   }
   if (classic) {
     classic.classList.toggle('hidden', useLean);
+    if (useLean) {
+      classic.style.display = 'none';
+      classic.style.visibility = 'hidden';
+    } else {
+      classic.style.display = '';
+      classic.style.visibility = '';
+    }
   }
 
   if (railMetrics) {
     railMetrics.classList.toggle('hidden', useLean);
+    railMetrics.style.display = useLean ? 'none' : '';
   }
   if (railHistory) {
     railHistory.classList.toggle('hidden', useLean);
+    railHistory.style.display = useLean ? 'none' : '';
   }
 }
 
