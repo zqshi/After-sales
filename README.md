@@ -9,96 +9,112 @@
 ## 📑 目录
 
 - [项目简介](#项目简介)
+- [服务与端口](#服务与端口)
 - [快速开始](#快速开始)
 - [项目结构](#项目结构)
 - [核心功能](#核心功能)
 - [技术架构](#技术架构)
-- [开发指南](#开发指南)
+- [配置说明](#配置说明)
 - [部署上线](#部署上线)
 - [文档](#文档)
 
 ## 🎯 项目简介
 
-智能售后工作台是一个面向企业售后团队的综合管理平台，提供：
-
-- **多渠道对话管理**：统一接入飞书、企业QQ、微信等IM渠道
-- **智能客户画像**：实时聚合CRM、合同、SLA数据，提供360度客户视图
-- **AI辅助方案**：基于LLM的会话分析和解决方案推荐
-- **需求采集与任务管理**：自动识别需求，质检评分，任务流转
-- **治理与审计**：完整的权限控制、操作审计和监控告警
+智能售后工作台面向企业售后团队，提供多渠道对话管理、客户画像、AI辅助质检与需求采集等能力。当前仓库包含前端工作台、后端服务、AgentScope 服务与监控组件。
 
 ### 项目状态
 
 - **当前版本**：v0.1.0（开发阶段）
-- **代码质量**：⭐⭐⭐☆☆ (3.3/5.0)
-- **距离生产就绪**：预计20周（详见[项目质量评估](./docs/PROJECT_QUALITY_ASSESSMENT.md)）
+- **交付形态**：前端 + 后端 + AgentScope（Python）多服务协作
+
+## 🧭 服务与端口
+
+- **前端工作台**：http://localhost:5173（本地开发）
+- **后端 API**：http://localhost:8080（Fastify）
+- **AgentScope 服务**：http://localhost:5000（FastAPI）
+- **Prometheus**：http://localhost:9090（可选）
+- **Grafana**：http://localhost:3001（可选）
+
+Docker Compose 模式下前端默认映射到 http://localhost:3000。
 
 ## 🚀 快速开始
 
 ### 前置要求
 
-- Node.js >= 18.0.0
-- npm >= 9.0.0
+- Node.js >= 18
+- Python >= 3.10
+- PostgreSQL 15.x
+- Redis 7.x
 
-### 安装依赖
+### 方式一：一键启动（本地）
+
+```bash
+./start-all.sh
+```
+
+脚本会安装依赖、启动后端、AgentScope 与前端，并进行基础健康检查。
+
+### 方式二：手动启动（本地）
+
+1. 安装依赖
 
 ```bash
 npm install
+cd backend && npm install
+cd ../agentscope-service && python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### 启动开发服务器
+2. 启动后端
+
+```bash
+cd backend
+npm run dev
+```
+
+3. 启动 AgentScope
+
+```bash
+cd agentscope-service
+source venv/bin/activate
+uvicorn src.api.main:app --reload --port 5000
+```
+
+4. 启动前端
 
 ```bash
 npm run dev
 ```
 
-访问 http://localhost:3000 查看应用
-
-### 构建生产版本
+### 方式三：Docker Compose
 
 ```bash
-npm run build
+docker-compose up --build
+```
+
+如只需数据库与缓存，可使用：
+
+```bash
+docker-compose up -d postgres redis
 ```
 
 ## 📁 项目结构
 
 ```
 After-sales/
-├── index.html                    # 登录页面（默认页）
-├── login.html                    # 登录入口（兼容跳转）
-├── app.html                      # 工作台主界面
-├── assets/
-│   ├── js/
-│   │   ├── api.js                # 统一API层
-│   │   ├── main.js               # 应用入口
-│   │   ├── core/                 # 核心工具库
-│   │   │   ├── dom.js            # DOM操作工具
-│   │   │   ├── notifications.js  # 通知组件
-│   │   │   ├── sanitize.js       # XSS防护
-│   │   │   └── storage.js        # 安全存储
-│   │   ├── domains/              # DDD领域模型（新）
-│   │   │   └── customer/         # 客户画像领域
-│   │   ├── chat/                 # 对话管理模块
-│   │   ├── customer/             # 客户画像模块
-│   │   ├── requirements/         # 需求采集模块
-│   │   ├── tasks/                # 任务管理模块
-│   │   ├── knowledge/            # 知识库模块
-│   │   ├── ai/                   # AI分析模块
-│   │   ├── roles.js              # 权限管理
-│   │   └── ui/                   # UI组件
-│   ├── css/
-│   │   └── main.css              # 全局样式
-│   └── mock-data/                # Mock测试数据
-├── docs/                         # 项目文档
-│   ├── API_CONTRACT_GUIDE.md     # API契约指南
-│   ├── API_GATEWAY_SPEC.md       # 网关规范
-│   ├── BACKEND_ARCHITECTURE.md   # 后端架构
-│   ├── FRONTEND_ARCHITECTURE.md  # 前端架构
-│   ├── TECHNICAL_DESIGN.md       # 技术设计
-│   ├── GOVERNANCE_*.md           # 治理文档
-│   └── PROJECT_QUALITY_ASSESSMENT.md  # 质量评估报告
-├── package.json
-├── vite.config.js
+├── index.html                     # 登录入口
+├── app.html                       # 工作台主界面
+├── assets/                        # 前端资源
+│   ├── js/                        # 业务逻辑与DDD层
+│   ├── css/                       # 模块化样式
+│   └── mock-data/                 # Mock数据
+├── public/                        # 运行时配置与静态资源
+├── backend/                       # 后端服务（Fastify + TypeORM）
+├── agentscope-service/            # AgentScope 服务（FastAPI）
+├── monitoring/                    # Prometheus/Grafana配置
+├── docs/                          # 需求、架构与交付文档
+├── workflows/                     # 业务流程编排示例
+├── docker-compose.yml
 └── README.md
 ```
 
@@ -107,166 +123,107 @@ After-sales/
 ### 1. 多渠道对话管理
 - 统一接入飞书、企业QQ、微信等IM平台
 - 实时消息推送（WebSocket）
-- 对话历史记录和搜索
+- 对话历史记录与搜索
 - SLA状态监控和告警
 
 ### 2. 智能客户画像
-- 实时聚合CRM、合同、服务记录
-- 客户健康度分析
+- 聚合CRM、合同、服务记录
+- 客户健康度分析与风险预警
 - 互动历史追踪
 - 承诺达成度监控
 
 ### 3. 需求采集与管理
 - 自动识别对话中的需求
 - 需求卡片创建和流转
-- 需求统计和优先级管理
+- 需求统计与优先级管理
 - 数据可视化
 
 ### 4. 质检与任务
 - 多维度质量评分
 - AI驱动的建议生成
-- 任务自动派发
-- 进度追踪
+- 任务自动派发与追踪
 
-### 5. 知识库集成
-- 智能知识推荐
-- 全文搜索
-- 知识卡片预览
-
-### 6. AI辅助
+### 5. 知识库与AI辅助
+- 知识卡片检索与推荐
 - 会话情感分析
-- 解决方案推荐
-- 自动化任务建议
+- 解决方案与自动化建议
 
 ## 🏗️ 技术架构
 
-### 前端技术栈
+### 前端
 
 - **核心**：Vanilla JavaScript (ES Modules)
-- **样式**：Tailwind CSS v3
-- **图表**：Chart.js v4.4
+- **样式**：模块化 CSS
+- **图表**：Chart.js
 - **构建工具**：Vite
-- **代码质量**：ESLint + Prettier
 - **测试**：Vitest
+
+### 后端
+
+- **框架**：Fastify 4.x
+- **语言**：TypeScript 5.x
+- **ORM**：TypeORM 0.3.x
+- **数据库**：PostgreSQL 15.x
+- **缓存/消息**：Redis 7.x
+
+### AgentScope 服务
+
+- **框架**：FastAPI
+- **语言**：Python 3.10+
+- **职责**：Agent 协作与工具调用编排
+
+### 监控与运维
+
+- **监控**：Prometheus + Grafana
+- **反向代理**：Nginx（生产配置）
 
 ### 架构模式
 
-- **DDD（领域驱动设计）**：按业务领域划分模块
-- **Repository模式**：数据访问抽象
-- **MVP/MVC**：视图与逻辑分离
-- **API统一封装**：集中式错误处理
+- **DDD（领域驱动设计）**：多上下文领域模型
+- **事件驱动**：EventBus + Outbox
+- **Repository 模式**：数据访问抽象
 
-### 后端架构（规划中）
+## ⚙️ 配置说明
 
-- **API网关**：Node.js + Express
-- **数据存储**：PostgreSQL + Redis
-- **消息队列**：Kafka
-- **监控**：Prometheus + Grafana
-- **日志**：ELK Stack
+### 前端运行时配置
 
-## 📚 开发指南
-
-### 代码规范
-
-```bash
-# 代码检查
-npm run lint
-
-# 自动修复
-npm run lint:fix
-
-# 代码格式化
-npm run format
-```
-
-### 测试
-
-```bash
-# 运行测试
-npm run test
-
-# 测试覆盖率
-npm run test:coverage
-
-# 测试UI
-npm run test:ui
-```
-
-### Git提交规范
-
-```
-feat: 新功能
-fix: Bug修复
-docs: 文档更新
-refactor: 代码重构
-test: 测试相关
-chore: 构建/工具链
-```
-
-### 环境配置
-
-创建 `config.js` 配置文件：
+编辑 `public/runtime-config.js` 以覆盖默认 API 地址：
 
 ```javascript
-window.config = {
-  apiBaseUrl: 'http://localhost:8080',  // API网关地址
-  authToken: 'your-token',              // 认证令牌（可选）
-  featureFlags: {
-    'chat.channel.feishu': true,
-    'ai.solutions': false,
-  },
+window.RUNTIME_CONFIG = {
+  apiBaseUrl: "http://localhost:8080/api/v1",
+  agentScopeUrl: "http://localhost:5000",
+  agentScopeWebSocketUrl: "ws://localhost:5000"
 };
 ```
+
+### API 代理
+
+Vite 开发环境会将 `/api/v1` 代理到 `http://localhost:8080`，可通过 `VITE_API_PROXY_TARGET` 覆盖。
 
 ## 🚢 部署上线
 
 ### 开发环境
 
-1. 配置Mock网关或真实API
-2. 启动开发服务器：`npm run dev`
-3. 访问 http://localhost:3000
+1. 运行 `docker-compose up -d postgres redis`
+2. 启动后端与 AgentScope
+3. 启动前端：`npm run dev`
 
 ### 生产环境
 
-1. 构建生产包：`npm run build`
-2. 将 `dist/` 目录部署到Web服务器
-3. 配置Nginx反向代理（可选）
-4. 确保API网关可访问
-
-### 部署检查
-
-部署前请完成以下检查：
-
-- ✅ API契约验证
-- ✅ 安全测试（XSS、CSRF）
-- ✅ 性能测试（加载时间、响应时间）
-- ✅ 监控和告警配置
-- ✅ Feature Flag就绪
-- ✅ 灰度发布计划
+1. 构建前端：`npm run build`
+2. 构建后端：`cd backend && npm run build`
+3. 使用 `docker-compose` 或自定义部署方式上线
+4. 可选启用 `nginx` profile 提供统一入口
 
 ## 📖 文档
 
-### 📘 核心文档
-
-- [架构总览](./docs/ARCHITECTURE_SUMMARY.md) - 所有架构文档的导航中心
-- [项目质量评估](./docs/PROJECT_QUALITY_ASSESSMENT.md) - 质量现状与改进计划
-- [变更日志](./CHANGELOG.md) - 版本变更记录
-
-### 🏗️ 架构设计
-
-- [DDD战略设计](./docs/architecture/DDD_STRATEGIC_DESIGN.md) - 限界上下文、聚合设计、领域模型
-- [分层架构设计](./docs/architecture/LAYERED_ARCHITECTURE.md) - 四层架构详解、依赖倒置
-- [领域事件设计](./docs/architecture/DOMAIN_EVENTS.md) - 事件驱动架构、EventBus实现
-- [目录结构设计](./docs/architecture/DIRECTORY_STRUCTURE.md) - DDD代码组织规范
-
-### 🔌 API与技术方案
-
-- [API设计规范](./docs/API_DESIGN.md) - RESTful API完整设计、认证授权
-- [技术方案设计](./docs/TECHNICAL_SOLUTIONS.md) - 工程化、测试策略、CI/CD、部署方案
-
-### 💻 开发文档
-
-- [开发指南](./docs/development/DEVELOPMENT.md) - 开发环境、Git规范、代码标准
+- [文档中心](./docs/README.md) - 文档导航入口
+- [快速开始](./docs/guides/QUICK_START.md) - 5分钟启动指南
+- [启动指南](./docs/guides/STARTUP_GUIDE.md) - 完整启动说明
+- [架构设计](./docs/architecture/AGENT_ARCHITECTURE_DESIGN.md)
+- [API 参考](./docs/api/API_REFERENCE.md)
+- [变更日志](./CHANGELOG.md)
 
 ## 🤝 贡献指南
 
@@ -282,18 +239,12 @@ window.config = {
 
 本项目采用 [MIT](./LICENSE) 许可证
 
-## 👥 团队
-
-- **治理委员会**：负责架构决策、发布审批
-- **开发团队**：功能开发、代码审查
-- **运维团队**：监控、告警、性能优化
-
 ## 📞 联系我们
 
 - Issue：[GitHub Issues](https://github.com/your-org/after-sales/issues)
 - 文档：查看 `docs/` 目录
-- 邮件：support@yourcompany.com
+- 邮件：labixiaoxin-why@outlook.com
 
 ---
 
-**注意**：本项目当前处于开发阶段，不建议直接用于生产环境。请参考[质量评估报告](./PROJECT_QUALITY_ASSESSMENT.md)了解改进计划。
+**注意**：本项目处于开发阶段，配置与接口仍在迭代中，实际部署前请阅读相关文档与环境说明。
