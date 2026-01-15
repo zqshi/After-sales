@@ -1,0 +1,264 @@
+/**
+ * 知识库模块样式
+ * 包含知识管理、知识应用、FAQ等
+ */
+
+/* ==================== 知识库模式 ==================== */
+.knowledge-mode .left-sidebar,
+.knowledge-mode #left-resizer {
+  display: none;
+}
+
+.knowledge-mode .main-content {
+  background: var(--bg-light);
+}
+
+.knowledge-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.knowledge-content {
+  min-height: 0;
+}
+
+/* ==================== 知识表格 ==================== */
+.knowledge-table {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+}
+
+.knowledge-table-header {
+  display: grid;
+  grid-template-columns: minmax(220px, 2.2fr) minmax(140px, 1fr) minmax(90px, 0.7fr) minmax(120px, 0.8fr) minmax(80px, 0.5fr);
+  gap: 8px;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color);
+  min-width: 0;
+  align-items: center;
+}
+
+.knowledge-table-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.knowledge-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 2.2fr) minmax(140px, 1fr) minmax(90px, 0.7fr) minmax(120px, 0.8fr) minmax(80px, 0.5fr);
+  gap: 8px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s ease;
+  align-items: center;
+}
+
+.knowledge-row:hover {
+  background: #f8fafc;
+}
+
+.knowledge-cell {
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.knowledge-table-header > div:last-child,
+.knowledge-row > .knowledge-cell:last-child {
+  text-align: right;
+}
+
+/* ==================== 知识应用 ==================== */
+.knowledge-application {
+  transition: padding 0.2s ease, transform 0.2s ease;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.knowledge-app-results {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.knowledge-application.has-results .knowledge-app-results {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.knowledge-application.has-results {
+  justify-content: flex-start;
+  padding-top: 24px;
+  max-width: 100%;
+  width: 100%;
+}
+
+.knowledge-application.has-results .knowledge-app-header {
+  display: none;
+}
+
+.knowledge-application.has-results .knowledge-app-search {
+  margin-top: 0;
+}
+
+.knowledge-application.has-results .knowledge-app-shortcuts {
+  display: none;
+}
+
+.knowledge-application.has-results .knowledge-app-tips {
+  display: none;
+}
+
+.knowledge-app-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr);
+  gap: 16px;
+  align-items: start;
+  flex: 1;
+  min-height: 320px;
+}
+
+.knowledge-app-detail {
+  position: sticky;
+  top: 16px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.knowledge-app-layout.is-compact {
+  grid-template-columns: 1fr;
+}
+
+#knowledge-app-list {
+  min-height: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+/* ==================== FAQ表格 ==================== */
+#knowledge-faq-panel > .grid,
+#knowledge-faq-list > .grid {
+  grid-template-columns: minmax(220px, 2.2fr) minmax(120px, 1fr) minmax(110px, 0.8fr) minmax(90px, 0.6fr) minmax(90px, 0.6fr);
+  align-items: center;
+}
+
+#knowledge-faq-panel > .grid > div:last-child,
+#knowledge-faq-list > .grid > div:last-child {
+  text-align: right;
+}
+
+/* ==================== 知识项 ==================== */
+.knowledge-item {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-border-radius);
+  padding: var(--card-padding);
+  transition: all 0.2s var(--animation-timing);
+  cursor: pointer;
+}
+
+.knowledge-item:hover {
+  border-color: var(--card-hover-border);
+  box-shadow: 0 2px 8px var(--card-hover-shadow);
+}
+
+.knowledge-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.knowledge-item-meta {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 1100px) {
+  .knowledge-table-header,
+  .knowledge-row {
+    grid-template-columns: minmax(200px, 2.2fr) minmax(120px, 1fr) minmax(80px, 0.7fr) minmax(70px, 0.5fr);
+  }
+
+  .knowledge-table-header > div:nth-child(4),
+  .knowledge-row > .knowledge-cell:nth-child(4) {
+    display: none;
+  }
+
+  #knowledge-faq-panel > .grid,
+  #knowledge-faq-list > .grid {
+    grid-template-columns: minmax(220px, 2.2fr) minmax(110px, 1fr) minmax(90px, 0.6fr) minmax(90px, 0.6fr);
+  }
+
+  #knowledge-faq-panel > .grid > div:nth-child(3),
+  #knowledge-faq-list > .grid > div:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .knowledge-app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-app-detail {
+    position: static;
+  }
+}
+
+@media (max-width: 860px) {
+  .knowledge-table-header,
+  .knowledge-row {
+    grid-template-columns: minmax(200px, 2.2fr) minmax(120px, 1fr) minmax(70px, 0.5fr);
+  }
+
+  .knowledge-table-header > div:nth-child(3),
+  .knowledge-row > .knowledge-cell:nth-child(3) {
+    display: none;
+  }
+
+  #knowledge-faq-panel > .grid,
+  #knowledge-faq-list > .grid {
+    grid-template-columns: minmax(220px, 2.2fr) minmax(90px, 0.6fr) minmax(90px, 0.6fr);
+  }
+
+  #knowledge-faq-panel > .grid > div:nth-child(2),
+  #knowledge-faq-list > .grid > div:nth-child(2) {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .knowledge-table-header,
+  .knowledge-row {
+    grid-template-columns: minmax(200px, 1fr) minmax(70px, 0.4fr);
+  }
+
+  .knowledge-table-header > div:nth-child(2),
+  .knowledge-row > .knowledge-cell:nth-child(2) {
+    display: none;
+  }
+
+  #knowledge-faq-panel > .grid,
+  #knowledge-faq-list > .grid {
+    grid-template-columns: minmax(220px, 1fr) minmax(90px, 0.6fr);
+  }
+
+  #knowledge-faq-panel > .grid > div:nth-child(4),
+  #knowledge-faq-list > .grid > div:nth-child(4) {
+    display: none;
+  }
+}

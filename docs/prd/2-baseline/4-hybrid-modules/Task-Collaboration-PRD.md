@@ -4,6 +4,17 @@
 > **优先级**: P0 (核心功能模块)
 > **所属版本**: v0.5+ (基础任务管理) → v0.8+ (NLP任务创建)
 
+### 实现状态（当前基础设施对齐）
+
+**已落地MCP工具**:
+- `createTask`
+- `updateTaskStatus`
+- `detectRequirement` / `createRequirement`（用于需求识别与落库）
+
+**待补齐能力**:
+- `extractTaskFromConversation` / `parseTaskFromNL` 等自动提取与NLP解析尚未实现。
+- 协作评论/@提醒/依赖分析仍需业务服务支持。
+
 ---
 
 ### Part 1: Agent能力 (智能任务管理)
@@ -18,7 +29,7 @@
 - **任务智能提醒**: 基于紧急度和优先级智能安排提醒时间
 - **任务关联推荐**: 根据任务内容推荐相关知识和历史案例
 
-**MCP工具清单**:
+**MCP工具清单（规划）**:
 
 ```typescript
 // 1. 任务创建与解析

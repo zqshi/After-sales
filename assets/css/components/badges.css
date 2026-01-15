@@ -1,0 +1,324 @@
+/**
+ * 徽章和标签组件样式
+ * 包含状态徽章、情绪标签、分析芯片等
+ */
+
+/* ==================== 基础徽章 ==================== */
+.status-badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-pending {
+  background-color: #FEFCE8;
+  color: var(--warning-color);
+}
+
+.status-processing {
+  background-color: #EFF6FF;
+  color: var(--primary-color);
+}
+
+.status-completed {
+  background-color: #ECFDF5;
+  color: var(--success-color);
+}
+
+.status-rejected {
+  background-color: #FEF2F2;
+  color: var(--error-color);
+}
+
+/* ==================== 状态Pill ==================== */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid var(--border-color);
+  width: fit-content;
+  font-weight: 500;
+}
+
+.status-pill.is-low {
+  background: #ecfdf3;
+  color: #047857;
+  border-color: #bbf7d0;
+}
+
+.status-pill.is-medium {
+  background: #fef9c3;
+  color: #a16207;
+  border-color: #fde68a;
+}
+
+.status-pill.is-high {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+/* ==================== 情绪标签 ==================== */
+.emotion-neutral {
+  background-color: #EFF6FF;
+  color: var(--primary-color);
+}
+
+.emotion-urgent {
+  background-color: #FEF2F2;
+  color: var(--error-color);
+}
+
+.emotion-positive {
+  background-color: #ECFDF5;
+  color: var(--success-color);
+}
+
+.emotion-negative {
+  background-color: #FFF7ED;
+  color: var(--warning-color);
+}
+
+/* 紧急程度标签 */
+.urgency-low {
+  background-color: #EFF6FF;
+  color: var(--primary-color);
+}
+
+.urgency-medium {
+  background-color: #FEFCE8;
+  color: var(--warning-color);
+}
+
+.urgency-high {
+  background-color: #FEF2F2;
+  color: var(--error-color);
+}
+
+/* 渠道标签 */
+.channel-tag {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  background-color: #EFF6FF;
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+/* 情感标签样式 */
+.sentiment-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sentiment-positive {
+  background-color: var(--sentiment-positive-bg);
+  color: var(--sentiment-positive-text);
+}
+
+.sentiment-neutral {
+  background-color: var(--sentiment-neutral-bg);
+  color: var(--sentiment-neutral-text);
+}
+
+.sentiment-negative {
+  background-color: var(--sentiment-negative-bg);
+  color: var(--sentiment-negative-text);
+}
+
+/* 情绪识别icon样式 */
+.sentiment-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  cursor: help;
+  transition: transform 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.sentiment-icon:hover {
+  transform: scale(1.2);
+}
+
+/* 对话列表项中的情绪icon容器 */
+.conversation-item .sentiment-icon {
+  margin-left: 4px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* ==================== 分析芯片 ==================== */
+.analysis-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.chip-urgent {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.chip-sla {
+  background: #ecfeff;
+  color: #0ea5e9;
+  border: 1px solid #bae6fd;
+}
+
+.chip-impact {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.chip-neutral {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid var(--border-color);
+}
+
+.chip-soft {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid var(--border-color);
+}
+
+.chip-ghost {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px dashed #cbd5e1;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+}
+
+.chip-success {
+  background: #ecfdf3;
+  color: #047857;
+  border-color: #bbf7d0;
+}
+
+.chip-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+/* ==================== 权限芯片 ==================== */
+.permission-chip {
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.permission-chip.chip-primary {
+  background: #eef2ff;
+  color: #1e3a8a;
+  border-color: #dfe6ff;
+}
+
+.permission-chip.chip-secondary {
+  background: #ecfeff;
+  color: #075985;
+  border-color: #bae6fd;
+}
+
+/* ==================== 质量芯片 ==================== */
+.quality-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  background: #eef2ff;
+  color: #1e3a8a;
+  border: 1px solid #dfe3ff;
+}
+
+.quality-chip-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quality-action {
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+  border: 1px dashed var(--border-color);
+}
+
+/* ==================== 知识标签 ==================== */
+.knowledge-tag {
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  background: #eef2ff;
+  color: #1e40af;
+  border: 1px solid #dfe6ff;
+}
+
+.knowledge-score {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ==================== 命令芯片 ==================== */
+.command-chip {
+  border: 1px solid var(--border-color);
+  background: #f8fafc;
+  color: #1e293b;
+  border-radius: var(--radius-full);
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.command-chip:hover {
+  border-color: var(--primary-light);
+  color: var(--primary-dark);
+  background: #eef2ff;
+}
+
+/* ==================== Badge软样式 ==================== */
+.badge-soft {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: #eef2ff;
+  color: #1e40af;
+  font-size: 11px;
+  border: 1px solid #dfe6ff;
+}

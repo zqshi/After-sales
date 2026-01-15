@@ -4,6 +4,17 @@
 > **优先级**: P0
 > **所属版本**: v0.1 + v0.8（增强）
 
+### 实现状态（当前基础设施对齐）
+
+**当前实现位置**: `agentscope-service/src/agents/engineer_agent.py`
+
+**已接入MCP工具（后端可用）**:
+- `searchKnowledge`（知识检索）
+- `createTask`（创建任务/工单）
+
+**说明**:
+- `searchTickets`、`getSystemStatus` 等在当前后端MCP工具中尚未实现，工程师侧能力以检索知识库+人工判断为主。
+
 ### 3.2.1 Agent Profile
 
 #### 1.1 身份定义
@@ -20,14 +31,14 @@
 - **结果导向**: 快速定位问题，给出可执行方案
 - **证据支撑**: 诊断结论基于日志、环境信息等证据
 
-**Capabilities**:
-- `diagnoseFault` (MCP): 故障诊断与根因分析
-- `classifyIssue` (MCP): 技术问题分类（系统/功能/性能/配置）
-- `searchTechnicalKB` (MCP): 技术知识库语义检索
-- `analyzeLogs` (MCP): 日志模式识别与异常检测
-- `recommendSolution` (MCP): 解决方案推荐与优先级排序
-- `estimateResolutionTime` (MCP): 估算问题解决时间
-- `createTechnicalTicket` (MCP): 创建技术工单并分配工程师
+**Capabilities（当前实现）**:
+- `searchKnowledge` (MCP): 技术知识检索（TaxKB）
+- `createTask` (MCP): 创建技术工单/任务
+
+**规划能力（需新增MCP工具与数据链路）**:
+- `diagnoseFault` / `classifyIssue` / `analyzeLogs`
+- `recommendSolution` / `estimateResolutionTime`
+- `createTechnicalTicket` / `searchTickets` / `getSystemStatus`
 
 #### 1.2 能力边界
 
@@ -77,7 +88,9 @@
 | v0.8 | 增加根因分析+自动工单创建 | 提升自动化率 | 2025-07 | 产品团队 |
 | v1.0 | 性能问题诊断+预测性维护 | 商业化标准版 | 2025-11 | 产品团队 |
 
-#### 2.2 当前版本Prompt（v1.0完整版）
+#### 2.2 规划版Prompt（v1.0）
+
+> 当前实现的简化Prompt以 `agentscope-service/src/agents/engineer_agent.py` 为准。
 
 ```
 你是专业的技术故障诊断专家 EngineerAgent。
@@ -793,7 +806,6 @@
 **特性**:
 - **智能分配**: 根据工程师专长和负载自动分配
 - **优先级继承**: 继承诊断结果的优先级
-- **SLA跟踪**: 自动计算SLA截止时间
 
 ---
 
@@ -1083,7 +1095,6 @@ Step 5: createTechnicalTicket()
       ticketId: "TICKET-12345",
       assignee: "高级架构师",
       priority: "P0",
-      sla: "1小时内响应"
     }
 
 【前端展示】
@@ -1092,7 +1103,6 @@ Step 5: createTechnicalTicket()
 • 诊断置信度：45%（需专家介入）
 • 已创建工单：TICKET-12345
 • 分配给：高级架构师
-• SLA：1小时内响应
 ```
 
 ---
@@ -1779,4 +1789,3 @@ Step 5: recommendSolution()
 ```
 
 ---
-

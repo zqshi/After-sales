@@ -4,6 +4,17 @@
 > **优先级**: P0 (核心功能模块)
 > **所属版本**: v0.5+ (基础对话) → v0.8+ (智能协同)
 
+### 实现状态（当前基础设施对齐）
+
+**已实现机制**:
+- OrchestratorAgent 规则化模式决策（simple/parallel/agent_supervised/human_first）
+- 人工介入通过 `HumanAgentAdapter` + WebSocket 通知前端
+- 仅依赖 `analyzeConversation` / `getCustomerProfile` / `searchKnowledge` 三类MCP工具
+
+**待补齐能力**:
+- `detectConversationMode` / `detectHandoffTrigger` 等MCP工具尚未实现
+- 质量监控/合规检测仍需后端工具与数据支撑
+
 ---
 
 ### Part 1: Agent能力 (对话管理与介入检测)
@@ -18,7 +29,7 @@
 - **对话状态管理**: 维护对话状态，支持AI/人工模式切换
 - **协同对话**: AI和人工客服协同回复客户
 
-**MCP工具清单**:
+**MCP工具清单（规划）**:
 
 ```typescript
 // 1. 对话模式管理

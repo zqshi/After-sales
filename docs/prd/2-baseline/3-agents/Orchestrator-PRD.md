@@ -4,6 +4,21 @@
 > **优先级**: P0 (核心路由Agent)
 > **所属版本**: v0.5+
 
+### 实现状态（当前基础设施对齐）
+
+**当前实现位置**: `agentscope-service/src/router/orchestrator_agent.py`
+
+**路由方式（已实现）**:
+- 基于规则+启发式（复杂度/情绪/场景）判断执行模式
+- 模式: `simple` / `parallel` / `agent_supervised` / `human_first`
+- 人工介入通过 `HumanAgentAdapter` + WebSocket 通知实现
+
+**已接入MCP工具（后端可用）**:
+- `analyzeConversation` / `getCustomerProfile` / `searchKnowledge`
+
+**说明**:
+- 文档中 `classifyIntent` / `routeToAgent` / `detectEmergency` 等为规划能力，当前未在MCP侧实现。
+
 ---
 
 ### 第1章：Agent Profile
@@ -20,12 +35,13 @@
 - **会话管理**: 维护会话状态，管理多轮对话上下文
 - **紧急识别**: 检测VIP客户、负面情绪、敏感词，触发特殊处理流程
 
-**Capabilities** (MCP Tools):
-- `classifyIntent`: 意图分类
-- `routeToAgent`: Agent路由决策
-- `detectEmergency`: 紧急情况检测
-- `getConversationContext`: 获取会话上下文
-- `escalateToHuman`: 升级到人工
+**Capabilities（当前实现）**:
+- 规则化意图/场景识别与模式决策（内置逻辑）
+- 人工介入触发与建议推送
+
+**规划能力（需新增MCP工具与数据链路）**:
+- `classifyIntent` / `routeToAgent` / `detectEmergency`
+- `getConversationContext` / `escalateToHuman`
 
 ---
 
@@ -131,6 +147,8 @@ Output:
 ---
 
 ### 第2章：工具清单
+
+> 以下工具清单为规划版本，当前实现未在MCP侧注册这些工具，实际能力以 `agentscope-service/src/router/orchestrator_agent.py` 为准。
 
 #### 工具1: classifyIntent
 

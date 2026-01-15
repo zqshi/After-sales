@@ -1,0 +1,290 @@
+/**
+ * 质检模块样式
+ * 包含质检面板、质检分析、对话复盘等
+ */
+
+/* ==================== 质检面板 ==================== */
+.qc-panel {
+  box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.25);
+}
+
+.qc-lean-body {
+  background: linear-gradient(180deg, #f8fafc, #ffffff);
+  --qc-panel-gutter: 18px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.qc-lean-body > .p-4 {
+  border-bottom: none;
+}
+
+/* ==================== 质检头部 ==================== */
+.qc-header-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.qc-header-main {
+  min-width: 0;
+}
+
+.qc-header-meta {
+  text-align: right;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 120px;
+}
+
+/* ==================== 质检布局 ==================== */
+.qc-lean-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qc-panel-gutter);
+  padding: 12px var(--qc-panel-gutter) 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.qc-lean-grid > * {
+  min-width: 0;
+  min-height: 0;
+}
+
+#qc-analysis-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--qc-panel-gutter);
+  grid-auto-rows: auto;
+  align-content: start;
+  width: 100%;
+  height: auto;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+#qc-analysis-wrap .qc-dim-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.qc-analysis-grid .qc-dim-card--full {
+  grid-column: 1 / -1;
+}
+
+#qc-thread-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qc-panel-gutter);
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+#qc-thread-wrap > * {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+/* ==================== 质检芯片 ==================== */
+.qc-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  border: 1px solid var(--border-color);
+  background: #f8fafc;
+  color: #334155;
+}
+
+.qc-chip-urgent {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.qc-chip-soft {
+  background: #eef2ff;
+  color: #1e3a8a;
+  border-color: #dfe3ff;
+}
+
+.qc-chip-ghost {
+  background: #f8fafc;
+  color: #475569;
+  border-style: dashed;
+}
+
+/* ==================== 质检维度卡片 ==================== */
+.qc-dim-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px;
+}
+
+.qc-dim-card.compact {
+  padding: 10px;
+}
+
+.qc-dim-bar {
+  height: 6px;
+  background: var(--border-color);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin: 8px 0 6px;
+}
+
+.qc-dim-bar div {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-light), var(--primary-dark));
+  border-radius: var(--radius-full);
+}
+
+.qc-dim-label {
+  font-size: 12px;
+  color: #334155;
+}
+
+.qc-dim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+/* ==================== 质检卡片 ==================== */
+.qc-thread-card,
+.qc-insights-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #fff;
+  padding: 12px;
+}
+
+.qc-thread-card--fill {
+  display: flow-root;
+  height: auto;
+  overflow: visible;
+}
+
+.qc-thread-list {
+  position: static;
+  display: block;
+  overflow-y: visible;
+  height: auto;
+  max-height: none;
+  padding-right: 4px;
+}
+
+/* ==================== 质检消息 ==================== */
+.qc-message {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+}
+
+.qc-message .tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  background: #eef2ff;
+  color: #1e3a8a;
+  border: 1px solid #e0e7ff;
+}
+
+/* ==================== 质检洞察 ==================== */
+.qc-insight-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  font-size: 12px;
+  color: #334155;
+}
+
+/* ==================== 质检操作栏 ==================== */
+.qc-action-bar {
+  margin: 6px var(--qc-panel-gutter) 8px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 10px 30px -18px rgba(15, 23, 42, 0.35);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* 移除边框色 */
+.qc-action-bar,
+.qc-dim-card,
+.qc-thread-card,
+.qc-insights-card,
+.qc-message,
+.qc-insight-row {
+  border-color: transparent;
+}
+
+/* ==================== 质检模式 ==================== */
+.analysis-main.mode-conversation #qc-analysis-wrap,
+.analysis-main.mode-conversation .qc-action-bar {
+  display: none;
+}
+
+.analysis-main.mode-analysis #qc-thread-wrap {
+  display: none;
+}
+
+.analysis-main.mode-analysis .qc-action-bar {
+  border-style: dashed;
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 640px) {
+  .qc-action-bar {
+    margin: 8px 10px;
+    padding: 10px;
+    gap: 8px;
+    position: relative;
+    box-shadow: none;
+  }
+
+  .qc-lean-grid {
+    padding: 10px;
+  }
+
+  .qc-header-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .qc-header-meta {
+    text-align: left;
+  }
+
+  #qc-analysis-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  #qc-thread-wrap {
+    grid-template-columns: 1fr;
+  }
+}

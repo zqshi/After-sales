@@ -1,0 +1,348 @@
+/**
+ * 聊天模块样式
+ * 包含对话列表、消息气泡、聊天头部、AI辅助等
+ */
+
+/* ==================== 对话列表 ==================== */
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: transparent;
+}
+
+.conversation-item {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 14px;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s ease;
+  margin: 0;
+  border-bottom: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.conversation-item:hover {
+  border-color: #93c5fd;
+  background: #f8fbff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.conversation-item.is-active {
+  border-color: var(--primary-light);
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+/* ==================== 聊天头部 ==================== */
+.chat-header {
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ==================== 消息区域 ==================== */
+.chat-messages {
+  background: #ffffff;
+  border-radius: 0;
+}
+
+.chat-messages .message {
+  animation: fadeIn 0.25s ease;
+}
+
+/* ==================== 消息气泡 ==================== */
+.message-bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  line-height: 1.6;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  margin-top: 0;
+  transform: translateY(-10px);
+}
+
+.message-bubble:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.message-bubble.customer {
+  background: #eff6ff;
+  color: #0f172a;
+  border: 1px solid #dbeafe;
+}
+
+.message-row.justify-start .message-bubble.customer {
+  background: #f8fafc;
+  border: 1px solid #f8fafc;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.message-bubble.agent {
+  background: #2563eb;
+  color: white;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+  align-self: flex-end;
+  text-align: left;
+}
+
+/* ==================== 消息高亮 ==================== */
+.message-highlight {
+  outline: 2px solid var(--primary-light);
+  box-shadow: 0 8px 18px -6px rgba(30, 64, 175, 0.35);
+  border-radius: var(--radius-md);
+  transition: outline 0.4s ease, box-shadow 0.4s ease, background 0.4s ease;
+  background: linear-gradient(90deg, #eef2ff, #ffffff);
+}
+
+/* ==================== 历史高亮 ==================== */
+.chat-messages .message {
+  transition: background-color 1s ease, box-shadow 1s ease;
+}
+
+.history-highlight {
+  background-color: rgba(30, 64, 175, 0.08);
+  box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.05);
+}
+
+/* ==================== 消息行布局 ==================== */
+.message-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0;
+}
+
+.message-row + .message-row {
+  margin-top: 20px;
+}
+
+.message-row.justify-end {
+  justify-content: flex-end;
+}
+
+.message-row.justify-start {
+  justify-content: flex-start;
+}
+
+.message-row .avatar {
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.message-row.justify-end .message-content-wrapper {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.message-row.justify-start .message-bubble,
+.message-row.justify-start .message-meta-line {
+  margin-left: 40px;
+}
+
+.message-row.justify-end .message-bubble,
+.message-row.justify-end .message-meta-line {
+  margin-right: 40px;
+}
+
+.message-row[data-sender-role="agent"] .message-header-text {
+  justify-content: flex-end;
+  text-align: right;
+  width: 100%;
+}
+
+.message-row[data-sender-role="agent"] .message-time {
+  text-align: right;
+}
+
+/* ==================== 消息头部 ==================== */
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.message-header-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.message-header-left {
+  justify-content: flex-start;
+}
+
+.message-header-left .avatar {
+  order: 1;
+  margin-top: 10px;
+}
+
+.message-header-left .message-header-text {
+  order: 2;
+}
+
+.message-header-right {
+  justify-content: flex-end;
+}
+
+.message-header-right .message-header-text {
+  order: 1;
+}
+
+.message-header-right .avatar {
+  order: 2;
+  margin-top: 10px;
+}
+
+.message-author {
+  color: #374151;
+  font-weight: 600;
+}
+
+.message-time {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* ==================== 消息元数据 ==================== */
+.message-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 6px;
+  transform: translateY(-10px);
+}
+
+.message-meta {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 0.35rem;
+}
+
+/* ==================== 消息内容容器 ==================== */
+.message-content-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+}
+
+/* ==================== 聊天模式控制 ==================== */
+#chat-mode-control {
+  flex-wrap: wrap;
+}
+
+.chat-mode-pill {
+  font-size: 11px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: var(--radius-full);
+  padding: 4px 14px;
+  background: white;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.chat-mode-pill.active {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: white;
+  box-shadow: 0 4px 8px rgba(26, 115, 232, 0.15);
+}
+
+/* ==================== Agent状态 ==================== */
+.agent-status-pill {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+}
+
+.agent-status-pill.agent-status-online {
+  border-color: var(--success-color);
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.agent-status-pill.agent-status-offline {
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+}
+
+/* ==================== 升级横幅 ==================== */
+.escalation-banner {
+  margin: 0 1rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, rgba(239, 115, 115, 0.15), rgba(249, 115, 22, 0.15));
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.escalation-banner.hidden {
+  display: none;
+}
+
+.escalation-banner .escalation-action {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--error-color);
+  color: white;
+  cursor: pointer;
+}
+
+/* ==================== 文本提示 ==================== */
+.text-tips span {
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 768px) {
+  .conversation-item {
+    padding: 10px 12px;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+  }
+
+  .message-bubble {
+    max-width: 85%;
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: var(--radius-md);
+  }
+
+  .conversation-list {
+    gap: 6px;
+  }
+}

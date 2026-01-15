@@ -17,6 +17,7 @@ import {
   openFaultReportMock,
   openTicketMock,
   openTicketManagementPanel,
+  openRequirementPanel,
 } from './chat/index.js';
 import {
   initKnowledgeBase,
@@ -39,6 +40,7 @@ import {
 import { initAiSolutions, analyzeConversation } from './ai/index.js';
 import { initAgentTasks, createRelatedTask, openAnalysisPanelClassic } from './tasks/index.js';
 import { initTools } from './tools/index.js';
+import { initReports } from './reports/index.js';
 import { scrollToBottom } from './core/scroll.js';
 import { initCustomerProfile, updateCustomerContext, openHistoryDetail } from './customer/index.js';
 import { initRoleSwitcher } from './roles.js';
@@ -72,6 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAiSolutions();
     initAgentTasks();
     initTools();
+    initReports();
     initDockNavigation();
     initUserMenu();
     scrollToBottom();
@@ -129,6 +132,7 @@ window.openClarifyPanel = openClarifyPanel;
 window.openFaultReportMock = openFaultReportMock;
 window.openTicketMock = openTicketMock;
 window.openTicketManagementPanel = openTicketManagementPanel;
+window.openRequirementPanel = openRequirementPanel;
 
 window.initAiSolutions = initAiSolutions;
 window.analyzeConversation = analyzeConversation;

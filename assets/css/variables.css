@@ -1,0 +1,85 @@
+/**
+ * CSS变量定义
+ * 统一管理颜色、间距、圆角、阴影等设计令牌
+ */
+
+:root {
+  /* ==================== 颜色系统 ==================== */
+  /* 主色 */
+  --primary-color: #1E40AF;
+  --primary-light: #3B82F6;
+  --primary-dark: #1E3A8A;
+
+  /* 辅助色 */
+  --secondary-color: #64748B;
+  --success-color: #10B981;
+  --warning-color: #F59E0B;
+  --error-color: #EF4444;
+  --info-color: #3B82F6;
+
+  /* 背景色 */
+  --bg-light: #F8FAFC;
+  --bg-white: #FFFFFF;
+
+  /* 文本色 */
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+
+  /* 边框色 */
+  --border-color: #E2E8F0;
+
+  /* 面板色 */
+  --panel-bg: #ffffff;
+  --panel-border: #e2e8f0;
+  --panel-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+
+  /* ==================== 间距系统 ==================== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+
+  /* ==================== 圆角 ==================== */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* ==================== 阴影 ==================== */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* ==================== 布局 ==================== */
+  --drawer-width: clamp(320px, 28vw, 520px);
+  --dock-width: 64px;
+  --sidebar-width: 384px;
+
+  /* ==================== 动画 ==================== */
+  --animation-duration: 0.2s;
+  --animation-timing: ease;
+
+  /* ==================== AI辅助面板 ==================== */
+  --ai-panel-bg: #f9fafb;
+  --ai-panel-border: #e5e7eb;
+  --ai-panel-max-height: 300px;
+
+  /* ==================== 情感分析颜色 ==================== */
+  --sentiment-positive-bg: #dcfce7;
+  --sentiment-positive-text: #166534;
+  --sentiment-neutral-bg: #f3f4f6;
+  --sentiment-neutral-text: #4b5563;
+  --sentiment-negative-bg: #fee2e2;
+  --sentiment-negative-text: #991b1b;
+
+  /* ==================== 卡片样式 ==================== */
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --card-hover-border: #3b82f6;
+  --card-hover-shadow: rgba(59, 130, 246, 0.15);
+  --card-border-radius: 8px;
+  --card-padding: 10px 12px;
+}

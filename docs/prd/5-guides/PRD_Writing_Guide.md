@@ -678,7 +678,6 @@ llm_confidence_score{agent="AssistantAgent", bucket="0.9-1.0"}
 **核心价值**:
 - 减少重复询问客户信息，提升效率
 - 通过健康度评分识别高风险客户
-- SLA信息实时可见，避免超时
 
 **优先级**: P0（核心功能）
 ```
@@ -698,7 +697,6 @@ llm_confidence_score{agent="AssistantAgent", bucket="0.9-1.0"}
 
 **US-01**: 作为一线客服，我希望看到客户的基础档案，以便快速了解客户背景
 **US-02**: 作为售后经理，我希望看到客户的健康度评分，以便识别高风险客户
-**US-03**: 作为一线客服，我希望看到SLA信息，以便避免服务超时
 
 ### 2.2 功能列表
 
@@ -706,7 +704,6 @@ llm_confidence_score{agent="AssistantAgent", bucket="0.9-1.0"}
 |-------|------|--------|------|
 | 客户基础档案 | 展示姓名、公司、职位、联系方式 | P0 | 无 |
 | 合同信息 | 展示合同金额、状态、到期时间 | P0 | 无 |
-| SLA信息 | 展示服务等级、响应时间要求 | P0 | 无 |
 | 健康度评分 | 展示健康度分数、风险等级 | P0 | HealthScoreCalculator |
 | 已购产品清单 | 展示客户已购买的产品列表 | P1 | 无 |
 | 最近互动记录 | 展示近7/30/90天的沟通记录 | P1 | 无 |
@@ -766,7 +763,6 @@ llm_confidence_score{agent="AssistantAgent", bucket="0.9-1.0"}
 │   合同金额: ¥100,000                  │
 │   合同状态: 🟢 有效                   │
 │   到期时间: 2025-12-31                │
-│   SLA等级: 金牌VIP                    │
 │                                      │
 │ 📊 健康度评分                         │
 │   分数: 85/100 (🟢 健康)              │
@@ -903,7 +899,6 @@ Authorization: Bearer <token>
       "amount": 100000,
       "status": "active",
       "expiryDate": "2025-12-31",
-      "slaLevel": "金牌VIP"
     },
     "healthScore": {
       "score": 85,
@@ -978,7 +973,6 @@ interface ContractInfo {
   amount: number;               // 合同金额（元）
   status: 'active' | 'expired' | 'cancelled'; // 合同状态
   expiryDate: string;           // 到期时间（ISO 8601）
-  slaLevel: '普通' | '银牌' | '金牌VIP' | '铂金VIP'; // SLA等级
 }
 
 interface HealthScore {

@@ -59,6 +59,12 @@ function initTabs() {
       content.classList.toggle('active', shouldShow);
     });
 
+    if (group === 'workspace' && tabId === 'workspace-reports') {
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 0);
+    }
+
     // 当切换到对话tab时，如果右侧面板是打开的且显示的是质检面板，自动切换到经典分析面板
     if (group === 'default' && tabId === 'conversations') {
       const drawer = qs('#right-sidebar');

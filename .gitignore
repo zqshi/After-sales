@@ -58,3 +58,15 @@ venv/
 ENV/
 env/
 .venv
+
+# 旧版本备份
+_legacy/
+*.old
+*.backup
+
+# 其他临时文件
+*.bak
+.AppleDouble
+.LSOverride
+backend/coverage-report.txt
+backend/coverage/.tmp/

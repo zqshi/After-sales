@@ -37,6 +37,15 @@ function initDockSubmenus() {
         return;
       }
 
+      if (parent === 'tools') {
+        if (subtab === 'reports') {
+          showReportsContent();
+        } else {
+          showToolsContent();
+        }
+        return;
+      }
+
       showMessagesContent();
       if (subtab === 'tasks') {
         showTasksContent();
@@ -142,6 +151,9 @@ function handleDockTabSwitch(dockTab, clickedBtn) {
       // 显示工具内容
       showToolsContent();
       break;
+    case 'reports':
+      showReportsContent();
+      break;
     default:
       showMessagesContent();
   }
@@ -241,6 +253,44 @@ function showToolsContent() {
   });
 
   showWorkspaceContent('workspace-tools');
+}
+
+function showReportsContent() {
+  setRightSidebarMode('panel');
+  toggleRightSidebar(false);
+  setKnowledgeLayout(false);
+  setToolsLayout(true);
+  setDockActive('reports');
+
+  const sidebarTabs = qsa('.sidebar-tab');
+  sidebarTabs.forEach(tab => {
+    const tabId = tab.getAttribute('data-tab');
+    const tabGroup = tab.getAttribute('data-tab-group');
+
+    if (tabGroup === 'sidebar') {
+      if (tabId === 'reports') {
+        tab.classList.add('tab-active');
+      } else {
+        tab.classList.remove('tab-active');
+      }
+    }
+  });
+
+  const tabContents = qsa('.tab-content');
+  tabContents.forEach(content => {
+    const contentGroup = content.getAttribute('data-tab-group');
+    if (contentGroup === 'sidebar') {
+      if (content.id === 'reports-tab') {
+        content.classList.remove('hidden');
+        content.classList.add('active');
+      } else {
+        content.classList.add('hidden');
+        content.classList.remove('active');
+      }
+    }
+  });
+
+  showWorkspaceContent('workspace-reports');
 }
 
 function showWorkspaceContent(tabId) {

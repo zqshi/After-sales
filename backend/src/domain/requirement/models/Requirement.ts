@@ -192,6 +192,54 @@ export class Requirement extends AggregateRoot<RequirementProps> {
     this.props.updatedAt = new Date();
   }
 
+  /**
+   * 业务规则：是否应该自动创建Task
+   *
+   * 规则：
+   * 1. 高优先级（urgent/high）→ 自动创建
+   * 2. 来自客户对话（source=conversation/customer）→ 自动创建
+   * 3. 其他情况（低优先级、手动创建）→ 不自动创建
+   */
+  shouldAutoCreateTask(): boolean {
+    // 规则1：紧急或高优先级 → 自动创建
+    if (this.props.priority.isUrgent()) {
+      return true;
+    }
+
+    // 规则2：来自客户 → 自动创建
+    if (this.props.source.isCustomerInitiated()) {
+      return true;
+    }
+
+    // 规则3：其他情况（低优先级、手动创建）→ 不自动创建
+    return false;
+  }
+
+  /**
+   * 业务规则：是否需要与客户沟通
+   *
+   * 判断该需求是否需要创建Conversation与客户沟通
+   */
+  needsCustomerCommunication(): boolean {
+    // 如果已有关联对话，不需要再创建
+    if (this.props.conversationId) {
+      return false;
+    }
+
+    // 高优先级需求需要主动沟通
+    if (this.props.priority.isUrgent()) {
+      return true;
+    }
+
+    // 技术类、功能类需求可能需要确认细节
+    const communicationCategories = ['technical', 'feature', 'bug'];
+    if (communicationCategories.includes(this.props.category)) {
+      return true;
+    }
+
+    return false;
+  }
+
   static rehydrate(
     props: RequirementProps,
     id: string,

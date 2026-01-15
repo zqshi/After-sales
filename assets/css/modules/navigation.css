@@ -1,0 +1,159 @@
+/**
+ * 导航模块样式
+ * 包含Dock导航、左侧栏、右侧抽屉等
+ */
+
+/* ==================== Dock导航栏 ==================== */
+.dock-nav {
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+  width: var(--dock-width);
+}
+
+body.drawer-open .dock-nav,
+body.drawer-open .dock-submenu {
+  z-index: 10;
+}
+
+/* Dock二级菜单 */
+.dock-item {
+  position: relative;
+}
+
+.dock-submenu {
+  position: absolute;
+  top: 6px;
+  left: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 120;
+}
+
+.dock-submenu::before {
+  content: '';
+  position: absolute;
+  left: -16px;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+}
+
+.dock-item:hover .dock-submenu {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.dock-submenu-item {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #334155;
+  background: #f8fafc;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  min-width: 70px;
+}
+
+.dock-submenu-item:hover {
+  color: var(--primary-color);
+  border-color: #cbd5f5;
+  background: #eef2ff;
+}
+
+/* ==================== 消息子tab ==================== */
+.message-subtabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+/* ==================== 右侧抽屉 ==================== */
+.analysis-drawer {
+  width: var(--drawer-width);
+  min-width: 320px;
+  max-width: 520px;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+}
+
+body.drawer-open .main-content {
+  margin-right: var(--drawer-width);
+}
+
+#right-sidebar-overlay {
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.12);
+}
+
+/* ==================== 抽屉面板 ==================== */
+.ai-assistant-drawer {
+  background: #f8fafc;
+}
+
+.ai-assistant-header {
+  background: linear-gradient(90deg, #eef2ff, #ffffff);
+  position: sticky;
+  top: 0;
+  z-index: 6;
+}
+
+.ai-assistant-body {
+  background: #f8fafc;
+}
+
+.analysis-header {
+  background: linear-gradient(90deg, #eef2ff, #fff);
+  position: sticky;
+  top: 0;
+  z-index: 6;
+}
+
+.analysis-body {
+  background: #f8fafc;
+}
+
+.analysis-rail {
+  background: linear-gradient(180deg, #f8fbff, #ffffff);
+}
+
+.right-sidebar.panel-only .analysis-body {
+  grid-template-columns: 1fr !important;
+  background: #ffffff;
+}
+
+.right-sidebar.panel-only .analysis-rail {
+  display: none;
+}
+
+/* ==================== 客户行 ==================== */
+.customer-row {
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  transition: all 0.15s ease;
+}
+
+.customer-row:hover {
+  border-color: transparent;
+  background: #f8fafc;
+}
+
+.customer-row:hover .hover-actions {
+  display: flex;
+}

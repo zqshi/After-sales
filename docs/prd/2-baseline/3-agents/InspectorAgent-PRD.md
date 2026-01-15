@@ -4,6 +4,17 @@
 > **优先级**: P0
 > **所属版本**: v0.1 + v1.0（质检报告）
 
+### 实现状态（当前基础设施对齐）
+
+**当前实现位置**: `agentscope-service/src/agents/inspector_agent.py`
+
+**现有能力**:
+- 基于对话文本的LLM质检评分与建议（无持久化报表链路）
+
+**基础设施缺口**:
+- 后端MCP未提供 `inspectConversation` / `generateQualityReport` 等工具。
+- 代码中引用的 `getConversationHistory` 仍未在MCP侧实现，需补齐后才能自动拉取对话历史。
+
 ### 3.3.1 Agent Profile
 
 #### 1.1 身份定义
@@ -20,14 +31,12 @@
 - **数据驱动**: 依据事实和数据，而非主观臆断
 - **建设性**: 不仅指出问题，还提供改进建议
 
-**Capabilities**:
-- `inspectConversation` (MCP): 对话质量检查与评分
-- `checkCompliance` (MCP): 服务规范合规性检查
-- `scoreServiceQuality` (MCP): 服务质量综合评分
-- `detectViolations` (MCP): 违规行为识别（辱骂、泄密、越权）
-- `generateQualityReport` (MCP): 生成质检报告（周报/月报）
-- `recommendImprovement` (MCP): 质量改进建议
-- `compareTeamPerformance` (MCP): 团队质量对比分析
+**Capabilities（当前实现）**:
+- 基于对话文本进行质检评分与改进建议输出
+
+**规划能力（需新增MCP工具与数据链路）**:
+- `inspectConversation` / `checkCompliance` / `detectViolations`
+- `generateQualityReport` / `compareTeamPerformance`
 
 #### 1.2 能力边界
 
@@ -78,7 +87,9 @@
 | v0.8 | 增加改进建议生成+团队对比分析 | 支持质量持续改进 | 2025-07 | 产品团队 |
 | v1.0 | 质检报告自动化（周报/月报）+趋势分析 | 商业化标准版 | 2025-11 | 产品团队 |
 
-#### 2.2 当前版本Prompt（v1.0完整版）
+#### 2.2 规划版Prompt（v1.0）
+
+> 当前实现的简化Prompt以 `agentscope-service/src/agents/inspector_agent.py` 为准。
 
 ```
 你是专业的服务质检专家 InspectorAgent。
@@ -1070,7 +1081,6 @@ overallScore = (responseSpeed × 0.15) +
 **标准流程**:
 1. 调用`detectViolations()`检测严重违规（信息泄露/辱骂/越权）
 2. 如果检测到`critical`违规：
-   - 立即推送告警到管理层（Slack + 邮件）
    - 标记该对话需100%人工复核
    - 触发安全审计流程
 3. 记录违规证据（对话片段、时间戳）
@@ -1286,7 +1296,6 @@ sequenceDiagram
     InspectorAgent->>MCP: detectViolations()
     MCP-->>InspectorAgent: {criticalViolations: [information_leakage]}
     InspectorAgent->>AlertService: 推送紧急告警
-    AlertService->>Manager: Slack通知 + 邮件通知
     InspectorAgent->>System: 标记对话需100%人工审核
 ```
 
@@ -1311,7 +1320,6 @@ Step 3: 评估严重性
   → 处理: 立即告警
 
 Step 4: 推送告警
-  → Slack: "@管理层 🔴 严重违规：客服AGENT-001泄露客户身份证号"
   → 邮件: "紧急：质检发现信息泄露违规"
   → 标记: 该对话需100%人工审核
 
@@ -1973,7 +1981,6 @@ Agent质检 → 人工审核 → 人工调整（可选）→ 确认保存
 | **质检准确率** | <85% | 优化评分算法，调整权重 |
 
 **告警通知**:
-- 降级1触发>100次/小时 → Slack告警
 - 降级2触发>50次/小时 → 邮件通知
 - 降级3触发 → 紧急电话通知
 
@@ -2409,7 +2416,6 @@ Step 2: 调用detectViolations()
   → 严重性: critical（严重）
 
 Step 3: 立即触发告警
-  → Slack通知: "@管理层 🔴 严重违规：客服AGENT-002泄露客户身份证号"
   → 邮件通知: "紧急：质检发现信息泄露违规，涉及客服李客服"
   → 标记: 该对话需100%人工审核
   → 暂停: 该客服自动质检改为100%人工审核
@@ -2471,7 +2477,6 @@ Step 4: 生成质检结果
 │ [立即处理] [查看完整对话]             │
 └─────────────────────────────────────┘
 
-【Slack通知】
 @管理层 🔴 严重违规告警
 
 客服：李客服（AGENT-002）
@@ -2620,4 +2625,3 @@ Step 4: 人工复核决策
    - 质量管理（统计申诉成功率）
 
 ---
-

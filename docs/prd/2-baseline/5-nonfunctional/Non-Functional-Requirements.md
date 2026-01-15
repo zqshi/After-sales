@@ -4,6 +4,13 @@
 > **创建日期**: 2025-12-30
 > **所属版本**: v0.5+ (基础) → v1.0+ (企业级)
 
+## 基础设施对齐说明（当前实现）
+
+- **核心组件**: Fastify + PostgreSQL + Redis + AgentScope Service
+- **知识检索**: 通过TaxKB适配器调用外部知识服务（语义检索依赖外部能力）
+- **监控**: Prometheus + Grafana 已在 `docker-compose.yml` 预置
+- **未落地项**: Milvus/GraphQL 等需明确引入计划后才能纳入硬性指标
+
 ---
 
 ## 5.1 性能需求
@@ -114,7 +121,7 @@
 | **响应时间** | <10ms | <5ms | <3ms |
 | **QPS** | 1000 | 5000 | 10000 |
 
-#### Milvus性能指标
+#### 向量检索性能指标（如引入向量库）
 
 | 指标 | v0.5目标 | v0.8目标 | v1.0目标 |
 |-----|---------|---------|---------|
@@ -154,7 +161,7 @@
   - 数据库连接池
   - 异步任务队列
   - API接口合并
-  - GraphQL按需查询
+  - 按需查询（GraphQL为可选方案）
   - 数据预加载
 
 目标:
@@ -427,7 +434,6 @@ def mask_address(address):
 
 ```yaml
 扩展方式:
-  - 读写分离: Master (写) + Slave 1/2 (读)
   - 垂直分片: 按业务模块拆分数据库
   - 水平分片: 按租户ID分片 (v1.0)
   - 分库分表: Sharding-JDBC
@@ -612,13 +618,10 @@ def mask_address(address):
 
 ```yaml
 架构设计:
-  - 主从复制: Master + Slave 1 + Slave 2
   - 自动故障转移: Patroni + etcd
   - 读写分离: 写主库，读从库
-  - 数据同步: 同步复制 (Master → Slave1), 异步复制 (Master → Slave2)
 
 故障恢复:
-  - 主库故障: 自动提升Slave1为新主库 (RTO <60秒)
   - 从库故障: 自动摘除，不影响服务
   - 数据恢复: 基于WAL日志 (RPO <10秒)
 ```
@@ -628,13 +631,10 @@ def mask_address(address):
 ```yaml
 架构设计:
   - Redis Cluster: 主从 + 哨兵
-  - 节点数: 3 Master + 3 Slave
   - 哨兵数: 3个 (Sentinel)
   - 自动故障转移: 哨兵检测+自动切换
 
 故障恢复:
-  - Master故障: 自动提升Slave为新Master
-  - Slave故障: 自动摘除，不影响服务
   - 数据持久化: RDB + AOF
 ```
 

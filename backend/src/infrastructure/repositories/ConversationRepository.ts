@@ -5,6 +5,7 @@ import { IConversationRepository } from '@domain/conversation/repositories/IConv
 import { Conversation } from '@domain/conversation/models/Conversation';
 import { ConversationEntity } from '@infrastructure/database/entities/ConversationEntity';
 import { DomainEventEntity } from '@infrastructure/database/entities/DomainEventEntity';
+import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
 import { ConversationMapper } from './mappers/ConversationMapper';
 import { ConversationStatus, SLAStatus } from '@domain/conversation/types';
 
@@ -23,10 +24,12 @@ export interface PaginationOptions {
 export class ConversationRepository implements IConversationRepository {
   private repository: Repository<ConversationEntity>;
   private eventRepository: Repository<DomainEventEntity>;
+  private outboxEventBus: OutboxEventBus;
 
   constructor(private dataSource: DataSource) {
     this.repository = dataSource.getRepository(ConversationEntity);
     this.eventRepository = dataSource.getRepository(DomainEventEntity);
+    this.outboxEventBus = new OutboxEventBus(dataSource);
   }
 
   async save(conversation: Conversation): Promise<void> {
@@ -39,6 +42,8 @@ export class ConversationRepository implements IConversationRepository {
       await queryRunner.manager.save(entity);
 
       const events = conversation.getUncommittedEvents();
+
+      // 保存到domain_events表（事件溯源）
       for (const event of events) {
         const eventEntity = new DomainEventEntity();
         eventEntity.id = event.eventId;
@@ -51,6 +56,13 @@ export class ConversationRepository implements IConversationRepository {
 
         await queryRunner.manager.save(eventEntity);
       }
+
+      // 保存到outbox_events表（Outbox模式）
+      await this.outboxEventBus.publishInTransaction(
+        events,
+        'Conversation',
+        queryRunner,
+      );
 
       conversation.clearEvents();
       await queryRunner.commitTransaction();

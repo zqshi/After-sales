@@ -99,6 +99,7 @@ function setAiPanelMode(mode) {
   const solutionPanel = qs('#ai-panel-solution');
   const actionPanel = qs('#ai-panel-action');
   const clarifyPanel = qs('#ai-panel-clarify');
+  const requirementsPanel = qs('#ai-panel-requirements');
   const title = qs('#ai-assistant-title');
   const badge = qs('#ai-assistant-badge');
   const desc = qs('#ai-assistant-desc');
@@ -106,7 +107,7 @@ function setAiPanelMode(mode) {
   if (panel) {
     panel.classList.remove('hidden');
   }
-  if (!replyPanel || !solutionPanel || !actionPanel || !clarifyPanel) {
+  if (!replyPanel || !solutionPanel || !actionPanel || !clarifyPanel || !requirementsPanel) {
     return;
   }
 
@@ -114,6 +115,7 @@ function setAiPanelMode(mode) {
   solutionPanel.classList.toggle('hidden', mode !== 'solution');
   actionPanel.classList.toggle('hidden', mode !== 'action');
   clarifyPanel.classList.toggle('hidden', mode !== 'clarify');
+  requirementsPanel.classList.toggle('hidden', mode !== 'requirements');
 
   if (title) {
     if (mode === 'reply') {
@@ -122,6 +124,8 @@ function setAiPanelMode(mode) {
       title.textContent = 'AI解决方案';
     } else if (mode === 'clarify') {
       title.textContent = '问题澄清';
+    } else if (mode === 'requirements') {
+      title.textContent = '需求检测';
     } else {
       title.textContent = '协作面板';
     }
@@ -133,6 +137,8 @@ function setAiPanelMode(mode) {
       badge.textContent = '排查';
     } else if (mode === 'clarify') {
       badge.textContent = '评估';
+    } else if (mode === 'requirements') {
+      badge.textContent = '需求';
     } else {
       badge.textContent = '表单';
     }
@@ -144,6 +150,8 @@ function setAiPanelMode(mode) {
       desc.textContent = '提供排查建议步骤与参考资料，便于快速定位问题。';
     } else if (mode === 'clarify') {
       desc.textContent = '基于当前会话评估问题描述完整度。';
+    } else if (mode === 'requirements') {
+      desc.textContent = '扫描对话中的需求信息，生成需求卡片。';
     } else {
       desc.textContent = '支持工单与排查协作，可与对话并行操作。';
     }
@@ -162,6 +170,13 @@ export function openAiSolutionPanel() {
   hideRightSidebarOverlay();
   setAiSolutionMockData();
   setAiPanelMode('solution');
+}
+
+export function openRequirementPanel() {
+  openAiAssistantPanel();
+  hideRightSidebarOverlay();
+  loadRequirementsData();
+  setAiPanelMode('requirements');
 }
 
 function setAiSolutionMockData() {

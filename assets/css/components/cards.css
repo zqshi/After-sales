@@ -1,0 +1,381 @@
+/**
+ * 卡片和面板组件样式
+ * 包含各种卡片、面板、徽章样式
+ */
+
+/* ==================== 基础卡片 ==================== */
+.card,
+.panel-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow: var(--panel-shadow);
+  transition: all 0.3s ease;
+}
+
+.card:hover,
+.panel-card:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
+}
+
+/* ==================== 特殊卡片 ==================== */
+.task-card {
+  box-shadow: var(--shadow-sm);
+}
+
+.suggestion-card {
+  background-color: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+.suggestion-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+.ai-assistant {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+}
+
+.problem-identification {
+  border-radius: var(--radius-md);
+}
+
+.solution-item {
+  border-radius: 14px;
+}
+
+/* ==================== 知识卡片 ==================== */
+.knowledge-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-border-radius);
+  padding: var(--card-padding);
+  transition: all 0.2s var(--animation-timing);
+  cursor: pointer;
+  position: relative;
+}
+
+.knowledge-card:hover {
+  border-color: var(--card-hover-border);
+  box-shadow: 0 2px 8px var(--card-hover-shadow);
+  transform: translateY(-2px);
+}
+
+.knowledge-card.active {
+  border-color: var(--primary-light);
+  box-shadow: 0 10px 18px -10px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(180deg, #f7faff, #ffffff);
+}
+
+.knowledge-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.knowledge-preview {
+  border: 1px solid rgba(30, 64, 175, 0.25);
+  box-shadow: 0 10px 30px -12px rgba(30, 64, 175, 0.35);
+}
+
+.knowledge-preview-body {
+  max-height: 160px;
+  overflow: hidden;
+  border: 1px dashed #d7def0;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  padding: 12px;
+  transition: max-height 0.2s ease;
+}
+
+.knowledge-preview.expanded .knowledge-preview-body {
+  max-height: none;
+  overflow: auto;
+}
+
+.knowledge-app-card {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.knowledge-app-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-light) !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.knowledge-app-card.is-active {
+  border-color: rgba(30, 64, 175, 0.4);
+  box-shadow: 0 10px 18px -10px rgba(30, 64, 175, 0.25);
+}
+
+/* ==================== 统计卡片 ==================== */
+.stat-tile {
+  background: #f8fafc;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  border: 1px dashed var(--border-color);
+}
+
+/* ==================== 质量评分卡片 ==================== */
+.quality-score-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #f8fbff;
+  padding: 12px;
+}
+
+.quality-score {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* ==================== 服务记录卡片 ==================== */
+.service-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--panel-shadow);
+}
+
+.service-card + .service-card {
+  margin-top: 8px;
+}
+
+.commit-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--panel-shadow);
+}
+
+/* ==================== 时间线卡片 ==================== */
+.timeline-card {
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ==================== Rail卡片 ==================== */
+.rail-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--panel-shadow);
+}
+
+/* ==================== 占位卡片 ==================== */
+.placeholder-card {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+/* ==================== 洞察卡片 ==================== */
+.insight-card {
+  background: linear-gradient(180deg, #f8fbff, #ffffff);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.insight-action {
+  font-size: 11px;
+  color: #1e3a8a;
+  background: #eef2ff;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #dfe3ff;
+}
+
+/* ==================== 交互卡片 ==================== */
+.interaction-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  height: 100%;
+}
+
+/* ==================== 报表卡片 ==================== */
+.report-tile {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  box-shadow: var(--shadow-sm);
+}
+
+.report-tile button {
+  margin-top: 8px;
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 0;
+  font-size: 12px;
+  color: var(--primary-color);
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.report-tile button:hover {
+  border-color: var(--primary-light);
+  background: #eef2ff;
+}
+
+/* ==================== 布局预览卡片 ==================== */
+.layout-preview {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: linear-gradient(180deg, #f8fafc, #ffffff);
+  min-height: 160px;
+  transition: all 0.2s ease;
+}
+
+.layout-preview .preview-top {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.layout-preview .bar {
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: #dbeafe;
+}
+
+.layout-preview .bar.short {
+  width: 26%;
+}
+
+.layout-preview .bar.long {
+  flex: 1;
+}
+
+.layout-preview .preview-body {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.layout-preview .preview-card {
+  background: #eef2ff;
+  border: 1px solid #dfe6ff;
+  border-radius: var(--radius-md);
+  height: 62px;
+}
+
+.layout-preview .preview-card.tall {
+  height: 96px;
+}
+
+.layout-preview .preview-card.wide {
+  grid-column: span 2;
+}
+
+.layout-preview.layout-dashboard .preview-body {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.layout-preview.layout-board .preview-body {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.layout-preview.layout-board .preview-card.wide {
+  grid-column: span 3;
+}
+
+.layout-preview.layout-focus {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 10px;
+}
+
+.layout-preview.layout-focus .preview-body {
+  grid-template-columns: 1fr;
+}
+
+.layout-preview.layout-focus .preview-card.wide {
+  grid-column: span 1;
+}
+
+/* ==================== 任务列表项 ==================== */
+.task-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+}
+
+/* ==================== 历史记录卡片 ==================== */
+.history-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+}
+
+/* ==================== 进度条 ==================== */
+.progress {
+  width: 100%;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-light), var(--primary-dark));
+  border-radius: var(--radius-full);
+}

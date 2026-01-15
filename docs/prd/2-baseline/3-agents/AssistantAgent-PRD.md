@@ -4,6 +4,21 @@
 > **优先级**: P0
 > **所属版本**: v0.1 + v0.5 + v0.8（持续增强）
 
+### 实现状态（当前基础设施对齐）
+
+**当前实现位置**: `agentscope-service/src/agents/assistant_agent.py`
+
+**已接入MCP工具（后端可用）**:
+- `analyzeConversation`（对话情绪/质量分析）
+- `getCustomerProfile`（客户画像）
+- `searchKnowledge`（知识检索）
+
+**当前输出结构（v0.1实现）**:
+- `sentiment_analysis` / `requirement_extraction` / `clarification_questions` / `suggested_reply` / `confidence`
+
+**说明**:
+- 文档中 v0.5+ 的自动化决策、多语言、知识图谱联动等属于规划能力，需新增MCP工具与业务数据支撑后落地。
+
 ### 3.1.1 Agent Profile
 
 #### 1.1 身份定义
@@ -20,10 +35,12 @@
 - **同理共情**: 能够理解客户情绪，针对负面情绪提供安抚性表述
 - **严谨可靠**: 不确定的信息明确标注，置信度<0.7的建议必须人工审核
 
-**Capabilities**:
+**Capabilities（当前实现）**:
 - `analyzeConversation` (MCP): 分析对话情感、意图、优先级
 - `getCustomerProfile` (MCP): 获取客户画像（等级、健康度、历史问题）
 - `searchKnowledge` (MCP): 语义检索知识库，匹配相关解决方案
+
+**规划能力（需新增MCP工具与数据链路）**:
 - `generateReply` (MCP): 生成回复建议，支持多种风格
 - `extractRequirement` (MCP): 提取客户需求关键词
 - `assessRisk` (MCP): 评估对话风险等级（流失风险、投诉风险）
@@ -78,7 +95,9 @@
 | v0.8 | 增强置信度评估+自动化决策 | 提升自动化率到60% | 2025-07 | 产品团队 |
 | v1.0 | 多语言支持（中英日）+知识图谱联动 | 商业化标准版 | 2025-11 | 产品团队 |
 
-#### 2.2 当前版本Prompt（v1.0完整版）
+#### 2.2 规划版Prompt（v1.0）
+
+> 当前实现的简化Prompt以 `agentscope-service/src/agents/assistant_agent.py` 为准。
 
 ```
 你是专业的智能售后客服助手 AssistantAgent。
@@ -537,7 +556,6 @@ Step 5: 评估置信度
     "contractInfo": {
       "amount": 100000,
       "expiryDate": "2025-12-31",
-      "slaLevel": "金牌VIP"
     },
     "recentIssues": [
       {
@@ -1792,7 +1810,6 @@ Agent提供3个方案：
 | **模板回复使用率** | >30% | 检查LLM服务质量 |
 
 **告警通知**:
-- 降级1触发>100次/小时 → Slack告警 + 邮件通知
 - 降级3触发>50次/小时 → 紧急告警 + 电话通知
 
 **降级恢复**:
@@ -2511,7 +2528,6 @@ Step 2: 调用getCustomerProfile()
       contractInfo: {
         amount: 100000,
         expiryDate: "2025-12-31",
-        slaLevel: "金牌VIP"
       }
     }
 
@@ -2564,7 +2580,6 @@ Step 7: 调用recommendNextAction()
     ]
 
 Step 8: 触发高优先级告警
-  → 推送到Slack: "@售后经理 🔴 金牌VIP客户投诉（流失风险75%）"
   → 推送到邮件: "VIP客户紧急投诉预警"
 
 【Agent最终输出】
@@ -2672,11 +2687,9 @@ Step 8: 触发高优先级告警
 2. **为什么推荐"escalate_to_engineer"**:
    - 意图=complaint + 故障类关键词
    - 知识库无明确解决方案
-   - VIP客户需要快速响应（SLA: 2小时）
 
 3. **告警触发逻辑**:
    - VIP + negative + riskLevel=high → 自动告警
-   - Slack推送@售后经理（实时）
    - 邮件通知（5分钟内）
 
 ---
@@ -2806,4 +2819,3 @@ Step 3: 调用recommendNextAction()
    - ✅ 直接判断：常规方案无效 → 升级
 
 ---
-
