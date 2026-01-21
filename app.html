@@ -133,32 +133,36 @@
     <!-- Dock导航栏 -->
     <div class="dock-nav w-16 bg-white border-r border-gray-200 flex flex-col items-center py-4 gap-3 h-full">
       <div class="dock-item">
-        <button class="dock-btn dock-active" data-dock-tab="messages" title="消息">
+        <button class="dock-btn dock-active" data-dock-tab="messages" data-permission="dock.messages" title="消息">
           <i class="fa fa-comments text-gray-500 text-lg"></i>
           <span>消息</span>
         </button>
         <div class="dock-submenu">
-          <button class="dock-submenu-item" data-dock-parent="messages" data-dock-subtab="dialog">对话</button>
-          <button class="dock-submenu-item" data-dock-parent="messages" data-dock-subtab="tasks">任务</button>
+          <button class="dock-submenu-item" data-dock-parent="messages" data-dock-subtab="dialog" data-permission="dock.messages.dialog">对话</button>
+          <button class="dock-submenu-item" data-dock-parent="messages" data-dock-subtab="tasks" data-permission="dock.messages.tasks">任务</button>
         </div>
       </div>
       <div class="dock-item">
-        <button class="dock-btn" data-dock-tab="knowledge" title="知识">
+        <button class="dock-btn" data-dock-tab="knowledge" data-permission="dock.knowledge" title="知识">
           <i class="fa fa-book text-gray-500 text-lg"></i>
           <span>知识</span>
         </button>
         <div class="dock-submenu">
-          <button class="dock-submenu-item" data-dock-parent="knowledge" data-dock-subtab="knowledge-management">知识管理</button>
-          <button class="dock-submenu-item" data-dock-parent="knowledge" data-dock-subtab="knowledge-application">知识应用</button>
+          <button class="dock-submenu-item" data-dock-parent="knowledge" data-dock-subtab="knowledge-management" data-permission="knowledge.management.view">知识管理</button>
+          <button class="dock-submenu-item" data-dock-parent="knowledge" data-dock-subtab="knowledge-application" data-permission="knowledge.application.view">知识应用</button>
         </div>
       </div>
-      <button class="dock-btn" data-dock-tab="tools" title="工具">
+      <button class="dock-btn" data-dock-tab="tools" data-permission="dock.tools" title="工具">
         <i class="fa fa-th-large text-gray-500 text-lg"></i>
         <span>工具</span>
       </button>
-      <button class="dock-btn" data-dock-tab="reports" title="报表">
+      <button class="dock-btn" data-dock-tab="reports" data-permission="dock.reports" title="报表">
         <i class="fa fa-bar-chart text-gray-500 text-lg"></i>
         <span>报表</span>
+      </button>
+      <button class="dock-btn" data-dock-tab="permissions" data-permission="dock.permissions" title="权限">
+        <i class="fa fa-lock text-gray-500 text-lg"></i>
+        <span>权限</span>
       </button>
     </div>
     <!-- 左侧导航栏 -->
@@ -263,7 +267,7 @@
                   <p class="text-xs text-gray-600">生成公告并回访受影响用户</p>
                 </div>
                 <div class="flex items-center gap-2">
-                  <button class="task-delete-btn text-xs text-red-600 hover:text-red-700">删除</button>
+                <button class="task-delete-btn text-xs text-red-600 hover:text-red-700" data-permission="tasks.delete">删除</button>
                 </div>
               </div>
               <div class="task-list-item" data-task-id="task-002">
@@ -276,7 +280,7 @@
                   <p class="text-xs text-gray-600">推送账单核验指南并收集反馈</p>
                 </div>
                 <div class="flex items-center gap-2">
-                  <button class="task-delete-btn text-xs text-red-600 hover:text-red-700">删除</button>
+                <button class="task-delete-btn text-xs text-red-600 hover:text-red-700" data-permission="tasks.delete">删除</button>
                 </div>
               </div>
             </div>
@@ -298,7 +302,7 @@
                 <span id="agent-status-pill" class="agent-status-pill agent-status-offline">Agent 未连接</span>
               </div>
               <div class="flex shrink-0">
-                <button class="flex items-center px-3 py-2 bg-primary text-white rounded-full text-xs hover:bg-primary-dark transition-colors" onclick="openFullAnalysisPanel()">
+                <button class="flex items-center px-3 py-2 bg-primary text-white rounded-full text-xs hover:bg-primary-dark transition-colors" onclick="openFullAnalysisPanel()" data-permission="analysis.panel.open">
                   <i class="fa fa-columns mr-2"></i>
                   <span>分析面板</span>
                 </button>
@@ -310,9 +314,9 @@
                 <span>客户反馈云服务器无法连接，影响业务运营，需要紧急处理。</span>
               </div>
               <div id="chat-mode-control" class="chat-mode-control flex items-center gap-2 flex-wrap shrink-0">
-                <button data-chat-mode="agent_auto" class="chat-mode-pill active">Agent自动</button>
-                <button data-chat-mode="agent_supervised" class="chat-mode-pill">Agent监督</button>
-                <button data-chat-mode="human_first" class="chat-mode-pill">人工优先</button>
+                <button data-chat-mode="agent_auto" class="chat-mode-pill active" data-permission="chat.mode.auto">Agent自动</button>
+                <button data-chat-mode="agent_supervised" class="chat-mode-pill" data-permission="chat.mode.supervised">Agent监督</button>
+                <button data-chat-mode="human_first" class="chat-mode-pill" data-permission="chat.mode.human">人工优先</button>
               </div>
             </div>
           </div>
@@ -320,7 +324,7 @@
 
         <div id="escalation-banner" class="escalation-banner hidden">
           <span class="escalation-text">Agent建议人工介入中...</span>
-          <button type="button" class="escalation-action">立即交付人工</button>
+          <button type="button" class="escalation-action" data-permission="chat.escalate.human">立即交付人工</button>
         </div>
 
         <!-- 消息区域 -->
@@ -453,7 +457,7 @@
                 </div>
 
                 <div class="flex justify-end mt-2">
-                  <button class="adopt-btn text-xs px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark"
+                  <button class="adopt-btn text-xs px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark" data-permission="ai.reply.adopt"
                     onclick="adoptSuggestion('sug-001')">填入草稿（内部）</button>
                 </div>
               </div>
@@ -474,7 +478,7 @@
                 </div>
 
                 <div class="flex justify-end mt-2">
-                  <button class="adopt-btn text-xs px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark"
+                  <button class="adopt-btn text-xs px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark" data-permission="ai.reply.adopt"
                     onclick="adoptSuggestion('sug-002')">填入草稿（内部）</button>
                 </div>
               </div>
@@ -546,14 +550,14 @@
 
           <!-- 快捷功能 -->
           <div class="mb-3 flex flex-nowrap gap-2 overflow-x-auto">
-            <button class="px-3 py-1.5 text-xs bg-primary text-white rounded-full hover:bg-primary-dark transition-colors shadow-sm" onclick="openTicketManagementPanel()">工单管理</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAiReplyPanel()">回复建议</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openClarifyPanel()">问题澄清</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openRequirementPanel()">需求检测</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAiSolutionPanel()">AI解决方案</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAssistCheckMock()">辅助排查</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openTicketMock()">创建工单</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openFaultReportMock()">生成故障报告</button>
+            <button class="px-3 py-1.5 text-xs bg-primary text-white rounded-full hover:bg-primary-dark transition-colors shadow-sm" onclick="openTicketManagementPanel()" data-permission="actions.ticket.manage">工单管理</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAiReplyPanel()" data-permission="actions.reply.suggest">回复建议</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openClarifyPanel()" data-permission="actions.clarify">问题澄清</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openRequirementPanel()" data-permission="actions.requirement.detect">需求检测</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAiSolutionPanel()" data-permission="actions.ai.solution">AI解决方案</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAssistCheckMock()" data-permission="actions.assist.check">辅助排查</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openTicketMock()" data-permission="actions.ticket.create">创建工单</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openFaultReportMock()" data-permission="actions.fault.report">生成故障报告</button>
           </div>
 
           <!-- 输入框 -->
@@ -562,24 +566,24 @@
               class="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               rows="3" placeholder="输入内部备注或回复草稿（不会自动发送到IM）"></textarea>
             <div class="absolute bottom-3 left-3 flex space-x-2">
-              <button id="emoji-button" class="text-gray-500 hover:text-primary" title="表情">
+              <button id="emoji-button" class="text-gray-500 hover:text-primary" title="表情" data-permission="chat.action.emoji">
                 <i class="fa fa-smile-o"></i>
               </button>
-              <button class="text-gray-500 hover:text-primary" title="附件">
+              <button class="text-gray-500 hover:text-primary" title="附件" data-permission="chat.action.attachment">
                 <i class="fa fa-paperclip"></i>
               </button>
-              <button class="text-gray-500 hover:text-primary" title="提及">
+              <button class="text-gray-500 hover:text-primary" title="提及" data-permission="chat.action.mention">
                 <i class="fa fa-at"></i>
               </button>
               <!-- 话术优化图标 -->
-              <button id="optimize-button" class="text-gray-500 hover:text-primary" title="话术优化"
+              <button id="optimize-button" class="text-gray-500 hover:text-primary" title="话术优化" data-permission="chat.action.optimize"
                 onclick="optimizeMessage()">
                 <i class="fa fa-magic"></i>
               </button>
             </div>
 
             <div class="absolute bottom-3 right-3">
-              <button id="send-button"
+              <button id="send-button" data-permission="chat.action.send"
                 class="px-3 h-9 flex items-center justify-center space-x-2 bg-primary text-white rounded-full hover:bg-primary-dark transition-colors text-xs font-medium"
                 onclick="sendMessage()">
                 <i class="fa fa-sticky-note"></i>
@@ -637,9 +641,9 @@
             </div>
           </div>
           <div class="px-4 pb-2 flex items-center gap-6">
-            <button id="knowledge-tab-doc"
+            <button id="knowledge-tab-doc" data-permission="knowledge.management.view"
               class="pb-2 text-sm font-semibold text-primary border-b-2 border-primary">文档库</button>
-            <button id="knowledge-tab-faq"
+            <button id="knowledge-tab-faq" data-permission="knowledge.management.view"
               class="pb-2 text-sm font-semibold text-gray-500 border-b-2 border-transparent">FAQ</button>
           </div>
         </div>
@@ -677,10 +681,28 @@
                     <i class="fa fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
                   </div>
                 </div>
+                <div id="knowledge-doc-status-wrap" class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500">状态</span>
+                  <select id="knowledge-doc-status" class="border border-gray-200 rounded-lg px-2 py-1 text-xs">
+                    <option value="">全部</option>
+                    <option value="active">启用</option>
+                    <option value="archived">归档</option>
+                    <option value="deprecated">废弃</option>
+                  </select>
+                </div>
+                <div id="knowledge-doc-sort-wrap" class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500">排序</span>
+                  <select id="knowledge-doc-sort" class="border border-gray-200 rounded-lg px-2 py-1 text-xs">
+                    <option value="updated_desc">更新时间（新到旧）</option>
+                    <option value="updated_asc">更新时间（旧到新）</option>
+                    <option value="title_asc">标题（A-Z）</option>
+                    <option value="title_desc">标题（Z-A）</option>
+                  </select>
+                </div>
                 <div class="flex items-center gap-2">
-                  <button id="knowledge-add-btn"
+                  <button id="knowledge-add-btn" data-permission="knowledge.manage.upload"
                     class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">上传文档</button>
-                  <button id="knowledge-faq-add-btn"
+                  <button id="knowledge-faq-add-btn" data-permission="knowledge.manage.faq.create"
                     class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark hidden">新增FAQ</button>
                 </div>
               </div>
@@ -698,7 +720,7 @@
                 </div>
                 <div id="knowledge-empty-state" class="hidden border border-dashed border-gray-200 rounded-xl p-6 text-center text-sm text-gray-500">
                   暂无文档，请先上传知识文档。
-                  <button id="knowledge-empty-add" class="ml-2 text-primary hover:underline">立即上传</button>
+                  <button id="knowledge-empty-add" class="ml-2 text-primary hover:underline" data-permission="knowledge.manage.upload">立即上传</button>
                 </div>
               </div>
 
@@ -714,7 +736,7 @@
                 </div>
                 <div id="knowledge-faq-empty-state" class="hidden border border-dashed border-gray-200 rounded-xl p-6 text-center text-sm text-gray-500">
                   暂无FAQ，请先创建常见问题。
-                  <button id="knowledge-faq-empty-add" class="ml-2 text-primary hover:underline">立即新增</button>
+                  <button id="knowledge-faq-empty-add" class="ml-2 text-primary hover:underline" data-permission="knowledge.manage.faq.create">立即新增</button>
                 </div>
               </div>
             </section>
@@ -752,7 +774,7 @@
                     <i class="fa fa-times-circle text-lg"></i>
                   </button>
                 </div>
-                <button id="knowledge-app-search-btn"
+                <button id="knowledge-app-search-btn" data-permission="knowledge.application.search"
                   class="px-6 py-3.5 text-sm rounded-full bg-primary text-white hover:bg-primary-dark transition-colors shadow-sm hover:shadow-md font-medium">
                   检索
                 </button>
@@ -775,35 +797,35 @@
                 </div>
               </div>
               <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button class="knowledge-shortcut-btn" data-keyword="登录失败">
+                <button class="knowledge-shortcut-btn" data-keyword="登录失败" data-permission="knowledge.application.shortcut">
                   <i class="fa fa-sign-in text-blue-600"></i>
                   <span>登录问题</span>
                 </button>
-                <button class="knowledge-shortcut-btn" data-keyword="账号锁定">
+                <button class="knowledge-shortcut-btn" data-keyword="账号锁定" data-permission="knowledge.application.shortcut">
                   <i class="fa fa-lock text-amber-600"></i>
                   <span>账号锁定</span>
                 </button>
-                <button class="knowledge-shortcut-btn" data-keyword="系统报错">
+                <button class="knowledge-shortcut-btn" data-keyword="系统报错" data-permission="knowledge.application.shortcut">
                   <i class="fa fa-exclamation-triangle text-red-600"></i>
                   <span>系统报错</span>
                 </button>
-                <button class="knowledge-shortcut-btn" data-keyword="账单异常">
+                <button class="knowledge-shortcut-btn" data-keyword="账单异常" data-permission="knowledge.application.shortcut">
                   <i class="fa fa-file-text-o text-green-600"></i>
                   <span>账单问题</span>
                 </button>
-                <button class="knowledge-shortcut-btn" data-keyword="权限申请">
+                <button class="knowledge-shortcut-btn" data-keyword="权限申请" data-permission="knowledge.application.shortcut">
                   <i class="fa fa-user-plus text-purple-600"></i>
                   <span>权限申请</span>
                 </button>
-                <button class="knowledge-shortcut-btn" data-keyword="数据同步">
+                <button class="knowledge-shortcut-btn" data-keyword="数据同步" data-permission="knowledge.application.shortcut">
                   <i class="fa fa-refresh text-cyan-600"></i>
                   <span>数据同步</span>
                 </button>
-                <button class="knowledge-shortcut-btn" data-keyword="性能优化">
+                <button class="knowledge-shortcut-btn" data-keyword="性能优化" data-permission="knowledge.application.shortcut">
                   <i class="fa fa-dashboard text-indigo-600"></i>
                   <span>性能问题</span>
                 </button>
-                <button class="knowledge-shortcut-btn" data-keyword="配置变更">
+                <button class="knowledge-shortcut-btn" data-keyword="配置变更" data-permission="knowledge.application.shortcut">
                   <i class="fa fa-cog text-gray-600"></i>
                   <span>配置变更</span>
                 </button>
@@ -825,7 +847,7 @@
                       <h4 id="knowledge-app-detail-title" class="text-base font-semibold text-gray-900">知识预览</h4>
                       <p id="knowledge-app-detail-category" class="text-xs text-gray-500 mt-1">分类：-</p>
                     </div>
-                    <button id="knowledge-app-detail-copy" type="button" class="px-3 py-1.5 text-xs rounded-full border border-gray-200 text-gray-600 hover:border-primary hover:text-primary transition-colors">
+                    <button id="knowledge-app-detail-copy" type="button" class="px-3 py-1.5 text-xs rounded-full border border-gray-200 text-gray-600 hover:border-primary hover:text-primary transition-colors" data-permission="knowledge.application.copy">
                       复制内容
                     </button>
                   </div>
@@ -885,27 +907,27 @@
               <span class="text-xs text-gray-500">一键执行</span>
             </div>
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <button class="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="服务状态监控">
+              <button class="bg-blue-50 hover:bg-blue-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="服务状态监控" data-permission="tools.system.monitor">
                 <i class="fa fa-server text-blue-600 text-2xl mb-2"></i>
                 <span class="text-xs">服务状态监控</span>
               </button>
-              <button class="bg-green-50 hover:bg-green-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="数据库管理">
+              <button class="bg-green-50 hover:bg-green-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="数据库管理" data-permission="tools.system.database">
                 <i class="fa fa-database text-green-600 text-2xl mb-2"></i>
                 <span class="text-xs">数据库管理</span>
               </button>
-              <button class="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="用户权限管理">
+              <button class="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="用户权限管理" data-permission="tools.system.permissions">
                 <i class="fa fa-user-plus text-purple-600 text-2xl mb-2"></i>
                 <span class="text-xs">用户权限管理</span>
               </button>
-              <button class="bg-orange-50 hover:bg-orange-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="数据备份">
+              <button class="bg-orange-50 hover:bg-orange-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="数据备份" data-permission="tools.system.backup">
                 <i class="fa fa-database text-orange-600 text-2xl mb-2"></i>
                 <span class="text-xs">数据备份</span>
               </button>
-              <button class="bg-red-50 hover:bg-red-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="错误日志分析">
+              <button class="bg-red-50 hover:bg-red-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="错误日志分析" data-permission="tools.system.logs">
                 <i class="fa fa-bug text-red-600 text-2xl mb-2"></i>
                 <span class="text-xs">错误日志分析</span>
               </button>
-              <button class="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="系统配置">
+              <button class="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="系统配置" data-permission="tools.system.settings">
                 <i class="fa fa-cogs text-indigo-600 text-2xl mb-2"></i>
                 <span class="text-xs">系统配置</span>
               </button>
@@ -917,19 +939,19 @@
               <span class="text-xs text-gray-500">跨系统联动</span>
             </div>
             <div class="grid md:grid-cols-2 gap-2">
-              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="发送系统通知">
+              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="发送系统通知" data-permission="tools.quick.notify">
                 <span>发送系统通知</span>
                 <i class="fa fa-paper-plane-o"></i>
               </button>
-              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="创建事件工单">
+              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="创建事件工单" data-permission="tools.quick.ticket">
                 <span>创建事件工单</span>
                 <i class="fa fa-plus-square-o"></i>
               </button>
-              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="升级问题">
+              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="升级问题" data-permission="tools.quick.escalate">
                 <span>升级问题</span>
                 <i class="fa fa-arrow-up"></i>
               </button>
-              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="生成报告">
+              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="生成报告" data-permission="tools.quick.report">
                 <span>生成报告</span>
                 <i class="fa fa-file-text-o"></i>
               </button>
@@ -938,7 +960,7 @@
         </div>
       </div>
 
-      <div class="tab-content hidden flex flex-col flex-1 min-h-0" id="workspace-reports-tab" data-tab-group="workspace">
+      <div class="tab-content hidden flex flex-col flex-1 min-h-0" id="workspace-reports-tab" data-tab-group="workspace" data-permission="reports.view">
         <div class="p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -1031,6 +1053,83 @@
         </div>
       </div>
 
+      <div class="tab-content hidden flex flex-col flex-1 min-h-0" id="workspace-permissions-tab" data-tab-group="workspace">
+        <div class="p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="text-xs text-gray-500 uppercase tracking-wide">权限管理</div>
+              <h2 class="text-lg font-semibold text-gray-900">成员权限配置</h2>
+            </div>
+            <span class="text-xs text-gray-500">仅管理员可见</span>
+          </div>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-bg-light" id="permissions-app">
+          <div class="panel-card">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div class="text-sm font-semibold text-gray-800">配置维度</div>
+                <p class="text-xs text-gray-500 mt-1">按角色/组织/用户/渠道/环境/功能模块/接口动作配置。</p>
+              </div>
+              <span class="text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-full">RBAC</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 text-xs">
+            <button id="permissions-tab-members" class="tab-btn px-3 py-1.5 rounded-full border border-gray-200 tab-active">成员管理</button>
+            <button id="permissions-tab-roles" class="tab-btn px-3 py-1.5 rounded-full border border-gray-200">角色管理</button>
+          </div>
+
+          <div id="permissions-panel-members" class="grid gap-4">
+            <div class="panel-card" id="permissions-member-panel">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-800">成员列表</h3>
+                <button id="permissions-add-member" class="text-xs text-primary hover:text-primary-dark">新增成员</button>
+              </div>
+              <div class="relative mb-3">
+                <input id="permissions-member-search" type="text" placeholder="搜索成员/角色/组织..."
+                  class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+                <i class="fa fa-search absolute left-3 top-2.5 text-gray-400 text-xs"></i>
+              </div>
+              <div class="grid grid-cols-6 gap-2 text-[11px] text-gray-500 px-3">
+                <div>成员</div>
+                <div>团队</div>
+                <div>角色</div>
+                <div>备注</div>
+                <div>状态</div>
+                <div class="text-right">操作</div>
+              </div>
+              <div class="space-y-2 text-xs mt-2" id="permissions-member-list"></div>
+            </div>
+          </div>
+
+          <div id="permissions-panel-roles" class="grid gap-4 lg:grid-cols-2 hidden">
+            <div class="panel-card" id="permissions-role-panel">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-800">角色列表</h3>
+                <button id="permissions-add-role" class="text-xs text-primary hover:text-primary-dark">新增角色</button>
+              </div>
+              <div class="space-y-2 text-xs" id="permissions-role-list"></div>
+            </div>
+
+            <div class="panel-card" id="permissions-config-panel">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-800">角色权限配置</h3>
+                <div class="flex items-center gap-2">
+                  <button id="permissions-reset" class="text-xs text-gray-500 hover:text-gray-700">重置</button>
+                  <button id="permissions-save-role" class="text-xs text-primary hover:text-primary-dark">保存变更</button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="text-xs text-gray-500">配置角色</label>
+                <select id="permissions-role-select" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"></select>
+              </div>
+              <div class="space-y-3 text-xs" id="permissions-group-list"></div>
+              <p class="text-[11px] text-gray-500">保存后即时生效，支持灰度与版本回滚。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 任务工作区：对齐对话逻辑，左侧任务 / 中间指令对话 / 右侧预览 -->
       <div class="tab-content hidden task-main flex-1 overflow-hidden" id="workspace-tasks-tab"
         data-tab-group="workspace">
@@ -1052,7 +1151,7 @@
                     </div>
                   </div>
                   <div class="flex flex-wrap gap-2 shrink-0">
-                    <button id="start-task-conversation"
+                    <button id="start-task-conversation" data-permission="tasks.conversation.start"
                       class="px-3 py-1.5 text-xs min-w-[120px] bg-primary text-white rounded-lg hover:bg-primary-dark">对话驱动任务</button>
                   </div>
                 </div>
@@ -1133,9 +1232,9 @@
                             <div class="text-xs text-gray-500">质检 92 分 · 待公告</div>
                             <div class="flex items-center gap-2">
                               <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                                data-open-qc data-conv-id="conv-001">对话质检</button>
+                                data-open-qc data-conv-id="conv-001" data-permission="quality.conversation.open">对话质检</button>
                               <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                                onclick="openAnalysisPanelClassic()">客户详情</button>
+                                onclick="openAnalysisPanelClassic()" data-permission="customer.detail.open">客户详情</button>
                             </div>
                           </div>
                         </div>
@@ -1157,9 +1256,9 @@
                             <div class="text-xs text-gray-500">质检 86 分 · 账单核验</div>
                             <div class="flex items-center gap-2">
                               <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                                data-open-qc data-conv-id="conv-002">对话质检</button>
+                                data-open-qc data-conv-id="conv-002" data-permission="quality.conversation.open">对话质检</button>
                               <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                                onclick="openAnalysisPanelClassic()">客户详情</button>
+                                onclick="openAnalysisPanelClassic()" data-permission="customer.detail.open">客户详情</button>
                             </div>
                           </div>
                         </div>
@@ -1181,9 +1280,9 @@
                             <div class="text-xs text-gray-500">质检 90 分 · 待回访</div>
                             <div class="flex items-center gap-2">
                               <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                                data-open-qc data-conv-id="conv-003">对话质检</button>
+                                data-open-qc data-conv-id="conv-003" data-permission="quality.conversation.open">对话质检</button>
                               <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                                onclick="openAnalysisPanelClassic()">客户详情</button>
+                                onclick="openAnalysisPanelClassic()" data-permission="customer.detail.open">客户详情</button>
                             </div>
                           </div>
                         </div>
@@ -1208,7 +1307,7 @@
                     </div>
                   </div>
                   <div class="flex flex-wrap gap-2">
-                    <button id="back-to-quality"
+                    <button id="back-to-quality" data-permission="quality.overview.back"
                       class="px-3 py-1.5 text-xs min-w-[120px] bg-white text-gray-700 rounded-lg border border-gray-200 hover:bg-gray-100">返回质检概览</button>
                   </div>
                 </div>
@@ -1222,17 +1321,17 @@
                       <input id="task-agent-command-input"
                         class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="用自然语言下发指令：例“生成登录公告并每天巡检认证服务”">
-                      <button id="task-agent-send"
+                      <button id="task-agent-send" data-permission="tasks.agent.send"
                         class="px-3 py-2 text-xs bg-primary text-white rounded-lg hover:bg-primary-dark">派发给Agent</button>
                     </div>
                     <div class="flex flex-wrap gap-2">
-                      <button
+                      <button data-permission="tasks.command.announcement"
                         class="px-3 py-1.5 text-xs rounded-full bg-white border border-gray-200 hover:border-primary hover:text-primary task-agent-chip"
                         data-command="对conv-001生成公告，给受影响客户群发">公告生成</button>
-                      <button
+                      <button data-permission="tasks.command.daily"
                         class="px-3 py-1.5 text-xs rounded-full bg-white border border-gray-200 hover:border-primary hover:text-primary task-agent-chip"
                         data-command="请每日 9:00 巡检认证服务并生成质检任务">每日巡检</button>
-                      <button
+                      <button data-permission="tasks.command.longterm"
                         class="px-3 py-1.5 text-xs rounded-full bg-white border border-gray-200 hover:border-primary hover:text-primary task-agent-chip"
                         data-command="把账单核验指引变成长期任务，标记优先级中等">长期化</button>
                     </div>
@@ -1368,7 +1467,7 @@
                 <div class="panel-card">
                   <div class="flex items-center justify-between gap-2">
                     <h4 class="text-sm font-medium text-gray-700">当前客情摘要</h4>
-                    <button class="text-xs text-primary hover:underline" onclick="document.querySelector('[data-tab=&quot;history&quot;][data-tab-group=&quot;analysis&quot;]').click()">查看历史对话</button>
+                    <button class="text-xs text-primary hover:underline" onclick="document.querySelector('[data-tab=&quot;history&quot;][data-tab-group=&quot;analysis&quot;]').click()" data-permission="customer.history.view">查看历史对话</button>
                   </div>
                   <p class="mt-2 text-sm text-gray-700 leading-relaxed">客户反馈云服务器无法连接，业务受影响；当前情绪急切，需要快速给出排查进展。</p>
                   <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
@@ -1420,15 +1519,15 @@
 
             <div class="qc-action-bar">
               <div class="flex flex-wrap items-center gap-2">
-                <button class="qc-filter-btn active" data-qc-mode="mixed">综合视图</button>
-                <button class="qc-filter-btn" data-qc-mode="analysis">质检分析</button>
-                <button class="qc-filter-btn" data-qc-mode="conversation">对话复盘</button>
+                <button class="qc-filter-btn active" data-qc-mode="mixed" data-permission="quality.view.mixed">综合视图</button>
+                <button class="qc-filter-btn" data-qc-mode="analysis" data-permission="quality.view.analysis">质检分析</button>
+                <button class="qc-filter-btn" data-qc-mode="conversation" data-permission="quality.view.conversation">对话复盘</button>
               </div>
               <div class="flex flex-wrap items-center gap-2">
-                <button class="qc-action-btn primary">生成质检报告</button>
-                <button class="qc-action-btn">推送优化建议</button>
-                <button class="qc-action-btn">服务回访</button>
-                <button class="qc-action-btn">标记复盘任务</button>
+                <button class="qc-action-btn primary" data-permission="quality.action.report">生成质检报告</button>
+                <button class="qc-action-btn" data-permission="quality.action.suggest">推送优化建议</button>
+                <button class="qc-action-btn" data-permission="quality.action.followup">服务回访</button>
+                <button class="qc-action-btn" data-permission="quality.action.review">标记复盘任务</button>
               </div>
             </div>
 
@@ -1552,7 +1651,7 @@
                 <div class="ai-panel-card ai-panel-card--compact bg-slate-50 border border-slate-200">
                   <div class="flex items-center justify-between gap-3">
                     <p class="text-xs text-gray-600">信息获取不清晰，需要做问题澄清</p>
-                    <button class="ai-panel-chip" data-action="clarify">问题澄清</button>
+                    <button class="ai-panel-chip" data-action="clarify" data-permission="actions.clarify">问题澄清</button>
                   </div>
                 </div>
                 <div id="ai-reply-list" class="space-y-3">
@@ -1561,7 +1660,7 @@
                       <div class="text-xs text-gray-400 mb-1">方案 A · 稳定情绪</div>
                       <p class="text-sm text-gray-700">非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。</p>
                       <div class="mt-3 flex justify-end">
-                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。">采纳</button>
+                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。" data-permission="ai.reply.adopt">采纳</button>
                       </div>
                     </div>
                   </div>
@@ -1570,7 +1669,7 @@
                       <div class="text-xs text-gray-400 mb-1">方案 B · 明确排查</div>
                       <p class="text-sm text-gray-700">我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。</p>
                       <div class="mt-3 flex justify-end">
-                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。">采纳</button>
+                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。" data-permission="ai.reply.adopt">采纳</button>
                       </div>
                     </div>
                   </div>
@@ -1579,7 +1678,7 @@
                       <div class="text-xs text-gray-400 mb-1">方案 C · 安抚 + 补偿口径</div>
                       <p class="text-sm text-gray-700">我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。</p>
                       <div class="mt-3 flex justify-end">
-                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。">采纳</button>
+                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。" data-permission="ai.reply.adopt">采纳</button>
                       </div>
                     </div>
                   </div>
@@ -1645,8 +1744,8 @@
                     <p class="text-xs text-gray-500 mt-1">从对话中提取需求并形成卡片</p>
                   </div>
                   <div class="flex items-center gap-2">
-                    <button id="requirements-refresh" class="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:border-primary">刷新</button>
-                    <button id="requirements-rescan" class="text-xs px-2 py-1 rounded-lg bg-primary text-white hover:bg-primary-dark">扫描当前对话</button>
+                    <button id="requirements-refresh" class="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:border-primary" data-permission="requirements.refresh">刷新</button>
+                    <button id="requirements-rescan" class="text-xs px-2 py-1 rounded-lg bg-primary text-white hover:bg-primary-dark" data-permission="requirements.scan">扫描当前对话</button>
                   </div>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-sm">
@@ -1742,6 +1841,14 @@
             <div class="text-xs text-gray-500">内容</div>
             <div id="knowledge-detail-content" class="mt-1 text-sm text-gray-700 whitespace-pre-line"></div>
           </div>
+          <div>
+            <div class="text-xs text-gray-500 flex items-center justify-between">
+              <span>关联FAQ</span>
+              <span id="knowledge-detail-faq-count" class="text-[11px] text-gray-400"></span>
+            </div>
+            <div id="knowledge-detail-faq-empty" class="mt-2 text-xs text-gray-400">暂无关联FAQ</div>
+            <div id="knowledge-detail-faq-list" class="mt-2 space-y-2"></div>
+          </div>
         </div>
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
           <button id="knowledge-detail-dismiss" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">关闭</button>
@@ -1790,7 +1897,7 @@
         </div>
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
           <button id="knowledge-add-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
-          <button id="knowledge-add-submit" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">提交</button>
+          <button id="knowledge-add-submit" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark" data-permission="knowledge.manage.upload">提交</button>
         </div>
       </div>
     </div>
@@ -1806,7 +1913,7 @@
         </div>
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
           <button id="knowledge-delete-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
-          <button id="knowledge-delete-confirm" class="px-3 py-2 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700">确认删除</button>
+          <button id="knowledge-delete-confirm" class="px-3 py-2 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700" data-permission="knowledge.manage.delete">确认删除</button>
         </div>
       </div>
     </div>
@@ -1841,20 +1948,24 @@
           <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
             <div class="flex items-center justify-between">
               <div class="text-xs text-gray-500">相似问题建议</div>
-              <button id="knowledge-faq-detect" class="text-xs text-primary hover:underline">检测</button>
+              <button id="knowledge-faq-detect" class="text-xs text-primary hover:underline" data-permission="knowledge.manage.faq.detect">检测</button>
             </div>
             <div id="knowledge-faq-detect-results" class="mt-2 space-y-2 text-xs text-gray-600"></div>
             <div class="mt-3 flex items-center gap-2">
               <input id="knowledge-faq-similar-input" type="text" class="flex-1 border border-gray-200 rounded-lg px-2 py-1 text-xs" placeholder="添加相似问题">
-              <button id="knowledge-faq-similar-add" class="px-2 py-1 text-xs rounded-lg border border-gray-200">添加</button>
-              <button id="knowledge-faq-similar-generate" class="px-2 py-1 text-xs rounded-lg border border-gray-200">生成</button>
+              <button id="knowledge-faq-similar-add" class="px-2 py-1 text-xs rounded-lg border border-gray-200" data-permission="knowledge.manage.faq.similar.add">添加</button>
+              <button id="knowledge-faq-similar-generate" class="px-2 py-1 text-xs rounded-lg border border-gray-200" data-permission="knowledge.manage.faq.similar.generate">生成</button>
             </div>
             <div id="knowledge-faq-similar-list" class="mt-2 flex flex-wrap gap-2 text-[11px] text-gray-600"></div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">来源文档</label>
+            <div id="knowledge-faq-source-list" class="mt-2 space-y-2 text-xs text-gray-600"></div>
           </div>
         </div>
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
           <button id="knowledge-faq-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
-          <button id="knowledge-faq-save" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">保存</button>
+          <button id="knowledge-faq-save" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark" data-permission="knowledge.manage.faq.save">保存</button>
         </div>
       </div>
     </div>
@@ -1870,7 +1981,93 @@
         </div>
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
           <button id="knowledge-faq-delete-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
-          <button id="knowledge-faq-delete-confirm" class="px-3 py-2 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700">确认删除</button>
+          <button id="knowledge-faq-delete-confirm" class="px-3 py-2 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700" data-permission="knowledge.manage.faq.delete">确认删除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增成员 -->
+    <div id="permissions-member-modal" class="hidden fixed inset-0 bg-black/40 z-[140] flex items-center justify-center px-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-900">新增成员</h3>
+          <button id="permissions-member-close" class="text-gray-400 hover:text-gray-600">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="p-4 space-y-4 text-sm text-gray-700">
+          <div>
+            <label class="text-xs text-gray-500">成员姓名</label>
+            <input id="permissions-member-name" type="text" placeholder="如：张敏"
+              class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">团队/组织</label>
+            <input id="permissions-member-team" type="text" placeholder="如：客服一组"
+              class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">角色</label>
+            <select id="permissions-member-role-modal" class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"></select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">备注</label>
+            <input id="permissions-member-badge" type="text" placeholder="如：对话/知识应用"
+              class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+          </div>
+          <p id="permissions-member-error" class="hidden text-xs text-red-600">请填写成员姓名与角色</p>
+        </div>
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
+          <button id="permissions-member-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
+          <button id="permissions-member-save" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 成员删除确认 -->
+    <div id="permissions-member-delete-modal" class="hidden fixed inset-0 bg-black/40 z-[140] flex items-center justify-center px-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-900">删除成员</h3>
+          <button id="permissions-member-delete-close" class="text-gray-400 hover:text-gray-600">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="p-4 text-sm text-gray-700">
+          <div id="permissions-member-delete-message">确认删除该成员？</div>
+        </div>
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
+          <button id="permissions-member-delete-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
+          <button id="permissions-member-delete-confirm" class="px-3 py-2 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700">确认删除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新增角色 -->
+    <div id="permissions-role-modal" class="hidden fixed inset-0 bg-black/40 z-[140] flex items-center justify-center px-4">
+      <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-gray-900">新增角色</h3>
+          <button id="permissions-role-close" class="text-gray-400 hover:text-gray-600">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="p-4 space-y-4 text-sm text-gray-700">
+          <div>
+            <label class="text-xs text-gray-500">角色名称</label>
+            <input id="permissions-role-name" type="text" placeholder="如：主管"
+              class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">角色描述</label>
+            <input id="permissions-role-desc" type="text" placeholder="如：报表/质检管理"
+              class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+          </div>
+          <p id="permissions-role-error" class="hidden text-xs text-red-600">请填写角色名称</p>
+        </div>
+        <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
+          <button id="permissions-role-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
+          <button id="permissions-role-save" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">保存</button>
         </div>
       </div>
     </div>

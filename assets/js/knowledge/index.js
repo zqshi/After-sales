@@ -36,6 +36,7 @@ const docs = [
     createdAt: '2024-02-10 10:20',
     updatedAt: '2024-02-18 09:30',
     fileHash: 'hash-ks-001',
+    relatedFaqIds: ['faq-001'],
   },
   {
     id: 'doc-002',
@@ -50,6 +51,7 @@ const docs = [
     createdAt: '2024-02-01 09:10',
     updatedAt: '2024-02-16 14:05',
     fileHash: 'hash-ks-002',
+    relatedFaqIds: ['faq-002'],
   },
   {
     id: 'doc-003',
@@ -64,6 +66,7 @@ const docs = [
     createdAt: '2023-12-28 15:30',
     updatedAt: '2024-02-10 18:20',
     fileHash: 'hash-ks-003',
+    relatedFaqIds: [],
   },
   {
     id: 'doc-004',
@@ -78,6 +81,7 @@ const docs = [
     createdAt: '2024-01-20 11:05',
     updatedAt: '2024-02-12 10:10',
     fileHash: 'hash-ks-004',
+    relatedFaqIds: [],
   },
 ];
 
@@ -88,6 +92,7 @@ const faqs = [
     answer: '进入薪酬个税模块，下载材料清单并在规定时间内提交。',
     status: 'active',
     similarQuestions: ['专项扣除材料提交入口在哪？', '个税专项扣除如何补交？'],
+    sourceDocIds: ['doc-001'],
     createdAt: '2024-02-08 10:10',
     updatedAt: '2024-02-18 10:10',
   },
@@ -97,6 +102,7 @@ const faqs = [
     answer: '员工提交申请后由主管审批，HR 复核后生效。',
     status: 'archived',
     similarQuestions: ['考勤补卡怎么走流程？'],
+    sourceDocIds: ['doc-002'],
     createdAt: '2024-01-15 09:00',
     updatedAt: '2024-02-11 09:20',
   },
@@ -106,6 +112,8 @@ const treeState = new Map();
 let selectedCategory = '';
 let treeQuery = '';
 let docQuery = '';
+let docStatusFilter = '';
+let docSort = 'updated_desc';
 let faqQuery = '';
 let selectedFiles = [];
 let pendingDeleteId = null;
@@ -126,6 +134,8 @@ export function initKnowledgeBase() {
   const tabDocBtn = qs('#knowledge-tab-doc');
   const tabFaqBtn = qs('#knowledge-tab-faq');
   const faqSearchInput = qs('#knowledge-faq-search');
+  const docStatusSelect = qs('#knowledge-doc-status');
+  const docSortSelect = qs('#knowledge-doc-sort');
   const faqAddBtn = qs('#knowledge-faq-add-btn');
   const faqEmptyAddBtn = qs('#knowledge-faq-empty-add');
   const fileInput = qs('#knowledge-add-files');
@@ -167,6 +177,16 @@ export function initKnowledgeBase() {
     renderDocList();
   });
 
+  on(docStatusSelect, 'change', (event) => {
+    docStatusFilter = event.target.value;
+    renderDocList();
+  });
+
+  on(docSortSelect, 'change', (event) => {
+    docSort = event.target.value || 'updated_desc';
+    renderDocList();
+  });
+
   on(faqSearchInput, 'input', (event) => {
     faqQuery = event.target.value.trim();
     renderFaqList();
@@ -194,7 +214,13 @@ export function initKnowledgeBase() {
     }
     const targetIndex = docs.findIndex((doc) => doc.id === pendingDeleteId);
     if (targetIndex > -1 && DOC_ALLOWED_STATUSES.includes(docs[targetIndex].status)) {
+      const removedId = docs[targetIndex].id;
       docs.splice(targetIndex, 1);
+      faqs.forEach((faq) => {
+        if (faq.sourceDocIds?.includes(removedId)) {
+          faq.sourceDocIds = faq.sourceDocIds.filter((id) => id !== removedId);
+        }
+      });
       renderDocList();
     }
     closeDeleteModal();
@@ -206,7 +232,13 @@ export function initKnowledgeBase() {
     }
     const targetIndex = faqs.findIndex((faq) => faq.id === pendingFaqDeleteId);
     if (targetIndex > -1 && DOC_ALLOWED_STATUSES.includes(faqs[targetIndex].status)) {
+      const removedId = faqs[targetIndex].id;
       faqs.splice(targetIndex, 1);
+      docs.forEach((doc) => {
+        if (doc.relatedFaqIds?.includes(removedId)) {
+          doc.relatedFaqIds = doc.relatedFaqIds.filter((id) => id !== removedId);
+        }
+      });
       renderFaqList();
     }
     closeFaqDeleteModal();
@@ -298,14 +330,27 @@ export function initKnowledgeBase() {
       return;
     }
 
-    const leaf = event.target.closest('[data-tree-leaf]');
-    if (leaf) {
-      selectedCategory = leaf.dataset.treeLeaf || '';
+    const selectable = event.target.closest('[data-tree-select]');
+    if (selectable) {
+      selectedCategory = selectable.dataset.treeSelect || '';
       renderBreadcrumb();
       renderDocList();
       renderFaqList();
       renderTree();
     }
+  });
+
+  const breadcrumb = qs('#knowledge-breadcrumb');
+  on(breadcrumb, 'click', (event) => {
+    const target = event.target.closest('[data-breadcrumb-all]');
+    if (!target) {
+      return;
+    }
+    selectedCategory = '';
+    renderBreadcrumb();
+    renderDocList();
+    renderFaqList();
+    renderTree();
   });
 
   const listContainer = qs('#knowledge-doc-list');
@@ -376,6 +421,19 @@ export function initKnowledgeBase() {
     });
   });
 
+  const detailModal = qs('#knowledge-detail-modal');
+  on(detailModal, 'click', (event) => {
+    const faqItem = event.target.closest('[data-related-faq-id]');
+    if (!faqItem) {
+      return;
+    }
+    const faqId = faqItem.dataset.relatedFaqId;
+    const target = faqs.find((faq) => faq.id === faqId);
+    if (target) {
+      openFaqModal('view', target);
+    }
+  });
+
   initSimpleKnowledgePage();
 }
 
@@ -422,9 +480,12 @@ function renderNode(node, depth, parentPath, keyword) {
     ? `<i class="fa ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'} text-xs text-gray-400"></i>`
     : '<i class="fa fa-file-o text-xs text-gray-300"></i>';
 
-  const label = isLeaf
-    ? `<button class="flex-1 text-left whitespace-normal break-words ${isActive ? 'text-primary' : 'text-gray-600'}" title="${path}" data-tree-leaf="${path}">${node.name}</button>`
-    : `<span class="text-sm font-medium text-gray-700 whitespace-normal break-words" title="${path}">${node.name}</span>`;
+  const label = `
+    <button class="flex-1 text-left whitespace-normal break-words ${isActive ? 'text-primary' : 'text-gray-600'}"
+      title="${path}" data-tree-select="${path}">
+      ${node.name}
+    </button>
+  `;
 
   const actions = `
     <div class="flex items-center gap-1 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -543,15 +604,49 @@ function getFilteredDocs() {
   return docs
     .filter((doc) => DOC_ALLOWED_STATUSES.includes(doc.status))
     .filter((doc) => {
-      if (selectedCategory && doc.category !== selectedCategory) {
+      if (selectedCategory && !doc.category?.startsWith(selectedCategory)) {
         return false;
       }
-      if (keyword && !doc.title.toLowerCase().includes(keyword)) {
+      if (docStatusFilter && doc.status !== docStatusFilter) {
         return false;
+      }
+      if (keyword) {
+        const title = doc.title?.toLowerCase() || '';
+        const summary = doc.summary?.toLowerCase() || '';
+        const tags = (doc.tags || []).join(' ').toLowerCase();
+        if (![title, summary, tags].some((field) => field.includes(keyword))) {
+          return false;
+        }
       }
       return true;
     })
-    .sort((a, b) => parseDateValue(b.updatedAt) - parseDateValue(a.updatedAt));
+    .sort(getDocSortComparator());
+}
+
+function getDocSortComparator() {
+  switch (docSort) {
+    case 'updated_asc':
+      return (a, b) => parseDateValue(a.updatedAt) - parseDateValue(b.updatedAt);
+    case 'title_asc':
+      return (a, b) => a.title.localeCompare(b.title, 'zh-Hans-CN');
+    case 'title_desc':
+      return (a, b) => b.title.localeCompare(a.title, 'zh-Hans-CN');
+    case 'updated_desc':
+    default:
+      return (a, b) => parseDateValue(b.updatedAt) - parseDateValue(a.updatedAt);
+  }
+}
+
+function normalizeCategoryName(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getDocsUnderCategory(path) {
+  return docs.filter((doc) => doc.category?.startsWith(path));
+}
+
+function getFaqsLinkedToDoc(docId) {
+  return faqs.filter((faq) => faq.sourceDocIds?.includes(docId));
 }
 
 function renderFaqList() {
@@ -602,6 +697,17 @@ function getFilteredFaqs() {
   return faqs
     .filter((faq) => DOC_ALLOWED_STATUSES.includes(faq.status))
     .filter((faq) => {
+      if (selectedCategory) {
+        const linkedDocs = (faq.sourceDocIds || [])
+          .map((docId) => docs.find((doc) => doc.id === docId))
+          .filter(Boolean);
+        if (!linkedDocs.length) {
+          return false;
+        }
+        if (!linkedDocs.some((doc) => doc.category?.startsWith(selectedCategory))) {
+          return false;
+        }
+      }
       if (keyword && !faq.question.toLowerCase().includes(keyword)) {
         return false;
       }
@@ -616,7 +722,7 @@ function renderBreadcrumb() {
     return;
   }
   if (!selectedCategory) {
-    breadcrumb.textContent = '全部分类';
+    breadcrumb.innerHTML = '<span class="text-gray-500">全部分类</span>';
     return;
   }
   const parts = selectedCategory.split(' / ');
@@ -626,7 +732,11 @@ function renderBreadcrumb() {
       return `${separator}<span class="text-gray-700">${segment}</span>`;
     })
     .join(' ');
-  breadcrumb.innerHTML = `<span class="text-gray-400 mr-1">分类路径：</span>${html}`;
+  breadcrumb.innerHTML = `
+    <button class="text-gray-400 mr-2 hover:text-primary" data-breadcrumb-all>全部分类</button>
+    <span class="text-gray-400 mr-1">/</span>
+    ${html}
+  `;
 }
 
 function formatStatusBadge(status) {
@@ -647,6 +757,8 @@ function switchLibrary(type) {
   const faqSection = qs('#knowledge-faq-section');
   const docSearchWrap = qs('#knowledge-doc-search-wrap');
   const faqSearchWrap = qs('#knowledge-faq-search-wrap');
+  const docStatusWrap = qs('#knowledge-doc-status-wrap');
+  const docSortWrap = qs('#knowledge-doc-sort-wrap');
   const docAddBtn = qs('#knowledge-add-btn');
   const faqAddBtn = qs('#knowledge-faq-add-btn');
   const taxonomyPanel = qs('#knowledge-panel .knowledge-page aside');
@@ -671,6 +783,14 @@ function switchLibrary(type) {
   if (docSearchWrap && faqSearchWrap) {
     docSearchWrap.classList.toggle('hidden', type !== 'doc');
     faqSearchWrap.classList.toggle('hidden', type !== 'faq');
+  }
+
+  if (docStatusWrap) {
+    docStatusWrap.classList.toggle('hidden', type !== 'doc');
+  }
+
+  if (docSortWrap) {
+    docSortWrap.classList.toggle('hidden', type !== 'doc');
   }
 
   if (docAddBtn && faqAddBtn) {
@@ -701,6 +821,9 @@ function openDetailModal(doc) {
   const updated = qs('#knowledge-detail-updated');
   const summary = qs('#knowledge-detail-summary');
   const content = qs('#knowledge-detail-content');
+  const relatedFaqList = qs('#knowledge-detail-faq-list');
+  const relatedFaqEmpty = qs('#knowledge-detail-faq-empty');
+  const relatedFaqCount = qs('#knowledge-detail-faq-count');
 
   if (!modal || !title || !status || !summary || !content || !category || !tags || !owner || !source || !created || !updated) {
     return;
@@ -716,7 +839,35 @@ function openDetailModal(doc) {
   updated.textContent = doc.updatedAt || '-';
   summary.textContent = doc.summary || '-';
   content.textContent = doc.content || '-';
+  renderRelatedFaqs(doc, relatedFaqList, relatedFaqEmpty, relatedFaqCount);
   modal.classList.remove('hidden');
+}
+
+function renderRelatedFaqs(doc, list, empty, count) {
+  if (!list || !empty || !count) {
+    return;
+  }
+  const relatedIds = doc.relatedFaqIds || [];
+  const relatedItems = relatedIds
+    .map((id) => faqs.find((faq) => faq.id === id))
+    .filter(Boolean);
+  count.textContent = relatedItems.length ? `${relatedItems.length}条` : '0条';
+  if (!relatedItems.length) {
+    empty.classList.remove('hidden');
+    list.innerHTML = '';
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = relatedItems
+    .map((faq) => {
+      return `
+        <button type="button" class="w-full text-left px-3 py-2 border border-gray-200 rounded-lg text-xs text-gray-700 hover:bg-gray-50" data-related-faq-id="${faq.id}">
+          <div class="font-medium text-gray-900">${faq.question}</div>
+          <div class="text-[11px] text-gray-500 mt-1 line-clamp-1">${faq.answer || '暂无答案'}</div>
+        </button>
+      `;
+    })
+    .join('');
 }
 
 function closeDetailModal() {
@@ -828,17 +979,49 @@ async function handleSubmit() {
     return;
   }
 
+  const allowedExtensions = ['pdf', 'docx', 'xlsx'];
+  const maxFileSize = 20 * 1024 * 1024;
+  const invalidFile = selectedFiles.find((file) => {
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!allowedExtensions.includes(extension)) {
+      return true;
+    }
+    if (file.size > maxFileSize) {
+      return true;
+    }
+    return false;
+  });
+  if (invalidFile) {
+    showAddError('仅支持 pdf/docx/xlsx，且单个文件不超过20MB');
+    return;
+  }
+
   const hashes = await Promise.all(selectedFiles.map((file) => hashFile(file)));
   const existingHashes = new Set(docs.map((doc) => doc.fileHash).filter(Boolean));
-  if (hashes.some((hash) => existingHashes.has(hash))) {
-    showAddError('已存在');
+  const nextTitle = selectedFiles[0].name;
+  const hasTitleConflict = docs.some((doc) => doc.category === category && normalizeText(doc.title) === normalizeText(nextTitle));
+  const hasContentConflict = hashes.some((hash) => existingHashes.has(hash));
+  if (hasTitleConflict && hasContentConflict) {
+    showAddError('已存在相同文档');
     return;
+  }
+  if (hasTitleConflict) {
+    const proceed = confirm('已存在同名文档，继续上传将生成新版本，是否继续？');
+    if (!proceed) {
+      return;
+    }
+  }
+  if (hasContentConflict) {
+    const proceed = confirm('检测到内容重复，可选择关联已有文档或继续上传为新版本。');
+    if (!proceed) {
+      return;
+    }
   }
 
   const now = new Date();
   const newDoc = {
     id: `doc-${now.getTime()}`,
-    title: selectedFiles[0].name,
+    title: nextTitle,
     status: 'active',
     summary: '新增文档默认摘要，待补充。',
     content: '新增文档默认内容，待补充。',
@@ -849,6 +1032,7 @@ async function handleSubmit() {
     createdAt: formatDate(now),
     updatedAt: formatDate(now),
     fileHash: hashes[0],
+    relatedFaqIds: [],
   };
 
   docs.push(newDoc);
@@ -910,6 +1094,7 @@ function openFaqModal(mode, faq) {
   const answer = qs('#knowledge-faq-answer');
   const error = qs('#knowledge-faq-error');
   const detectResults = qs('#knowledge-faq-detect-results');
+  const sourceList = qs('#knowledge-faq-source-list');
   if (!modal || !title || !status || !question || !answer || !error || !detectResults || !statusWrap) {
     return;
   }
@@ -927,6 +1112,7 @@ function openFaqModal(mode, faq) {
   detectResults.classList.add('hidden');
   detectResults.innerHTML = '';
   renderFaqSimilarList();
+  renderFaqSourceList(faq?.sourceDocIds || [], sourceList);
 
   statusWrap.classList.toggle('hidden', mode === 'add');
   if (mode === 'add') {
@@ -947,6 +1133,7 @@ function setFaqModalEditable(isEditable) {
   const similarGenerateBtn = qs('#knowledge-faq-similar-generate');
   const saveBtn = qs('#knowledge-faq-save');
   const cancelBtn = qs('#knowledge-faq-cancel');
+  const sourceInputs = qsa('#knowledge-faq-source-list input[type="checkbox"]');
 
   [status, question, answer, similarInput].forEach((el) => {
     if (el) {
@@ -959,6 +1146,9 @@ function setFaqModalEditable(isEditable) {
     if (el) {
       el.classList.toggle('hidden', !isEditable);
     }
+  });
+  sourceInputs.forEach((input) => {
+    input.disabled = !isEditable;
   });
 
   if (saveBtn) {
@@ -979,6 +1169,48 @@ function closeFaqModal() {
   editingFaqId = null;
   faqModalMode = 'add';
   faqSimilarList = [];
+}
+
+function renderFaqSourceList(selectedIds, container) {
+  if (!container) {
+    return;
+  }
+  if (!docs.length) {
+    container.innerHTML = '<div class="text-xs text-gray-400">暂无可关联文档</div>';
+    return;
+  }
+  container.innerHTML = docs
+    .map((doc) => {
+      const checked = selectedIds.includes(doc.id) ? 'checked' : '';
+      return `
+        <label class="flex items-center gap-2 text-xs text-gray-600">
+          <input type="checkbox" value="${doc.id}" ${checked} />
+          <span class="truncate">${doc.title}</span>
+        </label>
+      `;
+    })
+    .join('');
+}
+
+function getSelectedFaqSourceIds() {
+  return qsa('#knowledge-faq-source-list input[type="checkbox"]:checked').map((input) => input.value);
+}
+
+function syncFaqDocLinks(faqId, newDocIds = [], prevDocIds = []) {
+  const newSet = new Set(newDocIds);
+  const prevSet = new Set(prevDocIds);
+
+  docs.forEach((doc) => {
+    const list = doc.relatedFaqIds || [];
+    const hadPrev = prevSet.has(doc.id);
+    const hasNew = newSet.has(doc.id);
+    if (hadPrev && !hasNew) {
+      doc.relatedFaqIds = list.filter((id) => id !== faqId);
+    }
+    if (!hadPrev && hasNew) {
+      doc.relatedFaqIds = [...list, faqId];
+    }
+  });
 }
 
 function openFaqDeleteModal(faq) {
@@ -1005,6 +1237,7 @@ function handleFaqSave() {
   const question = qs('#knowledge-faq-question')?.value.trim() || '';
   const answer = qs('#knowledge-faq-answer')?.value.trim() || '';
   const error = qs('#knowledge-faq-error');
+  const sourceDocIds = getSelectedFaqSourceIds();
   if (!error) {
     return;
   }
@@ -1036,23 +1269,28 @@ function handleFaqSave() {
   if (faqModalMode === 'edit' && editingFaqId) {
     const target = faqs.find((faq) => faq.id === editingFaqId);
     if (target) {
-      target.category = category;
+      const prevSourceDocIds = target.sourceDocIds ? [...target.sourceDocIds] : [];
       target.status = status;
       target.question = question;
       target.answer = answer;
       target.similarQuestions = [...faqSimilarList];
+      target.sourceDocIds = [...sourceDocIds];
       target.updatedAt = formatDate(now);
+      syncFaqDocLinks(target.id, sourceDocIds, prevSourceDocIds);
     }
   } else {
+    const newFaqId = `faq-${now.getTime()}`;
     faqs.push({
-      id: `faq-${now.getTime()}`,
+      id: newFaqId,
       question: question,
       answer: answer,
       status: status,
       similarQuestions: [...faqSimilarList],
+      sourceDocIds: [...sourceDocIds],
       createdAt: formatDate(now),
       updatedAt: formatDate(now),
     });
+    syncFaqDocLinks(newFaqId, sourceDocIds, []);
   }
 
   renderFaqList();
@@ -1212,8 +1450,12 @@ function handleTreeAction(action, nodeId) {
     if (!trimmed) {
       return;
     }
-    if (knowledgeTaxonomy.some((node) => node.name === trimmed)) {
+    if (knowledgeTaxonomy.some((node) => normalizeCategoryName(node.name) === normalizeCategoryName(trimmed))) {
       alert('分类已存在');
+      return;
+    }
+    if (knowledgeTaxonomy.length >= 50) {
+      alert('单个层级最多支持 50 个分类');
       return;
     }
     const newNode = createNode(trimmed);
@@ -1239,8 +1481,12 @@ function handleTreeAction(action, nodeId) {
     if (!trimmed) {
       return;
     }
-    if (nodeInfo.node.children.some((child) => child.name === trimmed)) {
+    if (nodeInfo.node.children.some((child) => normalizeCategoryName(child.name) === normalizeCategoryName(trimmed))) {
       alert('分类已存在');
+      return;
+    }
+    if (nodeInfo.node.children.length >= 50) {
+      alert('单个层级最多支持 50 个分类');
       return;
     }
     nodeInfo.node.children.push(createNode(trimmed));
@@ -1260,7 +1506,7 @@ function handleTreeAction(action, nodeId) {
       return;
     }
     const siblings = nodeInfo.parent ? nodeInfo.parent.children : knowledgeTaxonomy;
-    if (siblings.some((node) => node.name === trimmed)) {
+    if (siblings.some((node) => normalizeCategoryName(node.name) === normalizeCategoryName(trimmed))) {
       alert('分类已存在');
       return;
     }
@@ -1282,6 +1528,15 @@ function handleTreeAction(action, nodeId) {
   }
 
   if (action === 'delete') {
+    if (nodeInfo.node.children?.length) {
+      alert('该分类下存在子级分类，请先删除子级分类。');
+      return;
+    }
+    const docsInCategory = getDocsUnderCategory(nodeInfo.path);
+    if (docsInCategory.length) {
+      alert('该分类下存在文档或FAQ，请先迁移或删除相关内容。');
+      return;
+    }
     if (!confirm(`确认删除分类“${nodeInfo.node.name}”？`)) {
       return;
     }

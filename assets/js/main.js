@@ -41,6 +41,7 @@ import { initAiSolutions, analyzeConversation } from './ai/index.js';
 import { initAgentTasks, createRelatedTask, openAnalysisPanelClassic } from './tasks/index.js';
 import { initTools } from './tools/index.js';
 import { initReports } from './reports/index.js';
+import { initPermissionManager } from './permissions/index.js';
 import { scrollToBottom } from './core/scroll.js';
 import { initCustomerProfile, updateCustomerContext, openHistoryDetail } from './customer/index.js';
 import { initRoleSwitcher } from './roles.js';
@@ -76,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTools();
     initReports();
     initDockNavigation();
+    initPermissionManager();
     initUserMenu();
     scrollToBottom();
 

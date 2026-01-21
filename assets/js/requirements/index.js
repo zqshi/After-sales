@@ -180,8 +180,8 @@ function renderUnprocessedRequirements() {
             <p class="text-sm text-gray-700 mt-1">"${req.content}"</p>
           </div>
           <div class="flex space-x-2">
-            <button class="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" onclick="ignoreUnprocessedRequirement('${req.id}')">忽略</button>
-            <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark" onclick="createRequirementFromList('${req.content.replace(/'/g, "\\'")}', '${req.id}')">创建卡片</button>
+            <button class="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" data-permission="requirements.ignore" onclick="ignoreUnprocessedRequirement('${req.id}')">忽略</button>
+            <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark" data-permission="requirements.create" onclick="createRequirementFromList('${req.content.replace(/'/g, "\\'")}', '${req.id}')">创建卡片</button>
           </div>
         </div>
       </div>`;
@@ -224,7 +224,7 @@ function renderProcessedRequirements(status = '全部状态') {
               <span class="text-xs text-gray-600 ml-4">客户：${req.customer}</span>
             </div>
           </div>
-          <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark" onclick="viewRequirementCard('${req.id}')">查看详情</button>
+          <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark" data-permission="requirements.view" onclick="viewRequirementCard('${req.id}')">查看详情</button>
         </div>
       </div>`;
       container.insertAdjacentHTML('beforeend', html);

@@ -154,6 +154,9 @@ function handleDockTabSwitch(dockTab, clickedBtn) {
     case 'reports':
       showReportsContent();
       break;
+    case 'permissions':
+      showPermissionsContent();
+      break;
     default:
       showMessagesContent();
   }
@@ -291,6 +294,33 @@ function showReportsContent() {
   });
 
   showWorkspaceContent('workspace-reports');
+}
+
+function showPermissionsContent() {
+  setRightSidebarMode('panel');
+  toggleRightSidebar(false);
+  setKnowledgeLayout(false);
+  setToolsLayout(true);
+  setDockActive('permissions');
+
+  const sidebarTabs = qsa('.sidebar-tab');
+  sidebarTabs.forEach(tab => {
+    const tabGroup = tab.getAttribute('data-tab-group');
+    if (tabGroup === 'sidebar') {
+      tab.classList.remove('tab-active');
+    }
+  });
+
+  const tabContents = qsa('.tab-content');
+  tabContents.forEach(content => {
+    const contentGroup = content.getAttribute('data-tab-group');
+    if (contentGroup === 'sidebar') {
+      content.classList.add('hidden');
+      content.classList.remove('active');
+    }
+  });
+
+  showWorkspaceContent('workspace-permissions');
 }
 
 function showWorkspaceContent(tabId) {
