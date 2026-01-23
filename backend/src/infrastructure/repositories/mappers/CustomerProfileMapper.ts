@@ -1,6 +1,6 @@
 import { CustomerProfile } from '@domain/customer/models/CustomerProfile';
 import { ContactInfo } from '@domain/customer/value-objects/ContactInfo';
-import { SLAInfo } from '@domain/customer/value-objects/SLAInfo';
+import { CustomerLevelInfo } from '@domain/customer/value-objects/CustomerLevelInfo';
 import { Metrics } from '@domain/customer/value-objects/Metrics';
 import { Insight } from '@domain/customer/value-objects/Insight';
 import { Interaction } from '@domain/customer/value-objects/Interaction';
@@ -61,7 +61,7 @@ export class CustomerProfileMapper {
           address: entity.contactInfo?.address as string | undefined,
           preferredChannel: entity.contactInfo?.preferredChannel as any,
         }),
-        slaInfo: SLAInfo.create({
+        slaInfo: CustomerLevelInfo.create({
           serviceLevel: entity.slaInfo.serviceLevel as any || 'bronze',
           responseTimeTargetMinutes: Number(entity.slaInfo.responseTimeTargetMinutes ?? 30),
           resolutionTimeTargetMinutes: Number(entity.slaInfo.resolutionTimeTargetMinutes ?? 120),

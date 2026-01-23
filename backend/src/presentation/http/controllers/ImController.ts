@@ -2,7 +2,7 @@
  * ImController - IM消息接入控制器
  *
  * 职责：
- * 1. 接收模拟IM消息（飞书/企微/钉钉/Web）
+ * 1. 接收多渠道IM消息（飞书/企微/钉钉/Web）
  * 2. 调用ConversationTaskCoordinator处理消息
  * 3. 调用AiService分析情绪
  * 4. 查询知识库和工单
@@ -13,12 +13,22 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { ConversationTaskCoordinator } from '@application/services/ConversationTaskCoordinator';
 import { AiService } from '@application/services/AiService';
 import { SearchKnowledgeUseCase } from '@application/use-cases/knowledge/SearchKnowledgeUseCase';
+import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
+import { CustomerProfileResponseDTO } from '@application/dto/customer/CustomerProfileResponseDTO';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
+import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
 import { config } from '@config/app.config';
 import { v4 as uuidv4 } from 'uuid';
 
 import { AgentMode } from '@domain/conversation/models/Conversation';
+import { Conversation } from '@domain/conversation/models/Conversation';
+import { CustomerProfile } from '@domain/customer/models/CustomerProfile';
+import { ContactInfo } from '@domain/customer/value-objects/ContactInfo';
+import { CustomerLevelInfo } from '@domain/customer/value-objects/CustomerLevelInfo';
+import { Metrics } from '@domain/customer/value-objects/Metrics';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 interface IncomingMessageRequest {
   customerId: string;
@@ -36,6 +46,8 @@ export class ImController {
     private readonly searchKnowledgeUseCase: SearchKnowledgeUseCase,
     private readonly taskRepository: TaskRepository,
     private readonly conversationRepository: ConversationRepository,
+    private readonly customerProfileRepository: CustomerProfileRepository,
+    private readonly sendMessageUseCase: SendMessageUseCase,
   ) {}
 
   /**
@@ -237,72 +249,437 @@ export class ImController {
     reply: FastifyReply,
   ): Promise<void> {
     try {
-      const { limit = 20, offset = 0 } = request.query as any;
+      const query = request.query as {
+        limit?: string;
+        offset?: string;
+        page?: string;
+        pageSize?: string;
+        status?: string;
+        agentId?: string;
+        customerId?: string;
+        channel?: string;
+        includeProblem?: string;
+      };
 
-      // Mock数据：模拟会话列表
-      const mockConversations = [
-        {
-          id: 'conv-001',
-          conversationId: 'conv-001', // 前端期望的字段名
-          customerId: 'customer-001',
-          customerName: '张三',
-          channel: 'web',
-          status: 'open',
-          mode: 'agent_auto', // Agent模式
-          lastMessage: '我的服务器无法连接，目前有影响业务，赶快看下',
-          lastMessageTime: new Date(Date.now() - 3600000).toISOString(),
-          unreadCount: 2,
-          agentId: 'agent-001',
-          agentName: '客服小王',
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-        },
-        {
-          id: 'conv-002',
-          conversationId: 'conv-002',
-          customerId: 'customer-002',
-          customerName: '李四',
-          channel: 'feishu',
-          status: 'open',
-          mode: 'agent_supervised', // Agent监督模式
-          lastMessage: '产品质量有问题，需要退换货',
-          lastMessageTime: new Date(Date.now() - 7200000).toISOString(),
-          unreadCount: 0,
-          agentId: 'agent-002',
-          agentName: '客服小李',
-          createdAt: new Date(Date.now() - 172800000).toISOString(),
-        },
-        {
-          id: 'conv-003',
-          conversationId: 'conv-003',
-          customerId: 'customer-003',
-          customerName: '王五',
-          channel: 'wecom',
-          status: 'closed',
-          mode: 'human_first', // 人工优先模式
-          lastMessage: '感谢解决，问题已经处理好了',
-          lastMessageTime: new Date(Date.now() - 14400000).toISOString(),
-          unreadCount: 0,
-          agentId: 'agent-001',
-          agentName: '客服小王',
-          createdAt: new Date(Date.now() - 259200000).toISOString(),
-        },
-      ];
+      const normalizedLimit = Number.parseInt(
+        query.pageSize || query.limit || '20',
+        10,
+      );
+      const normalizedOffset = Number.parseInt(
+        query.offset || '0',
+        10,
+      );
+      const page = query.page ? Number.parseInt(query.page, 10) : undefined;
+      const offset = page && page > 0 ? (page - 1) * normalizedLimit : normalizedOffset;
 
-      const start = Number(offset);
-      const end = start + Number(limit);
-      const conversations = mockConversations.slice(start, end);
+      const statusFilter =
+        query.status === 'active' ? 'open' : query.status;
+      const filters = {
+        status: statusFilter as any,
+        agentId: query.agentId,
+        customerId: query.customerId,
+        channel: query.channel,
+      };
+
+      const userName = (request.user as { name?: string } | undefined)?.name?.trim();
+      const shouldFilterByMembership =
+        Boolean(userName) && (!query.channel || query.channel === 'wecom');
+
+      let [conversationList, total] = await Promise.all([
+        this.conversationRepository.findByFilters(filters, {
+          limit: normalizedLimit,
+          offset,
+        }),
+        this.conversationRepository.countByFilters(filters),
+      ]);
+
+      if (shouldFilterByMembership && total > 0) {
+        if (conversationList.length < total) {
+          conversationList = await this.conversationRepository.findByFilters(filters, {
+            limit: total,
+            offset: 0,
+          });
+        }
+
+        const normalizedUserName = userName || '';
+        const filtered = conversationList.filter((conversation) => {
+          if (conversation.channel.value !== 'wecom') {
+            return true;
+          }
+
+          const groupMembers = (conversation.metadata as Record<string, unknown> | undefined)
+            ?.groupMembers;
+          if (!Array.isArray(groupMembers) || groupMembers.length === 0) {
+            return true;
+          }
+
+          return groupMembers.some(
+            (member) => typeof member === 'string' && member.trim() === normalizedUserName,
+          );
+        });
+
+        total = filtered.length;
+        conversationList = filtered.slice(offset, offset + normalizedLimit);
+      }
+
+      const profiles = await Promise.all(
+        conversationList.map((conversation) =>
+          this.customerProfileRepository.findById(conversation.customerId),
+        ),
+      );
+
+      const includeProblem = query.includeProblem === 'true' || query.includeProblem === '1';
+      const problemResults = includeProblem
+        ? await Promise.all(
+            conversationList.map((conversation) =>
+              this.evaluateConversationProblem(conversation),
+            ),
+          )
+        : [];
+
+      const conversations = conversationList.map((conversation, index) => {
+        const profile = profiles[index];
+        const lastMessage = [...conversation.messages]
+          .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime())[0];
+        const lastMessageTime = lastMessage?.sentAt?.toISOString();
+        const lastMessageSenderType =
+          lastMessage?.senderType === 'agent' ? 'agent' : lastMessage ? 'customer' : null;
+        const lastMessageMetadata = (lastMessage?.metadata || {}) as Record<string, unknown>;
+        const conversationMetadata = (conversation.metadata || {}) as Record<string, unknown>;
+        const groupMemberMap =
+          ((lastMessageMetadata.groupMemberMap as Record<string, string> | undefined) ||
+            (conversationMetadata.groupMemberMap as Record<string, string> | undefined) ||
+            {}) as Record<string, string>;
+        const metadataSenderId =
+          (lastMessageMetadata.senderId as string | undefined) ||
+          (lastMessageMetadata.sender_id as string | undefined);
+        const mappedSenderName = metadataSenderId ? groupMemberMap[metadataSenderId] : undefined;
+        const lastMessageSenderName =
+          (lastMessageMetadata.senderName as string | undefined) ||
+          mappedSenderName ||
+          (lastMessageSenderType === 'agent' ? '客服' : profile?.name || '客户');
+        const slaInfo = (profile as any)?.slaInfo as Record<string, unknown> | undefined;
+        const serviceLevel = slaInfo?.serviceLevel as string | undefined;
+        const severity =
+          conversation.priority === 'high'
+            ? 'high'
+            : conversation.priority === 'low'
+              ? 'low'
+              : 'normal';
+        const urgency = conversation.priority === 'high' ? 'high' : 'normal';
+
+        const problem = includeProblem ? problemResults[index] : null;
+        const isProblem = problem?.isProblem ?? null;
+        const problemStatus =
+          isProblem === true ? 'pending' : isProblem === false ? 'active' : undefined;
+
+        return {
+          id: conversation.id,
+          conversationId: conversation.id,
+          customerId: conversation.customerId,
+          customerName: profile?.name || '客户',
+          channel: conversation.channel.value,
+          status: conversation.status,
+          mode: conversation.mode,
+          lastMessage: lastMessage?.content || '',
+          lastMessageSenderType,
+          lastMessageSenderName,
+          lastMessageTime,
+          unreadCount: 0,
+          agentId: conversation.agentId || null,
+          agentName: conversation.agentId ? '客服' : null,
+          slaLevel: serviceLevel || (profile?.isVIP ? 'VIP' : '普通'),
+          urgency,
+          severity,
+          createdAt: conversation.createdAt.toISOString(),
+          updatedAt: conversation.updatedAt.toISOString(),
+          isProblem,
+          problemIntent: problem?.intent ?? null,
+          problemConfidence: problem?.confidence ?? null,
+          problemStatus,
+        };
+      });
 
       reply.code(200).send({
         success: true,
         data: {
           conversations,
-          total: mockConversations.length,
-          limit: Number(limit),
-          offset: Number(offset),
+          total,
+          limit: normalizedLimit,
+          offset,
         },
       });
     } catch (error) {
       console.error('[ImController] getConversations error', error);
+      reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : '服务器内部错误',
+      });
+    }
+  }
+
+  /**
+   * 获取会话统计（基于筛选维度 + LLM问题识别）
+   * GET /im/conversations/stats
+   */
+  async getConversationStats(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const query = request.query as {
+        channel?: string;
+        urgency?: string;
+        sla?: string;
+      };
+
+      const baseFilters = {
+        channel: query.channel || undefined,
+      };
+
+      const total = await this.conversationRepository.countByFilters(baseFilters);
+      if (total === 0) {
+        reply.code(200).send({
+          success: true,
+          data: {
+            statusCounts: { all: 0, pending: 0, active: 0 },
+          },
+        });
+        return;
+      }
+
+      const conversations = await this.conversationRepository.findByFilters(baseFilters, {
+        limit: total,
+        offset: 0,
+      });
+      const profiles = await Promise.all(
+        conversations.map((conversation) =>
+          this.customerProfileRepository.findById(conversation.customerId),
+        ),
+      );
+
+      const urgencyFilter = query.urgency?.toLowerCase();
+      const slaFilter = query.sla?.toLowerCase();
+
+      const filtered = conversations.filter((conversation, index) => {
+        if (urgencyFilter) {
+          const priority =
+            conversation.priority === 'high'
+              ? 'high'
+              : conversation.priority === 'low'
+                ? 'low'
+                : 'normal';
+          if (priority !== urgencyFilter) {
+            return false;
+          }
+        }
+
+        if (slaFilter) {
+          const profile = profiles[index];
+          const slaInfo = (profile as any)?.slaInfo as Record<string, unknown> | undefined;
+          const serviceLevel = slaInfo?.serviceLevel as string | undefined;
+          const slaLevel = (serviceLevel || (profile?.isVIP ? 'VIP' : '普通')).toLowerCase();
+          if (slaLevel !== slaFilter) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+
+      const problemResults = await Promise.all(
+        filtered.map((conversation) => this.evaluateConversationProblem(conversation)),
+      );
+
+      const problemCount = problemResults.filter((result) => result?.isProblem).length;
+      const llmEnabled = problemResults.some((result) => result?.isProblem !== null);
+      const totalFiltered = filtered.length;
+
+      reply.code(200).send({
+        success: true,
+        data: {
+          statusCounts: {
+            all: totalFiltered,
+            pending: llmEnabled ? problemCount : null,
+            active: llmEnabled ? totalFiltered - problemCount : null,
+          },
+        },
+      });
+    } catch (error) {
+      console.error('[ImController] getConversationStats error', error);
+      reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : '服务器内部错误',
+      });
+    }
+  }
+
+  /**
+   * 同步企业微信Mock群聊数据（演示用）
+   * POST /im/wecom/mock/sync
+   */
+  async syncWecomMockGroupChats(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const body = (request.body ?? {}) as { limit?: number; reset?: boolean };
+      const data = await this.loadWecomMockData();
+      const groupChats = data.groupChatList.group_chat_list || [];
+      const limit = body.limit && body.limit > 0 ? Math.min(body.limit, groupChats.length) : groupChats.length;
+
+      let customersCreated = 0;
+      let messagesImported = 0;
+
+      if (body.reset) {
+        await this.conversationRepository.deleteByChannel('wecom');
+      }
+
+      for (const entry of groupChats.slice(0, limit)) {
+        const chatId = entry.chat_id;
+        const detail = data.groupChatDetails.group_chat_details?.[chatId]?.group_chat;
+        if (!detail) {
+          continue;
+        }
+
+        const customerId = `wecom-${chatId}`;
+        if (body.reset) {
+          await this.conversationRepository.deleteByCustomerId(customerId);
+        }
+        const profile = await this.customerProfileRepository.findById(customerId);
+        if (!profile) {
+          const contactInfo = ContactInfo.create({ preferredChannel: 'chat' });
+          const slaInfo = CustomerLevelInfo.create({
+            serviceLevel: 'silver',
+            responseTimeTargetMinutes: 60,
+            resolutionTimeTargetMinutes: 240,
+          });
+          const metrics = Metrics.create({
+            satisfactionScore: 0,
+            issueCount: 0,
+            averageResolutionMinutes: 0,
+          });
+
+          const newProfile = CustomerProfile.create({
+            customerId,
+            name: detail.name || customerId,
+            contactInfo,
+            slaInfo,
+            metrics,
+          });
+          await this.customerProfileRepository.save(newProfile);
+          customersCreated += 1;
+        }
+
+        const groupMembers = Array.isArray(detail.member_list)
+          ? detail.member_list
+              .map((member: { name?: string }) => member?.name?.trim())
+              .filter((name: string | undefined): name is string => Boolean(name))
+          : [];
+        const memberNameMap = Array.isArray(detail.member_list)
+          ? detail.member_list.reduce((acc: Record<string, string>, member: { userid?: string; name?: string }) => {
+              const userId = member?.userid?.trim();
+              const name = member?.name?.trim();
+              if (userId && name) {
+                acc[userId] = name;
+              }
+              return acc;
+            }, {})
+          : {};
+        const memberTypeMap = Array.isArray(detail.member_list)
+          ? detail.member_list.reduce((acc: Record<string, number>, member: { userid?: string; type?: number }) => {
+              const userId = member?.userid?.trim();
+              const type = member?.type;
+              if (userId && typeof type === 'number') {
+                acc[userId] = type;
+              }
+              return acc;
+            }, {})
+          : {};
+        const messages = data.groupChatMessages.group_chat_messages?.[chatId] || [];
+        const sortedMessages = [...messages].sort(
+          (a, b) => (a?.sent_at ?? 0) - (b?.sent_at ?? 0),
+        );
+        let activeConversation: Conversation | null = null;
+        for (const message of sortedMessages) {
+          if (!message?.content) {
+            continue;
+          }
+          const memberType = memberTypeMap[message.sender_id];
+          const normalizedSenderType =
+            message.sender_type === 'agent' || memberType === 1 ? 'agent' : 'customer';
+          const senderName = memberNameMap[message.sender_id] || undefined;
+          const messageMetadata = {
+            chatId,
+            groupName: detail.name,
+            groupMembers,
+            groupMemberMap: memberNameMap,
+            memberType,
+            senderType: normalizedSenderType,
+            senderId: message.sender_id,
+            senderName,
+            sentAt: message.sent_at,
+            status: entry.status,
+            issueProduct: message.issue_product,
+            faultLevel: message.fault_level,
+          };
+
+          if (normalizedSenderType === 'customer') {
+            const result = await this.coordinator.processCustomerMessage({
+              customerId,
+              content: message.content,
+              channel: 'wecom',
+              senderId: customerId,
+              metadata: messageMetadata,
+            });
+            activeConversation = await this.conversationRepository.findById(result.conversationId);
+            messagesImported += 1;
+            continue;
+          }
+
+          if (!activeConversation) {
+            const existing = await this.conversationRepository.findByFilters(
+              { customerId, status: 'open' },
+              { limit: 1, offset: 0 },
+            );
+            activeConversation = existing[0] ?? null;
+          }
+
+          if (!activeConversation) {
+            continue;
+          }
+
+          const agentId = message.sender_id || 'agent-system';
+          if (!activeConversation.agentId || activeConversation.agentId !== agentId) {
+            activeConversation.assignAgent(agentId, {
+              assignedBy: 'system',
+              reason: 'auto',
+              metadata: { source: 'wecom_mock' },
+            });
+            await this.conversationRepository.save(activeConversation);
+          }
+
+          await this.sendMessageUseCase.execute({
+            conversationId: activeConversation.id,
+            senderId: agentId,
+            senderType: 'internal',
+            content: message.content,
+            metadata: messageMetadata,
+          });
+          messagesImported += 1;
+        }
+      }
+
+      reply.code(200).send({
+        success: true,
+        data: {
+          groupChats: limit,
+          customersCreated,
+          messagesImported,
+        },
+      });
+    } catch (error) {
+      console.error('[ImController] syncWecomMockGroupChats error', error);
       reply.code(500).send({
         success: false,
         error: error instanceof Error ? error.message : '服务器内部错误',
@@ -321,140 +698,84 @@ export class ImController {
     try {
       const { id } = request.params as { id: string };
       const { limit = 40, offset = 0 } = request.query as any;
+      const conversation = await this.conversationRepository.findById(id);
+      if (!conversation) {
+        reply.code(404).send({
+          success: false,
+          error: '会话不存在',
+        });
+        return;
+      }
 
-      // Mock数据：模拟历史消息
-      const refundMessages = [
-        {
-          id: 'msg-001',
-          conversationId: id,
-          content: '你好，我想咨询一下订单问题',
-          senderType: 'customer',
-          senderId: 'customer-001',
-          senderName: '张三',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          sentiment: {
-            emotion: 'neutral',
-            score: 0.5,
-            confidence: 0.85,
-          },
-        },
-        {
-          id: 'msg-002',
-          conversationId: id,
-          content: '您好！我是客服小王，很高兴为您服务。请问您的订单号是多少？',
-          senderType: 'agent',
-          senderId: 'agent-001',
-          senderName: '客服小王',
-          timestamp: new Date(Date.now() - 3540000).toISOString(),
-        },
-        {
-          id: 'msg-003',
-          conversationId: id,
-          content: '订单号是 ORD20231215001，我三天前申请的退款还没到账',
-          senderType: 'customer',
-          senderId: 'customer-001',
-          senderName: '张三',
-          timestamp: new Date(Date.now() - 3480000).toISOString(),
-          sentiment: {
-            emotion: 'negative',
-            score: 0.3,
-            confidence: 0.78,
-          },
-        },
-        {
-          id: 'msg-004',
-          conversationId: id,
-          content: '我帮您查询一下，请稍等...',
-          senderType: 'agent',
-          senderId: 'agent-001',
-          senderName: '客服小王',
-          timestamp: new Date(Date.now() - 3420000).toISOString(),
-        },
-        {
-          id: 'msg-005',
-          conversationId: id,
-          content: '查询到您的退款已经审批通过，正在处理中。预计1-3个工作日到账，请您耐心等待。',
-          senderType: 'agent',
-          senderId: 'agent-001',
-          senderName: '客服小王',
-          timestamp: new Date(Date.now() - 3300000).toISOString(),
-        },
-        {
-          id: 'msg-006',
-          conversationId: id,
-          content: '好的，谢谢！',
-          senderType: 'customer',
-          senderId: 'customer-001',
-          senderName: '张三',
-          timestamp: new Date(Date.now() - 3240000).toISOString(),
-          sentiment: {
-            emotion: 'positive',
-            score: 0.8,
-            confidence: 0.92,
-          },
-        },
-      ];
+      const profile = await this.customerProfileRepository.findById(
+        conversation.customerId,
+      );
 
-      const cloudServerMessages = [
-        {
-          id: 'msg-001',
-          conversationId: id,
-          content: '我的服务器无法连接，目前有影响业务，赶快看下',
-          senderType: 'customer',
-          senderId: 'customer-001',
-          senderName: '张三',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          sentiment: {
-            emotion: 'urgent',
-            score: 0.86,
-            confidence: 0.9,
-          },
-        },
-        {
-          id: 'msg-002',
-          conversationId: id,
-          content: '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。',
-          senderType: 'agent',
-          senderId: 'agent-001',
-          senderName: '客服小王',
-          timestamp: new Date(Date.now() - 3540000).toISOString(),
-        },
-        {
-          id: 'msg-003',
-          conversationId: id,
-          content: '服务器实例为test123，ip是192.168.10.2',
-          senderType: 'customer',
-          senderId: 'customer-001',
-          senderName: '张三',
-          timestamp: new Date(Date.now() - 3480000).toISOString(),
-          sentiment: {
-            emotion: 'urgent',
-            score: 0.8,
-            confidence: 0.9,
-          },
-        },
-        {
-          id: 'msg-004',
-          conversationId: id,
-          content: '收到，我们高优排查该问题，有进展第一时间同步。',
-          senderType: 'agent',
-          senderId: 'agent-001',
-          senderName: '客服小王',
-          timestamp: new Date(Date.now() - 3420000).toISOString(),
-        },
-      ];
-
-      const mockMessages = id === 'conv-001' ? cloudServerMessages : refundMessages;
+      const sortedMessages = [...conversation.messages].sort(
+        (a, b) => a.sentAt.getTime() - b.sentAt.getTime(),
+      );
 
       const start = Number(offset);
       const end = start + Number(limit);
-      const messages = mockMessages.slice(start, end);
+      const slice = sortedMessages.slice(start, end);
+      const conversationMetadata = (conversation.metadata || {}) as Record<string, unknown>;
+      const groupMemberMap = (conversationMetadata.groupMemberMap || {}) as Record<string, string>;
+      const messages = await Promise.all(
+        slice.map(async (message, index) => {
+          const senderType = message.senderType === 'agent' ? 'agent' : 'customer';
+          const messageIndex = start + index;
+          const history = sortedMessages
+            .slice(Math.max(0, messageIndex - 5), messageIndex)
+            .map((msg) => ({
+              role: msg.senderType === 'agent' ? 'agent' : 'customer',
+              content: msg.content,
+            }));
+          const sentimentResult =
+            senderType === 'customer'
+              ? await this.aiService.analyzeSentiment(message.content, history)
+              : undefined;
+          const sentiment = sentimentResult
+            ? {
+                emotion: sentimentResult.overallSentiment,
+                score: sentimentResult.score,
+                confidence: sentimentResult.confidence,
+                emotions: sentimentResult.emotions,
+                reasoning: sentimentResult.reasoning,
+              }
+            : undefined;
+          const metadata = message.metadata || {};
+          const fallbackName =
+            senderType === 'agent' ? '客服' : profile?.name || '客户';
+          const metadataSenderId =
+            (metadata as { senderId?: string }).senderId ||
+            (metadata as { sender_id?: string }).sender_id;
+          const mappedSenderName = metadataSenderId ? groupMemberMap[metadataSenderId] : undefined;
+          const senderName =
+            (metadata as { senderName?: string }).senderName ||
+            mappedSenderName ||
+            metadataSenderId ||
+            fallbackName;
+
+          return {
+            id: message.id,
+            conversationId: conversation.id,
+            content: message.content,
+            senderType,
+            senderId: message.senderId,
+            senderName,
+            timestamp: message.sentAt.toISOString(),
+            sentAt: message.sentAt.toISOString(),
+            metadata,
+            sentiment,
+          };
+        }),
+      );
 
       reply.code(200).send({
         success: true,
         data: {
           messages,
-          total: mockMessages.length,
+          total: sortedMessages.length,
           limit: Number(limit),
           offset: Number(offset),
         },
@@ -487,21 +808,39 @@ export class ImController {
         });
       }
 
-      // Mock数据：模拟消息发送成功
-      const newMessage = {
-        id: `msg-${Date.now()}`,
+      const conversation = await this.conversationRepository.findById(id);
+      if (!conversation) {
+        return reply.code(404).send({
+          success: false,
+          error: '会话不存在',
+        });
+      }
+
+      const senderId = (request.user as any)?.sub || conversation.agentId || 'agent-system';
+      if (!conversation.agentId && senderId !== conversation.customerId) {
+        conversation.assignAgent(senderId, { assignedBy: senderId, reason: 'manual' });
+        await this.conversationRepository.save(conversation);
+      }
+
+      const result = await this.sendMessageUseCase.execute({
         conversationId: id,
+        senderId,
+        senderType: 'internal',
         content: body.content,
-        senderType: 'agent',
-        senderId: 'agent-001',
-        senderName: '客服小王',
-        timestamp: new Date().toISOString(),
-        status: 'sent',
-      };
+      });
 
       reply.code(200).send({
         success: true,
-        data: newMessage,
+        data: {
+          id: result.messageId,
+          conversationId: result.conversationId,
+          content: result.message.content,
+          senderType: result.message.senderType,
+          senderId: result.message.senderId,
+          senderName: '客服',
+          timestamp: result.timestamp,
+          status: 'sent',
+        },
       });
     } catch (error) {
       console.error('[ImController] sendMessage error', error);
@@ -531,13 +870,23 @@ export class ImController {
         });
       }
 
-      // Mock数据：模拟状态更新成功
+      const conversation = await this.conversationRepository.findById(id);
+      if (!conversation) {
+        return reply.code(404).send({
+          success: false,
+          error: '会话不存在',
+        });
+      }
+
+      conversation.updateStatus(body.status as any);
+      await this.conversationRepository.save(conversation);
+
       reply.code(200).send({
         success: true,
         data: {
-          conversationId: id,
-          status: body.status,
-          updatedAt: new Date().toISOString(),
+          conversationId: conversation.id,
+          status: conversation.status,
+          updatedAt: conversation.updatedAt.toISOString(),
         },
       });
     } catch (error) {
@@ -560,27 +909,17 @@ export class ImController {
     try {
       const { customerId } = request.params as { customerId: string };
 
-      // Mock数据：模拟用户画像
-      const mockProfile = {
-        id: customerId,
-        name: '张三',
-        level: 'VIP',
-        phone: '138****8888',
-        email: 'zhang***@example.com',
-        registerDate: '2022-06-15',
-        totalOrders: 45,
-        totalAmount: 125800.0,
-        lastOrderDate: '2023-12-10',
-        tags: ['高价值客户', '活跃用户', '3C数码爱好者'],
-        riskLevel: 'low',
-        satisfactionScore: 4.8,
-        preferredChannel: 'web',
-        notes: '优质客户，购买力强，对价格不敏感',
-      };
+      const profile = await this.customerProfileRepository.findById(customerId);
+      if (!profile) {
+        return reply.code(404).send({
+          success: false,
+          error: '客户不存在',
+        });
+      }
 
       reply.code(200).send({
         success: true,
-        data: mockProfile,
+        data: CustomerProfileResponseDTO.fromAggregate(profile),
       });
     } catch (error) {
       console.error('[ImController] getCustomerProfile error', error);
@@ -603,47 +942,15 @@ export class ImController {
       const { customerId } = request.params as { customerId: string };
       const { range = '7d' } = request.query as any;
 
-      // Mock数据：模拟交互记录
-      const mockInteractions = [
-        {
-          id: 'int-001',
-          type: 'order',
-          title: '购买商品：iPhone 15 Pro',
-          amount: 8999.0,
-          status: 'completed',
-          timestamp: new Date(Date.now() - 86400000 * 2).toISOString(),
-        },
-        {
-          id: 'int-002',
-          type: 'refund',
-          title: '退款申请：ORD20231215001',
-          amount: 299.0,
-          status: 'processing',
-          timestamp: new Date(Date.now() - 86400000 * 3).toISOString(),
-        },
-        {
-          id: 'int-003',
-          type: 'service',
-          title: '售后咨询：产品保修问题',
-          status: 'closed',
-          timestamp: new Date(Date.now() - 86400000 * 5).toISOString(),
-        },
-        {
-          id: 'int-004',
-          type: 'complaint',
-          title: '投诉：物流配送延迟',
-          status: 'resolved',
-          timestamp: new Date(Date.now() - 86400000 * 7).toISOString(),
-        },
-      ];
+      const interactions = await this.customerProfileRepository.findInteractions(customerId);
 
       reply.code(200).send({
         success: true,
         data: {
           customerId,
           range,
-          interactions: mockInteractions,
-          total: mockInteractions.length,
+          interactions,
+          total: interactions.length,
         },
       });
     } catch (error) {
@@ -666,47 +973,99 @@ export class ImController {
     try {
       const { conversationId } = request.params as { conversationId: string };
 
-      // Mock数据：模拟质检数据
-      const mockQuality = {
+      const conversation = await this.conversationRepository.findById(conversationId);
+      if (!conversation) {
+        return reply.code(404).send({
+          success: false,
+          error: '会话不存在',
+        });
+      }
+
+      const profile = await this.customerProfileRepository.findById(
+        conversation.customerId,
+      );
+      const messageContext = conversation.messages
+        .slice(-10)
+        .map((msg) => msg.content)
+        .join('\n');
+
+      const analysis = await this.aiService.analyzeConversation({
         conversationId,
-        overallScore: 8.5,
-        dimensions: {
-          responseSpeed: {
-            score: 9.0,
-            avgResponseTime: 45, // 秒
-            label: '响应速度',
-          },
-          serviceAttitude: {
-            score: 8.5,
-            label: '服务态度',
-          },
-          problemSolving: {
-            score: 8.0,
-            label: '问题解决',
-          },
-          professionalKnowledge: {
-            score: 9.0,
-            label: '专业知识',
-          },
-          customerSatisfaction: {
-            score: 8.5,
-            label: '客户满意度',
-          },
+        context: messageContext,
+        options: {
+          includeHistory: true,
+          depth: 'brief',
         },
-        violations: [],
-        highlights: [
-          '响应及时，平均45秒内回复',
-          '使用礼貌用语，态度专业',
-          '准确理解客户问题',
-        ],
-        suggestions: ['可以主动提供相关产品推荐', '结束时可以询问是否还有其他问题'],
-        checkedAt: new Date().toISOString(),
-        checkedBy: 'AI质检系统',
-      };
+      });
+
+      const qualityScore = Math.round((analysis.score || 0.8) * 100);
+      const emotionScore = Math.round((analysis.result?.score || analysis.score || 0.7) * 100);
+      const satisfactionScoreRaw =
+        (profile?.metrics as any)?.satisfactionScore ?? 80;
+      const satisfactionScore =
+        satisfactionScoreRaw > 1 && satisfactionScoreRaw <= 5
+          ? Math.round((satisfactionScoreRaw / 5) * 100)
+          : Math.round(Number(satisfactionScoreRaw) || 80);
+      const lastMessage = conversation.messages
+        .slice(-1)[0];
+      const urgency =
+        conversation.priority === 'high'
+          ? '高紧急'
+          : conversation.status === 'closed'
+            ? '已解决'
+            : '处理中';
 
       reply.code(200).send({
         success: true,
-        data: mockQuality,
+        data: {
+          conversationId,
+          title: `${profile?.name || '客户'} · ${conversation.id}`,
+          score: qualityScore,
+          summary:
+            analysis.summary ||
+            lastMessage?.content ||
+            '暂无质检摘要',
+          urgency,
+          urgencyClass: urgency === '高紧急' ? 'chip-urgent' : urgency === '已解决' ? 'chip-neutral' : 'chip-soft',
+          tone: urgency === '高紧急' ? 'urgent' : urgency === '已解决' ? 'neutral' : 'soft',
+          sla: (profile?.slaInfo as any)?.serviceLevel || (profile?.isVIP ? 'VIP' : '普通'),
+          impact: analysis.issues?.length ? '需关注' : '影响未标注',
+          channel: conversation.channel.value,
+          time: lastMessage?.sentAt?.toISOString() || conversation.updatedAt.toISOString(),
+          tags: (analysis.keyPhrases || []).map((item) => item.phrase).slice(0, 4),
+          metrics: {
+            urgency: `${emotionScore}%`,
+            emotion: emotionScore,
+            eta: conversation.slaDeadline ? conversation.slaDeadline.toISOString() : '--',
+          },
+          dimensions: {
+            emotion: {
+              score: emotionScore,
+              label: analysis.overallSentiment || '中性',
+              bar: emotionScore,
+            },
+            quality: {
+              score: qualityScore,
+              label: analysis.summary || '质检分析完成',
+              bar: qualityScore,
+            },
+            satisfaction: {
+              score: satisfactionScore,
+              label: '客户满意度',
+              bar: satisfactionScore,
+            },
+          },
+          actions: analysis.improvementSuggestions || [],
+          tip: analysis.improvementSuggestions?.[0] || '建议持续跟进客户问题',
+          threadTitle: `对话节选 · ${conversation.id}`,
+          thread: conversation.messages.slice(-3).map((msg) => ({
+            role: msg.senderType === 'agent' ? '工程师' : '客户',
+            text: msg.content,
+            sentiment: msg.senderType === 'agent' ? '回复' : '客户反馈',
+            tag: msg.senderType === 'agent' ? '客服回复' : '客户消息',
+          })),
+          insights: analysis.improvementSuggestions || [],
+        },
       });
     } catch (error) {
       console.error('[ImController] getConversationQuality error', error);
@@ -727,178 +1086,173 @@ export class ImController {
   ): Promise<void> {
     try {
       const { id } = request.params as { id: string };
+      const conversation = await this.conversationRepository.findById(id);
+      if (!conversation) {
+        return reply.code(404).send({
+          success: false,
+          error: '会话不存在',
+        });
+      }
 
-      // 根据会话ID返回不同场景的Mock数据
-      let mockAnalysis: any;
+      const history = conversation.messages
+        .slice(-8)
+        .map((msg) => ({
+          role: msg.senderType === 'agent' ? 'agent' : 'customer',
+          content: msg.content,
+        }));
 
-      // 场景1：conv-001 - 急切情绪+问题场景（云服务器连接异常）- 显示AI辅助面板
-      if (id === 'conv-001') {
-        mockAnalysis = {
-          conversationId: id,
-          lastCustomerSentiment: {
-            emotion: 'urgent',
-            score: 0.86,
-            confidence: 0.9,
-            messageContent: '我的服务器无法连接，目前有影响业务，赶快看下',
-          },
-          replySuggestion: {
-            suggestedReply: '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。',
-            confidence: 0.9,
-            needsHumanReview: false,
-            reason: '云服务器故障排查需补充实例信息',
-          },
-          knowledgeRecommendations: [
-            {
-              id: 'kb-011',
-              title: '云服务器无法连接排查手册',
-              category: '故障处理',
-              score: 0.93,
-              url: 'http://localhost:3000/knowledge/kb-011',
-              type: 'knowledge',
-            },
-            {
-              id: 'kb-014',
-              title: '实例网络连通性诊断指南',
-              category: '云服务器',
-              score: 0.9,
-              url: 'http://localhost:3000/knowledge/kb-014',
-              type: 'knowledge',
-            },
-            {
-              id: 'kb-018',
-              title: 'P2故障升级与通报流程',
-              category: '应急预案',
-              score: 0.84,
-              url: 'http://localhost:3000/knowledge/kb-018',
-              type: 'knowledge',
-            },
-          ],
-          relatedTasks: [
-            {
-              id: 'task-001',
-              title: '云服务器实例无法连接 - P2',
-              priority: 'high',
-              url: 'http://localhost:3000/tasks/task-2231',
-            },
-            {
-              id: 'task-002',
-              title: '客户实例网络排查',
-              priority: 'medium',
-              url: 'http://localhost:3000/tasks/task-2232',
-            },
-          ],
-          detectedIssues: [
-            {
-              type: 'cloud_server_incident',
-              description: '产品线为云服务器，P2',
-              severity: 'p2',
-              suggestedAction: '高优排查并同步进展',
-            },
-          ],
-          analyzedAt: new Date().toISOString(),
-        };
+      const latestCustomerMessage = [...conversation.messages]
+        .reverse()
+        .find((msg) => msg.senderType === 'customer');
+
+      const sentiment = latestCustomerMessage
+        ? await this.aiService.analyzeSentiment(
+            latestCustomerMessage.content,
+            history,
+          )
+        : {
+            overallSentiment: 'neutral' as const,
+            score: 0.5,
+            confidence: 0.5,
+          };
+      const issueSignals = this.extractIssueSignals(conversation);
+
+      let knowledgeRecommendations: Array<{
+        id: string;
+        title: string;
+        category: string;
+        score: number;
+        url: string;
+        type: 'knowledge';
+      }> = [];
+
+      try {
+        let query = latestCustomerMessage?.content || '';
+        const llmClient = (this.aiService as any).llmClient;
+        if (llmClient && llmClient.isEnabled()) {
+          try {
+            const intent = await llmClient.extractIntent(query);
+            if (intent.keywords?.length) {
+              query = intent.keywords.join(' ');
+            }
+          } catch (err) {
+            console.warn('[ImController] LLM意图提取失败，使用原始查询', err);
+          }
+        }
+
+        const knowledgeResults = await this.searchKnowledgeUseCase.execute({
+          query: query || latestCustomerMessage?.content || '',
+          mode: 'keyword',
+          filters: { limit: 10 },
+        });
+        const baseUrl = config.app?.baseUrl || 'http://localhost:3000';
+        knowledgeRecommendations = knowledgeResults
+          .map((item) => ({
+            id: item.id,
+            title: item.title,
+            category: item.category,
+            score: item.score ?? 0.6,
+            url: `${baseUrl}/knowledge/${item.id}`,
+            type: 'knowledge' as const,
+          }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5);
+      } catch (err) {
+        console.warn('[ImController] 知识库查询失败', err);
       }
-      // 场景2：conv-002 - 中性情绪+咨询场景（无问题）- 隐藏AI辅助面板
-      else if (id === 'conv-002') {
-        mockAnalysis = {
-          conversationId: id,
-          lastCustomerSentiment: {
-            emotion: 'neutral',
-            score: 0.65,
-            confidence: 0.82,
-            messageContent: '你好，我想咨询一下新产品的功能',
-          },
-          replySuggestion: {
-            suggestedReply: '您好！很高兴为您介绍我们的新产品。请问您想了解哪方面的功能呢？我可以为您详细说明。',
-            confidence: 0.9,
-            needsHumanReview: false,
-            reason: '常规咨询场景，无问题检测',
-          },
-          knowledgeRecommendations: [],
-          relatedTasks: [],
-          detectedIssues: [], // 无问题，面板应该隐藏
-          analyzedAt: new Date().toISOString(),
-        };
+
+      const tasks = await this.taskRepository.findByFilters({
+        conversationId: conversation.id,
+      });
+      const baseUrl = config.app?.baseUrl || 'http://localhost:3000';
+      const relatedTasks = tasks.map((task) => ({
+        id: task.id,
+        title: task.title,
+        priority: task.priority.value,
+        url: `${baseUrl}/tasks/${task.id}`,
+      }));
+
+      const aiAnalysis = await this.aiService.analyzeConversation({
+        conversationId: conversation.id,
+        context: history.map((item) => item.content).join('\n'),
+        options: {
+          keywords: knowledgeRecommendations.map((item) => item.title).slice(0, 4),
+        },
+      });
+
+      const detectedIssues = (aiAnalysis.issues || []).map((issue) => ({
+        type: issue.type,
+        description: issue.description,
+        severity: issue.severity,
+        suggestedAction: aiAnalysis.improvementSuggestions?.[0],
+      }));
+
+      let replySuggestion: {
+        suggestedReply: string;
+        confidence: number;
+        needsHumanReview: boolean;
+        reason?: string;
+      } | null = null;
+
+      try {
+        const llmClient = (this.aiService as any).llmClient;
+        if (llmClient && llmClient.isEnabled() && latestCustomerMessage) {
+          const replyResult = await llmClient.generateReply(
+            latestCustomerMessage.content,
+            sentiment as any,
+            knowledgeRecommendations.map((item) => ({
+              title: item.title,
+              url: item.url,
+            })),
+            history,
+          );
+          replySuggestion = {
+            suggestedReply: replyResult.suggestedReply,
+            confidence: replyResult.confidence,
+            needsHumanReview: replyResult.confidence < 0.6,
+            reason: replyResult.reasoning,
+          };
+        }
+      } catch (err) {
+        console.warn('[ImController] 回复生成失败，未返回建议', err);
       }
-      // 场景3：conv-003 - 积极情绪+感谢场景 - 隐藏AI辅助面板
-      else if (id === 'conv-003') {
-        mockAnalysis = {
-          conversationId: id,
-          lastCustomerSentiment: {
-            emotion: 'positive',
-            score: 0.85,
-            confidence: 0.9,
-            messageContent: '太好了，问题已经解决了，非常感谢！',
-          },
-          replySuggestion: {
-            suggestedReply: '不客气！很高兴能帮到您。如果后续还有任何问题，欢迎随时联系我们。祝您生活愉快！',
-            confidence: 0.95,
-            needsHumanReview: false,
-            reason: '客户满意，常规结束语',
-          },
-          knowledgeRecommendations: [],
-          relatedTasks: [],
-          detectedIssues: [], // 无问题，面板应该隐藏
-          analyzedAt: new Date().toISOString(),
-        };
-      }
-      // 场景4：其他会话 - 负面情绪+技术问题 - 显示AI辅助面板
-      else {
-        mockAnalysis = {
-          conversationId: id,
-          lastCustomerSentiment: {
-            emotion: 'negative',
-            score: 0.25,
-            confidence: 0.85,
-            messageContent: '系统一直报错，根本用不了',
-          },
-          replySuggestion: {
-            suggestedReply: '非常抱歉给您带来不便。我能理解您的着急，让我立即帮您排查问题。请问您看到的错误提示是什么？或者您可以截图发给我，我马上为您处理。',
-            confidence: 0.88,
-            needsHumanReview: true,
-            reason: '技术问题可能需要工程师介入',
-          },
-          knowledgeRecommendations: [
-            {
-              id: 'kb-101',
-              title: '常见系统错误排查指南',
-              category: '技术支持',
-              score: 0.88,
-              url: 'http://localhost:3000/knowledge/kb-101',
-              type: 'knowledge',
-            },
-            {
-              id: 'kb-102',
-              title: '登录异常问题解决方案',
-              category: '技术支持',
-              score: 0.75,
-              url: 'http://localhost:3000/knowledge/kb-102',
-              type: 'knowledge',
-            },
-          ],
-          relatedTasks: [
-            {
-              id: 'task-101',
-              title: '系统报错问题跟进',
-              priority: 'high',
-              url: 'http://localhost:3000/tasks/task-101',
-            },
-          ],
-          detectedIssues: [
-            {
-              type: 'technical_issue',
-              description: '客户反馈系统错误',
-              severity: 'high',
-              suggestedAction: '立即排查，可能需要技术团队介入',
-            },
-          ],
-          analyzedAt: new Date().toISOString(),
+      if (!replySuggestion && latestCustomerMessage) {
+        const issueProductLabel = issueSignals.issueProduct
+          ? `关于${issueSignals.issueProduct}`
+          : '关于您反馈的问题';
+        const faultLevelText = issueSignals.faultLevel
+          ? `我们已按${issueSignals.faultLevel}级别优先处理。`
+          : '';
+        const referenceTitle = knowledgeRecommendations[0]?.title;
+        const referenceLine = referenceTitle ? `可先参考《${referenceTitle}》进行自查。` : '';
+        const apology = sentiment.overallSentiment === 'negative' ? '给您带来不便非常抱歉，' : '';
+        const suggestedReply = `${apology}已收到您${issueProductLabel}的反馈。${faultLevelText}请提供相关账号/区域/报错截图（如有），我们将继续跟进。${referenceLine}`.trim();
+        replySuggestion = {
+          suggestedReply,
+          confidence: 0.56,
+          needsHumanReview: true,
+          reason: '本地模板生成',
         };
       }
 
       reply.code(200).send({
         success: true,
-        data: mockAnalysis,
+        data: {
+          conversationId: conversation.id,
+          lastCustomerSentiment: {
+            emotion: sentiment.overallSentiment,
+            score: sentiment.score,
+            confidence: sentiment.confidence,
+            messageContent: latestCustomerMessage?.content || '',
+          },
+          replySuggestion,
+          knowledgeRecommendations,
+          relatedTasks,
+          detectedIssues,
+          issueProduct: issueSignals.issueProduct,
+          faultLevel: issueSignals.faultLevel,
+          analyzedAt: new Date().toISOString(),
+        },
       });
     } catch (error) {
       console.error('[ImController] getConversationAiAnalysis error', error);
@@ -930,25 +1284,19 @@ export class ImController {
         });
       }
 
-      // 查找会话
+      // 查找会话（支持无持久化的演示会话）
       const conversation = await this.conversationRepository.findById(id);
-      if (!conversation) {
-        return reply.code(404).send({
-          success: false,
-          error: '会话不存在',
-        });
+      if (conversation) {
+        conversation.setMode(mode);
+        await this.conversationRepository.save(conversation);
       }
-
-      // 设置模式
-      conversation.setMode(mode);
-      await this.conversationRepository.save(conversation);
 
       reply.code(200).send({
         success: true,
         data: {
           conversationId: id,
-          mode: conversation.mode,
-          updatedAt: conversation.updatedAt,
+          mode: conversation?.mode ?? mode,
+          updatedAt: conversation?.updatedAt ?? new Date().toISOString(),
         },
       });
     } catch (error) {
@@ -979,12 +1327,20 @@ export class ImController {
         });
       }
 
-      // 1. 获取对话信息
+      // 1. 获取对话信息（若无持久化记录则返回默认情绪）
       const conversation = await this.conversationRepository.findById(id);
       if (!conversation) {
-        return reply.code(404).send({
-          success: false,
-          error: `对话 ${id} 未找到`,
+        return reply.code(200).send({
+          success: true,
+          data: {
+            conversationId: id,
+            sentiment: {
+              type: 'neutral',
+              label: '中性',
+              score: 0.5,
+              confidence: 0.5,
+            },
+          },
         });
       }
 
@@ -1047,6 +1403,50 @@ export class ImController {
     }
   }
 
+  private async evaluateConversationProblem(
+    conversation: Conversation | null,
+  ): Promise<{ isProblem: boolean | null; intent?: string; confidence?: number }> {
+    if (!conversation) {
+      return { isProblem: null };
+    }
+
+    const llmClient = (this.aiService as any).llmClient;
+    if (!llmClient || !llmClient.isEnabled()) {
+      return { isProblem: null };
+    }
+
+    const latestCustomerMessage = [...conversation.messages]
+      .reverse()
+      .find((msg) => msg.senderType === 'customer');
+    if (!latestCustomerMessage?.content) {
+      return { isProblem: false, confidence: 0 };
+    }
+
+    const history = conversation.messages
+      .slice(-5)
+      .map((msg) => ({
+        role: msg.senderType === 'agent' ? 'agent' : 'customer',
+        content: msg.content,
+      }));
+
+    try {
+      const intent = await llmClient.extractIntent(latestCustomerMessage.content, history);
+      const confidence = intent.confidence ?? 0;
+      const isProblem =
+        confidence >= 0.6 &&
+        (intent.isQuestion || ['complaint', 'request', 'urgent'].includes(intent.intent));
+
+      return {
+        isProblem,
+        intent: intent.intent,
+        confidence,
+      };
+    } catch (err) {
+      console.warn('[ImController] 问题识别失败', err);
+      return { isProblem: null };
+    }
+  }
+
   /**
    * 获取情绪标签的中文描述
    */
@@ -1069,5 +1469,58 @@ export class ImController {
       urgent: '紧急',
     };
     return labelMap[emotion?.toLowerCase()] || '未知';
+  }
+
+  private extractIssueSignals(conversation: Conversation): {
+    issueProduct?: string;
+    faultLevel?: string;
+  } {
+    const latestCustomerMessage = [...conversation.messages]
+      .reverse()
+      .find((msg) => msg.senderType === 'customer');
+    const metadata = (latestCustomerMessage?.metadata || {}) as Record<string, unknown>;
+    const issueProduct =
+      (metadata.issueProduct as string | undefined) ||
+      (metadata.issue_product as string | undefined) ||
+      (metadata.product as string | undefined);
+    const faultLevel =
+      (metadata.faultLevel as string | undefined) ||
+      (metadata.fault_level as string | undefined) ||
+      (metadata.severity as string | undefined);
+    return {
+      issueProduct,
+      faultLevel,
+    };
+  }
+
+  private async loadWecomMockData(): Promise<{
+    groupChatList: { group_chat_list: Array<{ chat_id: string; status: number }> };
+    groupChatDetails: { group_chat_details: Record<string, { group_chat: any }> };
+    groupChatMessages: { group_chat_messages: Record<string, Array<any>> };
+  }> {
+    const groupChatList = await this.readWecomMockJson('groupchat_list.json');
+    const groupChatDetails = await this.readWecomMockJson('groupchat_details.json');
+    const groupChatMessages = await this.readWecomMockJson('groupchat_messages.json');
+    return { groupChatList, groupChatDetails, groupChatMessages };
+  }
+
+  private async readWecomMockJson(filename: string): Promise<any> {
+    const basePaths = [
+      path.resolve(process.cwd(), 'tests', 'wecom'),
+      path.resolve(process.cwd(), '..', 'tests', 'wecom'),
+    ];
+
+    let lastError: unknown = null;
+    for (const basePath of basePaths) {
+      const filePath = path.join(basePath, filename);
+      try {
+        const raw = await fs.readFile(filePath, 'utf8');
+        return JSON.parse(raw);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw new Error(`WeCom mock data file not found: ${filename}. ${String(lastError || '')}`);
   }
 }

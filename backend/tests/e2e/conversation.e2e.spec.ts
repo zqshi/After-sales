@@ -256,7 +256,7 @@ describe('Conversation API E2E Tests', () => {
       expect(body.data.messages).toHaveLength(0); // 不包含消息
     });
 
-    it('应该返回完整的SLA信息', async () => {
+    it('应该返回完整的客户等级信息', async () => {
       // Act
       const response = await app.inject({
         method: 'GET',

@@ -53,7 +53,7 @@
 - ✅ **创建Customer领域模型**（`assets/js/domains/customer/models/Profile.js`）
   - `CustomerProfile` - 聚合根
   - `ContactInfo` - 联系信息值对象
-  - `SLAInfo` - SLA信息值对象
+  - `客户等级Info` - 客户等级信息值对象
   - `Metrics` - 业务指标值对象
   - `Insight`, `Interaction`, `ConversationRecord` 等实体
   - 领域方法：`isVIP()`, `getRiskLevel()`, `getRecentInteractionStats()`

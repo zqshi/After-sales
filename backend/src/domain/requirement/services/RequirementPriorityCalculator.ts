@@ -4,7 +4,7 @@
  * 职责：基于多维度因素动态计算需求优先级，而非硬编码规则
  *
  * 核心价值：
- * 1. 综合多个业务因素（客户等级、情感强度、历史频率、SLA压力）
+ * 1. 综合多个业务因素（客户等级、情感强度、历史频率、客户等级压力）
  * 2. 支持权重配置，灵活调整优先级策略
  * 3. 提供透明的计算过程，便于审计和优化
  *
@@ -35,7 +35,7 @@ export interface PriorityCalculationContext {
   recentRequirementCount?: number; // 最近30天需求数
   lastRequirementDays?: number; // 距离上次需求天数
 
-  // SLA维度
+  // 客户等级维度
   slaResponseTime: number; // 承诺响应时长（分钟）
   slaResolutionTime: number; // 承诺解决时长（小时）
   currentPendingRequirements?: number; // 当前待处理需求数
@@ -51,7 +51,7 @@ export interface PriorityCalculationResult {
     customerScore: number; // 客户维度得分
     contentScore: number; // 内容维度得分
     historyScore: number; // 历史维度得分
-    slaScore: number; // SLA维度得分
+    slaScore: number; // 客户等级维度得分
   };
   reason: string; // 计算理由
 }
@@ -63,7 +63,7 @@ export interface PriorityWeights {
   customer: number; // 客户维度权重（默认0.35）
   content: number; // 内容维度权重（默认0.30）
   history: number; // 历史维度权重（默认0.20）
-  sla: number; // SLA维度权重（默认0.15）
+  sla: number; // 客户等级维度权重（默认0.15）
 }
 
 export class RequirementPriorityCalculator {
@@ -100,7 +100,7 @@ export class RequirementPriorityCalculator {
     const customerScore = this.calculateCustomerScore(context);
     const contentScore = this.calculateContentScore(context);
     const historyScore = this.calculateHistoryScore(context);
-    const slaScore = this.calculateSLAScore(context);
+    const slaScore = this.calculateCustomerLevelScore(context);
 
     // 2. 加权综合得分
     const totalScore =
@@ -276,16 +276,16 @@ export class RequirementPriorityCalculator {
   }
 
   /**
-   * 维度4：SLA得分（0-100）
+   * 维度4：客户等级得分（0-100）
    *
    * 规则：
-   * - SLA响应时间越短，得分越高
+   * - 客户等级响应时间越短，得分越高
    * - 当前积压需求越多，得分越高
    */
-  private calculateSLAScore(context: PriorityCalculationContext): number {
+  private calculateCustomerLevelScore(context: PriorityCalculationContext): number {
     let score = 50; // 默认中等分
 
-    // SLA响应时间得分（响应时间越短，优先级越高）
+    // 客户等级响应时间得分（响应时间越短，优先级越高）
     if (context.slaResponseTime <= 15) {
       score += 30; // 15分钟内响应 = 高优先级
     } else if (context.slaResponseTime <= 30) {
@@ -296,7 +296,7 @@ export class RequirementPriorityCalculator {
       score += 5; // 2小时内响应
     }
 
-    // SLA解决时间得分
+    // 客户等级解决时间得分
     if (context.slaResolutionTime <= 2) {
       score += 15; // 2小时内解决 = 高优先级
     } else if (context.slaResolutionTime <= 4) {
@@ -387,10 +387,10 @@ export class RequirementPriorityCalculator {
       }
     }
 
-    // SLA维度理由
+    // 客户等级维度理由
     if (maxKey === 'slaScore' || breakdown.slaScore >= 70) {
       if (context.slaResponseTime <= 30) {
-        reasons.push(`SLA响应${context.slaResponseTime}分钟`);
+        reasons.push(`客户等级响应${context.slaResponseTime}分钟`);
       }
     }
 

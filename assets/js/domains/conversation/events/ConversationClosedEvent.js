@@ -35,7 +35,7 @@ export class ConversationClosedEvent {
     this.firstResponseTime = data.firstResponseTime; // 首次响应时间（秒）
     this.averageResponseTime = data.averageResponseTime; // 平均响应时间（秒）
 
-    // SLA信息
+    // 客户等级信息
     this.slaStatus = data.slaStatus; // '达标' | '违规'
     this.slaViolated = data.slaViolated ?? false;
 
@@ -69,9 +69,9 @@ export class ConversationClosedEvent {
   }
 
   /**
-   * 是否SLA违规
+   * 是否客户等级违规
    */
-  isSLAViolated() {
+  isCustomerLevelViolated() {
     return this.slaViolated === true;
   }
 

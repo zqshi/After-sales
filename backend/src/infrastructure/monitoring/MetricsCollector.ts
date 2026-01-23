@@ -5,7 +5,7 @@
  * 1. 收集Agent调用指标（调用次数、响应时间、成功率）
  * 2. 收集工作流执行指标（执行次数、耗时、成功率）
  * 3. 收集任务状态指标（待办、进行中、完成）
- * 4. 收集对话指标（活跃、关闭、SLA违规）
+ * 4. 收集对话指标（活跃、关闭、客户等级违规）
  * 5. 提供/metrics端点供Prometheus抓取
  */
 
@@ -124,7 +124,7 @@ export class MetricsCollector {
   private conversationDuration: Histogram<string>;
 
   /**
-   * SLA违规计数器
+   * 客户等级违规计数器
    * 标签: severity (warning/critical)
    */
   private slaViolations: Counter<string>;
@@ -274,7 +274,7 @@ export class MetricsCollector {
 
     this.slaViolations = new Counter({
       name: 'sla_violations_total',
-      help: 'Total SLA violations',
+      help: 'Total 客户等级 violations',
       labelNames: ['severity'],
     });
 
@@ -439,9 +439,9 @@ export class MetricsCollector {
   }
 
   /**
-   * 记录SLA违规
+   * 记录客户等级违规
    */
-  recordSLAViolation(severity: 'warning' | 'critical'): void {
+  recordCustomerLevelViolation(severity: 'warning' | 'critical'): void {
     this.slaViolations.inc({ severity });
   }
 

@@ -1,0 +1,234 @@
+{
+  "errcode": 0,
+  "errmsg": "ok",
+  "group_chat_messages": {
+    "wrOgQhDgAAMYQiS5ol9G7gK9JVAAAA": [
+      {
+        "sender_id": "yolo",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "控制台登录提示认证失败（错误码401），现在无法进入业务后台，订单处理全部卡住。"
+        },
+        "content": "控制台登录提示认证失败（错误码401），现在无法进入业务后台，订单处理全部卡住。",
+        "issue_product": "云主机控制台",
+        "fault_level": "P1",
+        "sent_at": 1723099001
+      },
+      {
+        "sender_id": "support_01",
+        "sender_type": "agent",
+        "msgtype": "text",
+        "text": {
+          "content": "您好，这里是金山云客服王岚，已收到您控制台登录失败的问题。我先帮您排查，请确认登录账号与访问区域，并提供最近一次失败时间。"
+        },
+        "content": "您好，这里是金山云客服王岚，已收到您控制台登录失败的问题。我先帮您排查，请确认登录账号与访问区域，并提供最近一次失败时间。",
+        "sent_at": 1723099040
+      },
+      {
+        "sender_id": "DunDunEr",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "账号是 ops@ssxh.com，区域在华北1。刚刚 10:03 登录失败，提示认证失败。"
+        },
+        "content": "账号是 ops@ssxh.com，区域在华北1。刚刚 10:03 登录失败，提示认证失败。",
+        "issue_product": "云主机控制台",
+        "fault_level": "P1",
+        "sent_at": 1723099102
+      },
+      {
+        "sender_id": "support_01",
+        "sender_type": "agent",
+        "msgtype": "markdown",
+        "markdown": {
+          "content": "已升级为**P1故障**，预计10分钟内更新。\n> 临时方案：请尝试使用备用子账号登录或切换到 API 方式处理订单。"
+        },
+        "content": "已升级为P1故障，预计10分钟内更新。临时方案：请尝试使用备用子账号登录或切换到 API 方式处理订单。",
+        "sent_at": 1723099160
+      },
+      {
+        "sender_id": "yolo",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "清缓存后还是不行，影响太大了，能否给临时解决方案？"
+        },
+        "content": "清缓存后还是不行，影响太大了，能否给临时解决方案？",
+        "issue_product": "云主机控制台",
+        "fault_level": "P1",
+        "sent_at": 1723099220
+      },
+      {
+        "sender_id": "support_01",
+        "sender_type": "agent",
+        "msgtype": "text",
+        "text": {
+          "content": "已创建紧急故障单并通知值班同学，请您保持联系方式畅通。"
+        },
+        "content": "已创建紧急故障单并通知值班同学，请您保持联系方式畅通。",
+        "sent_at": 1723099280
+      },
+      {
+        "sender_id": "yolo",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "我们用子账号登录成功了，订单已经恢复处理。请继续跟进主账号问题。"
+        },
+        "content": "我们用子账号登录成功了，订单已经恢复处理。请继续跟进主账号问题。",
+        "sent_at": 1723099360
+      },
+      {
+        "sender_id": "support_01",
+        "sender_type": "agent",
+        "msgtype": "text",
+        "text": {
+          "content": "已确认认证网关侧有波动，正在修复中。我会持续跟进并同步最终恢复时间。"
+        },
+        "content": "已确认认证网关侧有波动，正在修复中。我会持续跟进并同步最终恢复时间。",
+        "sent_at": 1723099440
+      },
+      {
+        "sender_id": "yolo",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "谢谢，先这样，有进展再通知我。"
+        },
+        "content": "谢谢，先这样，有进展再通知我。",
+        "sent_at": 1723099520
+      }
+    ],
+    "wrOgQhDgAAcwMTB7YmDkbeBsAAAA": [
+      {
+        "sender_id": "hong",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "我们需要开具增值税专用发票，请问申请流程是什么？"
+        },
+        "content": "我们需要开具增值税专用发票，请问申请流程是什么？",
+        "issue_product": "账务服务",
+        "fault_level": "P3",
+        "sent_at": 1723099300
+      },
+      {
+        "sender_id": "support_02",
+        "sender_type": "agent",
+        "msgtype": "text",
+        "text": {
+          "content": "您好，这里是企业服务支持艾琳。发票申请流程：登录控制台 → 费用中心 → 发票管理 → 新建申请，填写公司信息并提交。"
+        },
+        "content": "您好，这里是企业服务支持艾琳。发票申请流程：登录控制台 → 费用中心 → 发票管理 → 新建申请，填写公司信息并提交。",
+        "sent_at": 1723099340
+      },
+      {
+        "sender_id": "aileen",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "需要提供哪些资料？"
+        },
+        "content": "需要提供哪些资料？",
+        "sent_at": 1723099360
+      },
+      {
+        "sender_id": "support_02",
+        "sender_type": "agent",
+        "msgtype": "text",
+        "text": {
+          "content": "需要企业抬头、纳税人识别号、开户地址电话、开户行及账号。若首次申请，还需要上传一般纳税人证明。"
+        },
+        "content": "需要企业抬头、纳税人识别号、开户地址电话、开户行及账号。若首次申请，还需要上传一般纳税人证明。",
+        "sent_at": 1723099400
+      },
+      {
+        "sender_id": "hong",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "明白了，我们今天整理资料，预计下午提交。谢谢。"
+        },
+        "content": "明白了，我们今天整理资料，预计下午提交。谢谢。",
+        "sent_at": 1723099460
+      },
+      {
+        "sender_id": "support_02",
+        "sender_type": "agent",
+        "msgtype": "text",
+        "text": {
+          "content": "好的，提交后约1-2个工作日内完成审核。如有问题欢迎随时联系。"
+        },
+        "content": "好的，提交后约1-2个工作日内完成审核。如有问题欢迎随时联系。",
+        "sent_at": 1723099500
+      }
+    ],
+    "wrOgQhDgAALvK0KZtD5wq2QxAAAA": [
+      {
+        "sender_id": "mark",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "对象存储读写延迟突然升高，图片加载非常慢，影响线上用户。"
+        },
+        "content": "对象存储读写延迟突然升高，图片加载非常慢，影响线上用户。",
+        "issue_product": "对象存储",
+        "fault_level": "P2",
+        "sent_at": 1723099500
+      },
+      {
+        "sender_id": "support_03",
+        "sender_type": "agent",
+        "msgtype": "text",
+        "text": {
+          "content": "您好，我是技术支持马琦。请提供受影响的Bucket名称、区域以及持续时间，我协助排查链路。"
+        },
+        "content": "您好，我是技术支持马琦。请提供受影响的Bucket名称、区域以及持续时间，我协助排查链路。",
+        "sent_at": 1723099540
+      },
+      {
+        "sender_id": "daisy",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "Bucket：media-prod，区域华南2，从9:50开始持续波动。"
+        },
+        "content": "Bucket：media-prod，区域华南2，从9:50开始持续波动。",
+        "issue_product": "对象存储",
+        "fault_level": "P2",
+        "sent_at": 1723099600
+      },
+      {
+        "sender_id": "support_03",
+        "sender_type": "agent",
+        "msgtype": "text",
+        "text": {
+          "content": "收到，我们检测到边缘节点缓存命中异常，已切换到备用节点。请您确认当前加载是否恢复。"
+        },
+        "content": "收到，我们检测到边缘节点缓存命中异常，已切换到备用节点。请您确认当前加载是否恢复。",
+        "sent_at": 1723099660
+      },
+      {
+        "sender_id": "daisy",
+        "sender_type": "customer",
+        "msgtype": "text",
+        "text": {
+          "content": "现在加载速度正常了，延迟恢复到可接受范围。"
+        },
+        "content": "现在加载速度正常了，延迟恢复到可接受范围。",
+        "sent_at": 1723099720
+      },
+      {
+        "sender_id": "support_03",
+        "sender_type": "agent",
+        "msgtype": "text",
+        "text": {
+          "content": "感谢反馈，问题已缓解，我们会继续监控并在问题完全消除后通知。"
+        },
+        "content": "感谢反馈，问题已缓解，我们会继续监控并在问题完全消除后通知。",
+        "sent_at": 1723099780
+      }
+    ]
+  }
+}

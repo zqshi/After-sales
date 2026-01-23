@@ -40,6 +40,7 @@ export class BaseRepository {
     this.cacheTTL = options.cacheTTL ?? 60000; // 默认60秒
     this.apiClient = options.apiClient || null; // 由子类注入
     this.cache = new Map(); // 简单的内存缓存
+    this.endpoint = options.endpoint || '';
   }
 
   /**
@@ -177,5 +178,47 @@ export class BaseRepository {
    */
   async findAll(_criteria = {}) {
     throw new Error(`[${this.entityName}Repository] findAll() must be implemented by subclass`);
+  }
+
+  getAll(params = {}) {
+    if (!this.apiClient) {
+      throw new Error(`[${this.entityName}Repository] apiClient is not configured`);
+    }
+    return this.apiClient.get(this.endpoint, { params });
+  }
+
+  getById(id, options = {}) {
+    if (!this.apiClient) {
+      throw new Error(`[${this.entityName}Repository] apiClient is not configured`);
+    }
+    return this.apiClient.get(`${this.endpoint}/${id}`, options);
+  }
+
+  post(path = '', payload = {}) {
+    if (!this.apiClient) {
+      throw new Error(`[${this.entityName}Repository] apiClient is not configured`);
+    }
+    return this.apiClient.post(`${this.endpoint}${path}`, payload);
+  }
+
+  put(path = '', payload = {}) {
+    if (!this.apiClient) {
+      throw new Error(`[${this.entityName}Repository] apiClient is not configured`);
+    }
+    return this.apiClient.put(`${this.endpoint}${path}`, payload);
+  }
+
+  patch(path = '', payload = {}) {
+    if (!this.apiClient) {
+      throw new Error(`[${this.entityName}Repository] apiClient is not configured`);
+    }
+    return this.apiClient.patch(`${this.endpoint}${path}`, payload);
+  }
+
+  del(path = '') {
+    if (!this.apiClient) {
+      throw new Error(`[${this.entityName}Repository] apiClient is not configured`);
+    }
+    return this.apiClient.delete(`${this.endpoint}${path}`);
   }
 }

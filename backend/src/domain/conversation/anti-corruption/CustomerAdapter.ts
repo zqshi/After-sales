@@ -5,12 +5,12 @@
  *
  * 核心价值：
  * 1. Conversation Context不直接依赖CustomerProfile复杂聚合根
- * 2. 提供面向对话分配和SLA决策的简化客户信息
+ * 2. 提供面向对话分配和客户等级决策的简化客户信息
  * 3. 当Customer模型变化时，只需修改此适配器，Conversation无感知
  *
  * 使用场景：
  * - 对话分配时需要客户等级、风险等级
- * - SLA计算时需要客户合同信息
+ * - 客户等级计算时需要客户合同信息
  * - 质检时需要客户历史服务质量
  * - AI分析时需要客户画像简介
  */
@@ -241,12 +241,12 @@ export class CustomerAdapter {
   }
 
   /**
-   * 获取客户的SLA信息
+   * 获取客户的客户等级信息
    *
    * @param customerId - 客户ID
-   * @returns SLA信息或null
+   * @returns 客户等级信息或null
    */
-  async getCustomerSLA(customerId: string): Promise<{
+  async getCustomerCustomerLevel(customerId: string): Promise<{
     responseTime: number;
     resolutionTime: number;
   } | null> {

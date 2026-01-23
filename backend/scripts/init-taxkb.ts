@@ -17,8 +17,12 @@
 
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { TaxKBAdapter, TaxKBError } from '../src/infrastructure/adapters/TaxKBAdapter';
 import { taxkbConfig } from '../src/config/taxkb.config';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // 颜色输出辅助函数
 const colors = {
@@ -96,185 +100,94 @@ function prepareExampleDocs(): string[] {
   logSection('步骤 3: 准备示例文档');
 
   const docsDir = path.join(__dirname, '../docs/knowledge-base');
+  const supportedExtensions = ['.txt', '.pdf', '.docx', '.doc', '.xlsx', '.xls'];
 
-  // 如果目录不存在，创建示例文档
-  if (!fs.existsSync(docsDir)) {
+  const ensureExampleDocs = () => {
+    if (!fs.existsSync(docsDir)) {
+      fs.mkdirSync(docsDir, { recursive: true });
+    }
+
+    const existing = fs
+      .readdirSync(docsDir)
+      .filter((f) => supportedExtensions.includes(path.extname(f)));
+    if (existing.length > 0) {
+      return;
+    }
+
     fs.mkdirSync(docsDir, { recursive: true });
 
     const exampleDocs = [
       {
-        filename: '01-产品功能介绍.md',
-        content: `# 产品功能介绍
+        filename: '01-产品功能介绍.txt',
+        content: `产品功能介绍
 
-## 核心功能
+核心功能
+1. 智能会话管理 - 多渠道接入、自动分配客服、客户等级监控和告警
+2. 任务管理系统 - 自动任务创建、优先级调度、质量评分
+3. 需求管理 - 智能需求检测、自动分类和优先级、生命周期跟踪
+4. 知识库 - 文档管理、语义搜索、智能推荐
 
-### 1. 智能会话管理
-- 多渠道接入（飞书、企业微信）
-- 自动分配客服
-- SLA监控和告警
-
-### 2. 任务管理系统
-- 自动任务创建
-- 优先级调度
-- 质量评分
-
-### 3. 需求管理
-- 智能需求检测
-- 自动分类和优先级
-- 需求生命周期跟踪
-
-### 4. 知识库
-- 文档管理
-- 语义搜索
-- 智能推荐
-
-## 常见问题
-
+常见问题
 Q: 如何创建新会话？
 A: 通过POST /api/conversations接口，提供customerId和channel参数。
 
 Q: 如何查询我的任务？
-A: 使用GET /api/tasks?assigneeId=YOUR_ID接口。
-`,
+A: 使用GET /api/tasks?assigneeId=YOUR_ID接口。`,
       },
       {
-        filename: '02-常见问题处理指南.md',
-        content: `# 常见问题处理指南
+        filename: '02-常见问题处理指南.txt',
+        content: `常见问题处理指南
 
-## 客户咨询类
+客户咨询类
+1. 账号问题 - 忘记密码
+处理流程:
+1) 验证客户身份
+2) 发送密码重置链接
+3) 引导客户完成重置
+4) 创建服务记录
 
-### 1. 账号问题
-**问题**: 忘记密码
-**处理流程**:
-1. 验证客户身份
-2. 发送密码重置链接
-3. 引导客户完成重置
-4. 创建服务记录
+2. 功能使用问题 - 不知道如何使用某功能
+处理流程:
+1) 了解具体功能名称
+2) 搜索知识库相关文档
+3) 提供详细操作步骤
+4) 必要时远程协助
 
-### 2. 功能使用问题
-**问题**: 不知道如何使用某功能
-**处理流程**:
-1. 了解具体功能名称
-2. 搜索知识库相关文档
-3. 提供详细操作步骤
-4. 必要时远程协助
+故障处理类
+1. 系统报错 - 收集错误信息, 检查日志, 定位根因, 执行修复, 通知结果
+2. 性能问题 - 了解表现, 检查监控, 分析资源, 优化扩容, 持续跟踪
 
-## 故障处理类
-
-### 1. 系统报错
-**处理流程**:
-1. 收集错误信息（错误码、时间、操作）
-2. 检查系统日志
-3. 定位问题根因
-4. 执行修复方案
-5. 通知客户结果
-
-### 2. 性能问题
-**处理流程**:
-1. 了解性能表现（慢、卡顿、超时）
-2. 检查系统监控指标
-3. 分析资源使用情况
-4. 优化或扩容
-5. 持续跟踪
-
-## 话术模板
-
-**开场白**: 您好！我是客服{AgentName}，很高兴为您服务。请问有什么可以帮助您的？
-
-**问题确认**: 我理解您的问题是：{问题总结}，对吗？
-
-**解决方案**: 根据您的情况，建议您：{方案描述}
-
-**结束语**: 问题已为您解决。如还有其他疑问，请随时联系我们！
-`,
+话术模板
+开场白: 您好！我是客服{AgentName}，很高兴为您服务。请问有什么可以帮助您的？
+问题确认: 我理解您的问题是：{问题总结}，对吗？
+解决方案: 根据您的情况，建议您：{方案描述}
+结束语: 问题已为您解决。如还有其他疑问，请随时联系我们！`,
       },
       {
-        filename: '03-API使用手册.md',
-        content: `# API使用手册
+        filename: '03-API使用手册.txt',
+        content: `API使用手册
 
-## 认证
-
-所有API请求需要携带JWT Token：
-\`\`\`
+认证
+所有API请求需要携带JWT Token:
 Authorization: Bearer YOUR_JWT_TOKEN
-\`\`\`
 
-## 会话管理
+会话管理
+创建会话: POST /api/conversations
+发送消息: POST /api/conversations/:id/messages
 
-### 创建会话
-\`\`\`http
-POST /api/conversations
-Content-Type: application/json
+任务管理
+创建任务: POST /api/tasks
+完成任务: PUT /api/tasks/:id/complete
 
-{
-  "customerId": "customer-123",
-  "channel": "feishu",
-  "initialMessage": "我需要帮助"
-}
-\`\`\`
+知识库
+搜索知识: POST /api/knowledge/search
 
-### 发送消息
-\`\`\`http
-POST /api/conversations/:id/messages
-Content-Type: application/json
-
-{
-  "senderId": "agent-001",
-  "senderType": "internal",
-  "content": "您好！有什么可以帮您？"
-}
-\`\`\`
-
-## 任务管理
-
-### 创建任务
-\`\`\`http
-POST /api/tasks
-Content-Type: application/json
-
-{
-  "title": "处理客户退款申请",
-  "priority": "high",
-  "conversationId": "conv-123",
-  "requirementId": "req-456"
-}
-\`\`\`
-
-### 完成任务
-\`\`\`http
-PUT /api/tasks/:id/complete
-Content-Type: application/json
-
-{
-  "qualityScore": {
-    "timeliness": 0.9,
-    "accuracy": 0.95,
-    "satisfaction": 0.85
-  }
-}
-\`\`\`
-
-## 知识库
-
-### 搜索知识
-\`\`\`http
-POST /api/knowledge/search
-Content-Type: application/json
-
-{
-  "query": "如何重置密码",
-  "limit": 5
-}
-\`\`\`
-
-## 错误码
-
-- 400: 请求参数错误
-- 401: 未认证
-- 403: 无权限
-- 404: 资源不存在
-- 500: 服务器错误
-`,
+错误码
+400 请求参数错误
+401 未认证
+403 无权限
+404 资源不存在
+500 服务器错误`,
       },
     ];
 
@@ -283,12 +196,15 @@ Content-Type: application/json
       fs.writeFileSync(filePath, doc.content, 'utf-8');
       log(`✓ 创建示例文档: ${doc.filename}`, 'green');
     });
-  }
+  };
+
+  // 如果目录不存在或无可用文档，创建示例文档
+  ensureExampleDocs();
 
   // 扫描文档目录
   const files = fs
     .readdirSync(docsDir)
-    .filter((f) => f.endsWith('.md') || f.endsWith('.txt') || f.endsWith('.pdf'))
+    .filter((f) => supportedExtensions.includes(path.extname(f)))
     .map((f) => path.join(docsDir, f));
 
   log(`\n找到 ${files.length} 个文档:`, 'blue');
@@ -320,6 +236,7 @@ async function uploadDocuments(
 
       const doc = await adapter.uploadDocument(buffer, {
         title,
+        filename,
         category: {
           company_entity: 'AfterSales',
           business_domain: 'Knowledge',
@@ -329,16 +246,20 @@ async function uploadDocuments(
       log(`✓ 成功上传: ${filename} (doc_id: ${doc.doc_id})`, 'green');
       successCount++;
 
-      // 检查处理进度
-      log('  检查文档处理进度...', 'blue');
-      const status = await adapter.getProcessingProgress(doc.doc_id);
-      log(
-        `  处理状态: ${status.overall_status} (${status.overall_progress}%)`,
-        'blue',
-      );
+      await waitForProcessing(adapter, doc.doc_id);
+      await verifyDocumentContent(adapter, doc.doc_id, filename);
     } catch (error) {
       if (error instanceof TaxKBError) {
-        log(`✗ 上传失败: ${filename} - ${error.message}`, 'red');
+        log(`✗ 上传失败: ${filename} - ${error.message} (状态码: ${error.statusCode})`, 'red');
+        if (error.details) {
+          log(`  详情: ${JSON.stringify(error.details)}`, 'yellow');
+          const existingId = extractExistingDocId(error.details);
+          if (existingId) {
+            log(`  使用已有文档: ${existingId}`, 'yellow');
+            await waitForProcessing(adapter, existingId);
+            await verifyDocumentContent(adapter, existingId, filename);
+          }
+        }
       } else {
         log(`✗ 上传失败: ${filename} - ${(error as Error).message}`, 'red');
       }
@@ -347,6 +268,64 @@ async function uploadDocuments(
   }
 
   log(`\n上传完成: ${successCount} 成功, ${failCount} 失败`, 'cyan');
+}
+
+async function waitForProcessing(
+  adapter: TaxKBAdapter,
+  docId: string,
+  maxAttempts = 6,
+  intervalMs = 5000,
+): Promise<void> {
+  log('  检查文档处理进度...', 'blue');
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const status = await adapter.getProcessingProgress(docId);
+    log(
+      `  处理状态: ${status.overall_status} (${status.overall_progress}%)`,
+      'blue',
+    );
+    const normalized = String(status.overall_status || '').toLowerCase();
+    if (
+      normalized.includes('complete') ||
+      normalized.includes('success') ||
+      normalized.includes('failed') ||
+      normalized.includes('error')
+    ) {
+      return;
+    }
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+  }
+}
+
+function extractExistingDocId(details: unknown): string | null {
+  if (!details || typeof details !== 'object') {
+    return null;
+  }
+  const payload = details as Record<string, any>;
+  const existingDoc = payload?.detail?.existing_doc;
+  if (existingDoc && typeof existingDoc.doc_id === 'string') {
+    return existingDoc.doc_id;
+  }
+  return null;
+}
+
+async function verifyDocumentContent(
+  adapter: TaxKBAdapter,
+  docId: string,
+  filename: string,
+): Promise<void> {
+  try {
+    const doc = await adapter.getDocument(docId, { include: ['fulltext', 'metadata'] });
+    const contentLength = doc.content ? doc.content.length : 0;
+    if (contentLength > 0) {
+      log(`  解析内容可用: ${filename} (length=${contentLength})`, 'green');
+      return;
+    }
+    log(`  ⚠️  解析内容为空: ${filename} (doc_id=${docId})`, 'yellow');
+  } catch (error) {
+    log(`  ⚠️  获取文档详情失败: ${filename}`, 'yellow');
+  }
 }
 
 /**
@@ -369,8 +348,9 @@ async function testSearch(adapter: TaxKBAdapter): Promise<void> {
       const semanticResults = await adapter.semanticSearch(query, { topK: 3 });
       log(`✓ 语义搜索返回 ${semanticResults.length} 条结果:`, 'green');
       semanticResults.slice(0, 2).forEach((result, idx) => {
+        const preview = result.content ? result.content.substring(0, 60) : '(no content)';
         log(
-          `  ${idx + 1}. [评分: ${result.score.toFixed(3)}] ${result.content.substring(0, 60)}...`,
+          `  ${idx + 1}. [评分: ${result.score.toFixed(3)}] ${preview}...`,
           'blue',
         );
       });
@@ -380,8 +360,9 @@ async function testSearch(adapter: TaxKBAdapter): Promise<void> {
         const qaResults = await adapter.searchQA(query, { top_k: 2 });
         log(`✓ QA搜索返回 ${qaResults.length} 条结果`, 'green');
         qaResults.slice(0, 1).forEach((qa, idx) => {
+          const answerPreview = qa.answer ? qa.answer.substring(0, 80) : '(no answer)';
           log(`  ${idx + 1}. Q: ${qa.question}`, 'blue');
-          log(`     A: ${qa.answer.substring(0, 80)}...`, 'blue');
+          log(`     A: ${answerPreview}...`, 'blue');
         });
       } catch (error) {
         log('  QA搜索暂不可用（可能是文档处理中）', 'yellow');

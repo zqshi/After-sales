@@ -53,6 +53,9 @@ services:
       NODE_ENV: development
       PORT: 8080
       LOG_LEVEL: debug
+      JWT_SECRET: change-me-in-production
+      AUTH_ALLOW_SIGNUP: "true"
+      AUTH_DEFAULT_ROLE: agent
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
       DATABASE_NAME: aftersales
@@ -63,6 +66,19 @@ services:
       REDIS_PORT: 6379
       REDIS_URL: redis://:redis123@redis:6379
       AGENTSCOPE_URL: http://agentscope-service:5000
+      AI_SERVICE_URL: https://platform.deepseek.com/usage
+      AI_SERVICE_API_KEY: sk-e583b61015a94e57956da61821c9d300
+      AI_MODEL: deepseek-v3.1
+      AI_SERVICE_PROVIDER: deepseek
+      TAXKB_ENABLED: "true"
+      TAXKB_BASE_URL: http://10.69.68.226:8080/api/v3
+      TAXKB_API_KEY: test_api_key
+      TAXKB_TIMEOUT: 30000
+      TAXKB_CACHE_ENABLED: "true"
+      TAXKB_CACHE_TTL: 300
+      TAXKB_CACHE_MAX_SIZE: 100
+      TAXKB_RETRY_MAX_ATTEMPTS: 3
+      TAXKB_RETRY_BACKOFF: 1000
     depends_on:
       postgres:
         condition: service_healthy
@@ -110,7 +126,6 @@ services:
     volumes:
       - ./assets:/app/assets
       - ./index.html:/app/index.html
-      - ./login.html:/app/login.html
       - ./app.html:/app/app.html
       - ./vite.config.js:/app/vite.config.js
       - /app/node_modules

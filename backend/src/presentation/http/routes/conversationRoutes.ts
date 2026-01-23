@@ -62,6 +62,7 @@ export async function conversationRoutes(
    */
   fastify.post(
     '/api/conversations',
+    { config: { permissions: ['conversations.write'] } },
     async (request, reply) => {
       await controller.createConversation(request, reply);
     },
@@ -113,6 +114,7 @@ export async function conversationRoutes(
    */
   fastify.get(
     '/api/conversations',
+    { config: { permissions: ['conversations.read'] } },
     async (request, reply) => {
       await controller.listConversations(request, reply);
     },
@@ -155,6 +157,7 @@ export async function conversationRoutes(
    */
   fastify.post(
     '/api/conversations/:id/assign',
+    { config: { permissions: ['conversations.write'] } },
     async (request, reply) => {
       await controller.assignAgent(request, reply);
     },
@@ -201,6 +204,7 @@ export async function conversationRoutes(
    */
   fastify.post(
     '/api/conversations/:id/messages',
+    { config: { permissions: ['conversations.write'] } },
     async (request, reply) => {
       await controller.sendMessage(request, reply);
     },
@@ -240,6 +244,7 @@ export async function conversationRoutes(
    */
   fastify.post(
     '/api/conversations/:id/close',
+    { config: { permissions: ['conversations.write'] } },
     async (request, reply) => {
       await controller.closeConversation(request, reply);
     },
@@ -272,6 +277,7 @@ export async function conversationRoutes(
    */
   fastify.get(
     '/api/conversations/:id',
+    { config: { permissions: ['conversations.read'] } },
     async (request, reply) => {
       await controller.getConversation(request, reply);
     },

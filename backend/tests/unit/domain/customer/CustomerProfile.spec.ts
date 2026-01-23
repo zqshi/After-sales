@@ -5,7 +5,7 @@ import { Insight } from '@domain/customer/value-objects/Insight';
 import { Interaction } from '@domain/customer/value-objects/Interaction';
 import { Metrics } from '@domain/customer/value-objects/Metrics';
 import { ServiceRecord } from '@domain/customer/value-objects/ServiceRecord';
-import { SLAInfo } from '@domain/customer/value-objects/SLAInfo';
+import { CustomerLevelInfo } from '@domain/customer/value-objects/CustomerLevelInfo';
 
 const buildProfile = (): CustomerProfile => {
   return CustomerProfile.create({
@@ -16,7 +16,7 @@ const buildProfile = (): CustomerProfile => {
       phone: '+8613800138000',
       preferredChannel: 'chat',
     }),
-    slaInfo: SLAInfo.create({
+    slaInfo: CustomerLevelInfo.create({
       serviceLevel: 'gold',
       responseTimeTargetMinutes: 5,
       resolutionTimeTargetMinutes: 30,

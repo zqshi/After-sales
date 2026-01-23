@@ -15,11 +15,11 @@ import { ConversationCreatedEvent } from '../events/ConversationCreatedEvent';
 import { ConversationClosedEvent } from '../events/ConversationClosedEvent';
 import { ConversationAssignedEvent } from '../events/ConversationAssignedEvent';
 import { MessageSentEvent } from '../events/MessageSentEvent';
-import { SLAViolatedEvent } from '../events/SLAViolatedEvent';
+import { CustomerLevelViolatedEvent } from '../events/CustomerLevelViolatedEvent';
 import { Message } from './Message';
 import { Channel } from '../value-objects/Channel';
 import { MessageSummary } from '../value-objects/MessageSummary';
-import { ConversationStatus, MessagePriority, SLAStatus } from '../types';
+import { ConversationStatus, MessagePriority, CustomerLevelStatus } from '../types';
 import type { IMessageRepository } from '../repositories/IMessageRepository';
 
 export type AgentMode = 'agent_auto' | 'agent_supervised' | 'human_first';
@@ -37,7 +37,7 @@ interface ConversationPropsOptimized {
   channel: Channel;
   status: ConversationStatus;
   priority: MessagePriority;
-  slaStatus: SLAStatus;
+  slaStatus: CustomerLevelStatus;
   slaDeadline?: Date;
 
   // ✅ 核心优化：使用MessageSummary代替messages数组
@@ -138,7 +138,7 @@ export class ConversationOptimized extends AggregateRoot<ConversationPropsOptimi
     return this.props.priority;
   }
 
-  get slaStatus(): SLAStatus {
+  get slaStatus(): CustomerLevelStatus {
     return this.props.slaStatus;
   }
 

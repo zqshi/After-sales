@@ -1,6 +1,18 @@
 import { ValueObject } from '@domain/shared/ValueObject';
 
-const ALLOWED_CHANNELS = ['chat', 'email', 'phone', 'web', 'sms', 'voice'] as const;
+const ALLOWED_CHANNELS = [
+  'chat',
+  'email',
+  'phone',
+  'web',
+  'sms',
+  'voice',
+  'feishu',
+  'wecom',
+  'wechat',
+  'qq',
+  'dingtalk',
+] as const;
 export type ChannelType = (typeof ALLOWED_CHANNELS)[number];
 
 export class Channel extends ValueObject<{ value: ChannelType }> {

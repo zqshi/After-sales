@@ -10,13 +10,21 @@ import {
 import { updateCustomerContext } from '../customer/index.js';
 import {
   fetchConversations,
+  fetchConversationAiAnalysis,
   fetchSentimentAnalysis,
+  fetchConversationStats,
+  fetchMonitoringAlerts,
+  fetchAuditSummary,
+  createTask,
+  fetchTasks,
+  fetchQualityProfile,
   isApiEnabled,
 } from '../api.js';
 
 const outboundEnabled = false;
-let currentConversationId = 'conv-001';
+let currentConversationId = null;
 let chatController = null;
+let serverStatusCounts = null;
 
 /**
  * 根据情绪类型返回对应的emoji图标
@@ -65,6 +73,7 @@ export function initChat() {
   initConversationEndDetection();
   initConversationFilters();
   initAiAssistantPanelActions();
+  bindAiQuickActions();
   scrollToBottom();
 }
 
@@ -93,6 +102,24 @@ function initAiAssistantPanelActions() {
   });
 }
 
+function bindAiQuickActions() {
+  const bindings = [
+    { selector: '[data-permission="actions.clarify"]', handler: openClarifyPanel },
+    { selector: '[data-permission="actions.assist.check"]', handler: openAssistCheck },
+    { selector: '[data-permission="actions.fault.report"]', handler: openFaultReport },
+  ];
+
+  bindings.forEach(({ selector, handler }) => {
+    qsa(selector).forEach((btn) => {
+      btn.removeAttribute('onclick');
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        handler();
+      });
+    });
+  });
+}
+
 function setAiPanelMode(mode) {
   const panel = qs('#ai-assistant-panel');
   const replyPanel = qs('#ai-panel-reply');
@@ -100,6 +127,8 @@ function setAiPanelMode(mode) {
   const actionPanel = qs('#ai-panel-action');
   const clarifyPanel = qs('#ai-panel-clarify');
   const requirementsPanel = qs('#ai-panel-requirements');
+  const stepsEl = qs('#ai-solution-steps');
+  const refsEl = qs('#ai-solution-references');
   const title = qs('#ai-assistant-title');
   const badge = qs('#ai-assistant-badge');
   const desc = qs('#ai-assistant-desc');
@@ -116,6 +145,15 @@ function setAiPanelMode(mode) {
   actionPanel.classList.toggle('hidden', mode !== 'action');
   clarifyPanel.classList.toggle('hidden', mode !== 'clarify');
   requirementsPanel.classList.toggle('hidden', mode !== 'requirements');
+
+  if (mode === 'solution') {
+    if (stepsEl) {
+      stepsEl.innerHTML = `<li class="list-none">${getAiEmptyStateHtml()}</li>`;
+    }
+    if (refsEl) {
+      refsEl.innerHTML = getAiEmptyStateHtml();
+    }
+  }
 
   if (title) {
     if (mode === 'reply') {
@@ -161,14 +199,14 @@ function setAiPanelMode(mode) {
 export function openAiReplyPanel() {
   openAiAssistantPanel();
   hideRightSidebarOverlay();
-  setAiReplyMockData();
+  loadAiPanelData('reply');
   setAiPanelMode('reply');
 }
 
 export function openAiSolutionPanel() {
   openAiAssistantPanel();
   hideRightSidebarOverlay();
-  setAiSolutionMockData();
+  loadAiPanelData('solution');
   setAiPanelMode('solution');
 }
 
@@ -179,71 +217,127 @@ export function openRequirementPanel() {
   setAiPanelMode('requirements');
 }
 
-function setAiSolutionMockData() {
+async function loadAiPanelData(mode) {
   const stepsEl = qs('#ai-solution-steps');
   const refsEl = qs('#ai-solution-references');
-  if (!stepsEl || !refsEl) {
+  const listEl = qs('#ai-reply-list');
+
+  if (mode === 'reply' && listEl) {
+    listEl.innerHTML = getAiEmptyStateHtml(LOADING_MESSAGE);
+  }
+  if (mode === 'solution') {
+    if (stepsEl) {
+      stepsEl.innerHTML = `<li class="list-none">${getAiEmptyStateHtml(LOADING_MESSAGE)}</li>`;
+    }
+    if (refsEl) {
+      refsEl.innerHTML = getAiEmptyStateHtml(LOADING_MESSAGE);
+    }
+  }
+
+  if (!currentConversationId) {
+    showNotification(NO_CONVERSATION_MESSAGE, 'warning');
+    if (mode === 'reply') {
+      if (listEl) {
+        listEl.innerHTML = getAiEmptyStateHtml(NO_CONVERSATION_MESSAGE);
+      }
+    }
+    if (mode === 'solution') {
+      if (stepsEl) {
+        stepsEl.innerHTML = `<li class="list-none">${getAiEmptyStateHtml(NO_CONVERSATION_MESSAGE)}</li>`;
+      }
+      if (refsEl) {
+        refsEl.innerHTML = getAiEmptyStateHtml(NO_CONVERSATION_MESSAGE);
+      }
+    }
     return;
   }
 
-  const contextText = getConversationContext().join(' ');
-  const steps = buildSolutionStepsFromContext(contextText);
-  const references = buildSolutionReferencesFromContext(contextText);
+  try {
+    const response = await fetchConversationAiAnalysis(currentConversationId);
+    const payload = response?.data ?? response;
 
-  stepsEl.innerHTML = steps.map((step) => `<li>${step}</li>`).join('');
-  refsEl.innerHTML = references.map((item) => `
-    <div class="ai-panel-card ai-panel-card--compact flex items-start gap-3">
-      <div class="w-8 h-8 rounded-full ${item.tagClass} flex items-center justify-center text-xs">${item.tag}</div>
-      <div class="flex-1">
-        <div class="text-sm text-gray-700">${item.title}</div>
-        <div class="text-[11px] text-gray-500 mt-1">${item.meta}</div>
-      </div>
-      <button class="text-xs text-primary hover:underline" data-action="view-reference" data-title="${item.title}" data-meta="${item.meta}">查看</button>
-    </div>
-  `).join('');
+    if (mode === 'reply') {
+      if (!listEl) {
+        return;
+      }
+      const suggestion = payload?.replySuggestion;
+      if (!suggestion?.suggestedReply) {
+        listEl.innerHTML = getAiEmptyStateHtml(EMPTY_DATA_MESSAGE);
+        return;
+      }
 
-  refsEl.onclick = (event) => {
-    const viewBtn = event.target.closest('[data-action="view-reference"]');
-    if (!viewBtn) {
-      return;
-    }
-    const title = viewBtn.dataset.title || '参考资料';
-    const meta = viewBtn.dataset.meta || '';
-    showActionModal({
-      title,
-      bodyHtml: `
-        <div class="ai-panel-stack">
-          <div class="ai-panel-card">
-            <div class="ai-panel-title">摘要</div>
-            <div class="ai-panel-text">当前为参考资料预览，实际内容可在知识库中查看。</div>
-            ${meta ? `<div class="ai-panel-meta mt-2">${meta}</div>` : ''}
+      listEl.innerHTML = `
+        <div class="ai-panel-card">
+          <div>
+            <div class="text-xs text-gray-400 mb-1">AI建议 · 置信度 ${Math.round((suggestion.confidence || 0) * 100)}%</div>
+            <p class="text-sm text-gray-700">${suggestion.suggestedReply}</p>
+            <div class="mt-3 flex justify-end">
+              <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-permission="ai.reply.adopt" data-suggestion="${suggestion.suggestedReply}">采纳</button>
+            </div>
           </div>
         </div>
-      `
-    });
-  };
-}
+      `;
+      return;
+    }
 
-function setAiReplyMockData() {
-  const listEl = qs('#ai-reply-list');
-  if (!listEl) {
-    return;
-  }
+    if (mode === 'solution') {
+      if (!stepsEl || !refsEl) {
+        return;
+      }
+      const issues = payload?.detectedIssues || [];
+      const knowledge = payload?.knowledgeRecommendations || [];
+      const firstIssue = issues[0];
 
-  const context = getConversationContext();
-  const suggestions = buildReplySuggestions(context);
+      if (!firstIssue) {
+        stepsEl.innerHTML = `<li class="list-none">${getAiEmptyStateHtml(EMPTY_DATA_MESSAGE)}</li>`;
+        refsEl.innerHTML = getAiEmptyStateHtml(EMPTY_DATA_MESSAGE);
+        return;
+      }
+      const steps = [];
+      if (firstIssue.description) {
+        steps.push(`问题描述：${firstIssue.description}`);
+      }
+      if (firstIssue.severity) {
+        steps.push(`优先级：${firstIssue.severity}`);
+      }
+      if (firstIssue.suggestedAction) {
+        steps.push(`建议动作：${firstIssue.suggestedAction}`);
+      }
 
-  listEl.innerHTML = suggestions.map((item) => `
-    <div class="ai-panel-card">
-      <div>
-        <div class="text-xs text-gray-400 mb-1">${item.tag}</div>
-        <p class="text-sm text-gray-700">${item.text}</p>
-        <div class="mt-3 flex justify-end">
-          <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="${item.text}">采纳</button>
+      stepsEl.innerHTML = steps.length
+        ? steps.map((step) => `<li>${step}</li>`).join('')
+        : `<li class="list-none">${getAiEmptyStateHtml(EMPTY_DATA_MESSAGE)}</li>`;
+      refsEl.innerHTML = knowledge
+        .map(
+          (item) => `
+        <div class="ai-panel-card ai-panel-card--compact flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-xs">KB</div>
+          <div class="flex-1">
+            <div class="text-sm text-gray-700">${item.title}</div>
+            <div class="text-[11px] text-gray-500 mt-1">${item.category || ''}</div>
+          </div>
+          <button class="text-xs text-primary hover:underline" data-action="view-reference" data-title="${item.title}" data-meta="${item.category || ''}">查看</button>
         </div>
-      </div>
-    </div>
-  `).join('');
+      `,
+        )
+        .join('');
+      if (!knowledge.length) {
+        refsEl.innerHTML = getAiEmptyStateHtml(EMPTY_DATA_MESSAGE);
+      }
+      return;
+    }
+  } catch (err) {
+    console.warn('[chat] load AI panel failed', err);
+    if (listEl) {
+      listEl.innerHTML = getAiEmptyStateHtml(EMPTY_DATA_MESSAGE);
+    }
+    if (stepsEl) {
+      stepsEl.innerHTML = `<li class="list-none">${getAiEmptyStateHtml(EMPTY_DATA_MESSAGE)}</li>`;
+    }
+    if (refsEl) {
+      refsEl.innerHTML = getAiEmptyStateHtml(EMPTY_DATA_MESSAGE);
+    }
+  }
 }
 
 function getConversationContext() {
@@ -276,6 +370,27 @@ function hideRightSidebarOverlay() {
   }
 }
 
+const NO_CONVERSATION_MESSAGE = '请先选择会话';
+const LOADING_MESSAGE = '正在获取会话数据...';
+const EMPTY_DATA_MESSAGE = '暂无可用数据';
+
+function renderClarifyPlaceholder(message = LOADING_MESSAGE) {
+  setAiClarifyPanelContent(`
+    <div class="ai-panel-stack">
+      ${getAiEmptyStateHtml(message)}
+    </div>
+  `);
+}
+
+function renderActionPlaceholder({ titleText, badgeText, descText }, message = LOADING_MESSAGE) {
+  setAiActionPanelContent({
+    titleText,
+    badgeText,
+    descText,
+    contentHtml: getAiEmptyStateHtml(message),
+  });
+}
+
 function setAiActionPanelContent({ titleText, badgeText, descText, contentHtml }) {
   const content = qs('#ai-action-content');
   if (content) {
@@ -304,122 +419,6 @@ function setAiClarifyPanelContent(contentHtml) {
   setAiPanelMode('clarify');
 }
 
-function buildSolutionStepsFromContext(contextText) {
-  const steps = [
-    '确认客户问题的发生时间与影响范围，优先定位受影响模块。',
-    '查看监控与告警，确认是否有异常指标或服务不可用。',
-    '收集关键日志与错误码，定位根因并安排修复。',
-    '验证恢复结果，确认客户侧功能恢复正常。',
-    '同步客户处理进展并记录复盘要点。'
-  ];
-
-  if (/登录|认证|账号|密码/.test(contextText)) {
-    return [
-      '检查认证服务与登录网关健康状态。',
-      '排查登录失败的错误码与异常日志。',
-      '确认是否有权限变更或密码重置记录。',
-      '必要时重启认证服务或切换备用节点。',
-      '验证多账号登录恢复情况并同步客户。'
-    ];
-  }
-  if (/无法访问|连接失败|超时|502|503/.test(contextText)) {
-    return [
-      '确认服务是否可用，检查网关/负载均衡状态。',
-      '定位异常接口与错误码，排查上游依赖。',
-      '查看近期发布/配置变更记录。',
-      '执行回滚或故障修复操作，验证访问恢复。',
-      '同步公告口径与恢复时间点。'
-    ];
-  }
-  return steps;
-}
-
-function buildSolutionReferencesFromContext(contextText) {
-  if (/登录|认证|账号|密码/.test(contextText)) {
-    return [
-      {
-        tag: 'KB',
-        tagClass: 'bg-blue-100 text-blue-600',
-        title: '认证服务异常排查手册',
-        meta: '适用场景：登录失败 · 平均恢复：15分钟'
-      },
-      {
-        tag: 'DOC',
-        tagClass: 'bg-emerald-100 text-emerald-600',
-        title: '用户权限变更与回滚流程',
-        meta: '适用场景：权限异常 · 版本：v3.2'
-      },
-      {
-        tag: 'REF',
-        tagClass: 'bg-amber-100 text-amber-600',
-        title: '登录链路监控与追踪指引',
-        meta: '建议工具：APM · 推荐时长：10分钟'
-      }
-    ];
-  }
-  return [
-    {
-      tag: 'KB',
-      tagClass: 'bg-blue-100 text-blue-600',
-      title: '服务不可用应急处理流程',
-      meta: '适用场景：不可用 · 解决时间：12分钟'
-    },
-    {
-      tag: 'DOC',
-      tagClass: 'bg-emerald-100 text-emerald-600',
-      title: '接口超时排查清单',
-      meta: '适用场景：超时/502 · 更新：本月'
-    },
-    {
-      tag: 'REF',
-      tagClass: 'bg-amber-100 text-amber-600',
-      title: '稳定性发布回滚策略',
-      meta: '建议版本：v2.4 · 建议时长：10分钟'
-    }
-  ];
-}
-
-function buildReplySuggestions(contextLines = []) {
-  const contextText = contextLines.join(' ').trim();
-  const hasLoginIssue = /登录|无法登录|认证|账号|密码/.test(contextText);
-  const hasSystemDown = /报错|无法访问|宕机|502|503|超时|连接失败/.test(contextText);
-  const hasMultipleUsers = /多用户|多个用户|大面积|批量/.test(contextText);
-
-  const suggestions = [];
-  const header = contextText ? `根据您反馈的情况（${contextLines.slice(-1)[0] || '客户问题'}）` : '根据当前会话情况';
-
-  suggestions.push({
-    tag: '建议 1 · 稳定情绪',
-    text: `${header}，我们已经同步技术团队处理。当前正在定位原因并加急恢复，预计 15 分钟内给到进展。给您带来不便非常抱歉。`
-  });
-
-  if (hasLoginIssue || hasSystemDown) {
-    suggestions.push({
-      tag: '建议 2 · 询问关键信息',
-      text: '为尽快定位问题，请补充：报错截图、出现时间、是否所有账号均受影响，以及是否近期有密码重置/权限调整。'
-    });
-  }
-
-  if (hasMultipleUsers) {
-    suggestions.push({
-      tag: '建议 3 · 影响范围确认',
-      text: '我们将优先确认影响范围并同步公告口径。请告知受影响用户数量及业务影响程度，方便我们评估优先级。'
-    });
-  }
-
-  suggestions.push({
-    tag: '建议 4 · 临时建议',
-    text: '建议先尝试清理缓存/重新登录，若仍异常请保持现状，我们会在修复后第一时间通知您。'
-  });
-
-  suggestions.push({
-    tag: '建议 5 · 跟进承诺',
-    text: '我会持续跟进处理进度，并在关键节点（定位/修复/恢复）及时向您同步。'
-  });
-
-  return suggestions;
-}
-
 function showActionModal({ title, bodyHtml, primaryText }) {
   const overlay = qs('#action-modal-overlay');
   const modalTitle = qs('#action-modal-title');
@@ -446,196 +445,177 @@ function showActionModal({ title, bodyHtml, primaryText }) {
   overlay.classList.remove('hidden');
 }
 
-export function openAssistCheckMock() {
-  const latest = getLatestCustomerMessageText();
+function getAiEmptyStateHtml(message = '暂无数据') {
+  return `
+    <div class="ai-panel-card text-xs text-gray-600 flex flex-col items-center justify-center gap-2 py-6">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 4h12a1 1 0 0 1 1 1v12a4 4 0 0 1-4 4H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke="#cbd5e1" stroke-width="1.5"/>
+        <path d="M8 9h8M8 12h5M8 15h6" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div>${message}</div>
+    </div>
+  `;
+}
+
+export async function openAssistCheck() {
   openAiAssistantPanel();
   hideRightSidebarOverlay();
-  setAiActionPanelContent({
+  renderActionPlaceholder({
     titleText: '辅助排查',
     badgeText: '排查',
-    descText: '根据当前反馈生成辅助排查建议。',
-    contentHtml: `
-    <div class="ai-panel-stack ai-panel-stack-tight">
-      <div class="ai-panel-card">
-        <div class="ai-panel-title">辅助排查</div>
-        <div class="ai-panel-text">问题概述：${latest || '客户反馈出现异常，需要辅助排查。'}</div>
-        <div class="ai-panel-label">系统排查优先级：</div>
-        <ol class="ai-panel-list mt-2">
-          <li class="ai-panel-card ai-panel-card--compact">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="flex items-start gap-2">
-                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">1</span>
-                  <span class="text-sm text-gray-700">认证服务状态与告警是否异常</span>
-                </div>
-                <div class="ai-tool-meta">
-                  <div class="ai-tool-meta-line">
-                    <span>工具：监控告警中心</span>
-                  </div>
-                  <div class="ai-tool-meta-line">
-                    <span class="ai-tool-status" data-tool-status="监控告警中心">自动调用中</span>
-                    <button class="ai-panel-chip" data-action="manual-check" data-tool="监控告警中心">手动排查</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </li>
-          <li class="ai-panel-card ai-panel-card--compact">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="flex items-start gap-2">
-                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">2</span>
-                  <span class="text-sm text-gray-700">网关/登录接口日志中是否有 401/502 峰值</span>
-                </div>
-                <div class="ai-tool-meta">
-                  <div class="ai-tool-meta-line">
-                    <span>工具：网关日志检索</span>
-                  </div>
-                  <div class="ai-tool-meta-line">
-                    <span class="ai-tool-status" data-tool-status="网关日志检索">自动调用中</span>
-                    <button class="ai-panel-chip" data-action="manual-check" data-tool="网关日志检索">手动排查</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </li>
-          <li class="ai-panel-card ai-panel-card--compact">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="flex items-start gap-2">
-                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">3</span>
-                  <span class="text-sm text-gray-700">最近 30 分钟是否发生配置变更或发布</span>
-                </div>
-                <div class="ai-tool-meta">
-                  <div class="ai-tool-meta-line">
-                    <span>工具：变更审计台</span>
-                  </div>
-                  <div class="ai-tool-meta-line">
-                    <span class="ai-tool-status" data-tool-status="变更审计台">自动调用中</span>
-                    <button class="ai-panel-chip" data-action="manual-check" data-tool="变更审计台">手动排查</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </li>
-          <li class="ai-panel-card ai-panel-card--compact">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="flex items-start gap-2">
-                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">4</span>
-                  <span class="text-sm text-gray-700">缓存服务健康度与命中率</span>
-                </div>
-                <div class="ai-tool-meta">
-                  <div class="ai-tool-meta-line">
-                    <span>工具：缓存监控</span>
-                  </div>
-                  <div class="ai-tool-meta-line">
-                    <span class="ai-tool-status" data-tool-status="缓存监控">自动调用中</span>
-                    <button class="ai-panel-chip" data-action="manual-check" data-tool="缓存监控">手动排查</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </li>
-          <li class="ai-panel-card ai-panel-card--compact">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <div class="flex items-start gap-2">
-                  <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">5</span>
-                  <span class="text-sm text-gray-700">受影响客户列表与影响范围统计</span>
-                </div>
-                <div class="ai-tool-meta">
-                  <div class="ai-tool-meta-line">
-                    <span>工具：客户影响面板</span>
-                  </div>
-                  <div class="ai-tool-meta-line">
-                    <span class="ai-tool-status" data-tool-status="客户影响面板">自动调用中</span>
-                    <button class="ai-panel-chip" data-action="manual-check" data-tool="客户影响面板">手动排查</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </li>
-        </ol>
-      </div>
-      <div class="ai-panel-card">
-        <div class="ai-panel-title">需要同步给协作方的信息</div>
-        <div class="ai-panel-label">建议按以下顺序补齐：</div>
-        <ol class="ai-panel-list mt-2">
-          <li class="flex items-start gap-2">
-            <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">1</span>
-            <span>故障发生时间与首次上报时间</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">2</span>
-            <span>客户侧报错截图/错误码</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">3</span>
-            <span>影响范围（用户数/业务线/区域）</span>
-          </li>
-          <li class="flex items-start gap-2">
-            <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-700">4</span>
-            <span>已执行动作与当前状态</span>
-          </li>
-        </ol>
-        <div class="ai-panel-label mt-3">协同方可直接发送的内容：</div>
-        <div class="ai-panel-card ai-panel-card--compact bg-slate-50 border border-slate-200" data-copy-source>
-          <div class="text-xs text-slate-600">【故障同步】</div>
-          <div class="text-sm text-slate-800 mt-1">1) 首次上报时间：2024-08-15 09:18；故障发生时间：2024-08-15 09:12。</div>
-          <div class="text-sm text-slate-800 mt-1">2) 报错信息：登录返回 502，疑似网关链路异常（客户截图待补充）。</div>
-          <div class="text-sm text-slate-800 mt-1">3) 影响范围：VIP 客户 3 个群组，多用户无法登录。</div>
-          <div class="text-sm text-slate-800 mt-1">4) 已执行动作：已通知值班工程师，切换备用节点进行观察。</div>
-        </div>
-        <div class="flex justify-end mt-2">
-          <button class="ai-panel-chip" data-action="copy-collab">复制</button>
-        </div>
-      </div>
-      <div class="ai-panel-banner info">建议优先完成 1-3 项，并同步公告口径。</div>
-    </div>
-  `
+    descText: '基于当前对话生成排查清单与协同指引。',
   });
-  bindAssistCheckActions();
+  if (!currentConversationId) {
+    showNotification(NO_CONVERSATION_MESSAGE, 'warning');
+    renderActionPlaceholder(
+      { titleText: '辅助排查', badgeText: '排查', descText: '请先选择会话后查看。' },
+      NO_CONVERSATION_MESSAGE,
+    );
+    return;
+  }
+
+  try {
+    const response = await fetchConversationAiAnalysis(currentConversationId);
+    const payload = response?.data ?? response ?? {};
+    const issues = payload.detectedIssues || [];
+    const knowledge = payload.knowledgeRecommendations || [];
+    const issueProduct = payload.issueProduct || '未标注';
+    const faultLevel = payload.faultLevel || '未标注';
+
+    const issuesHtml = issues.length
+      ? issues.map((item) => `<li>${item.description || '问题描述待补充'}</li>`).join('')
+      : '<li>暂无明确问题，建议补充现场信息。</li>';
+
+    const knowledgeHtml = knowledge.length
+      ? knowledge
+          .slice(0, 3)
+          .map(
+            (item) => `
+            <div class="ai-panel-card ai-panel-card--compact flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-xs">KB</div>
+              <div class="flex-1">
+                <div class="text-sm text-gray-700">${item.title}</div>
+                <div class="text-[11px] text-gray-500 mt-1">${item.category || ''}</div>
+              </div>
+              <button class="text-xs text-primary hover:underline" data-action="view-reference" data-title="${item.title}" data-meta="${item.category || ''}">查看</button>
+            </div>
+          `,
+          )
+          .join('')
+      : getAiEmptyStateHtml('暂无关联资料');
+
+    setAiActionPanelContent({
+      titleText: '辅助排查',
+      badgeText: '排查',
+      descText: '基于当前对话生成排查清单与协同指引。',
+      contentHtml: `
+        <div class="ai-panel-stack">
+          <div class="ai-panel-card">
+            <div class="text-xs text-gray-400 mb-2">问题概览</div>
+            <div class="text-sm text-gray-700">产品定位：${issueProduct}</div>
+            <div class="text-sm text-gray-700 mt-1">故障等级：${faultLevel}</div>
+          </div>
+          <div class="ai-panel-card">
+            <div class="text-xs text-gray-400 mb-2">排查重点</div>
+            <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">${issuesHtml}</ul>
+            <div class="mt-3 flex gap-2">
+              <button class="ai-panel-chip" data-action="manual-check" data-tool="日志查询">触发日志查询</button>
+              <button class="ai-panel-chip" data-action="manual-check" data-tool="链路追踪">触发链路追踪</button>
+            </div>
+          </div>
+          <div class="ai-panel-card">
+            <div class="text-xs text-gray-400 mb-2">协同资料</div>
+            ${knowledgeHtml}
+          </div>
+        </div>
+      `,
+    });
+    bindAssistCheckActions();
+  } catch (err) {
+    console.warn('[chat] openAssistCheck failed', err);
+    renderActionPlaceholder(
+      { titleText: '辅助排查', badgeText: '排查', descText: '暂无可用数据。' },
+      EMPTY_DATA_MESSAGE,
+    );
+  }
 }
 
-export function openFaultReportMock() {
-  const latest = getLatestCustomerMessageText();
+
+export async function openFaultReport() {
   openAiAssistantPanel();
   hideRightSidebarOverlay();
-  setAiActionPanelContent({
+  renderActionPlaceholder({
     titleText: '生成故障报告',
     badgeText: '报告',
-    descText: '基于当前对话生成故障报告摘要。',
-    contentHtml: `
-    <div class="ai-panel-stack">
-      <div class="ai-panel-card">
-        <div class="ai-panel-title">故障报告摘要</div>
-        <div class="ai-panel-grid">
-          <div>客户ID：CUST-102984</div>
-          <div>客户名称：ABC 科技有限公司</div>
-        </div>
-        <div class="ai-panel-label">故障时间线（正序）</div>
-        <div class="ai-panel-list mt-2">
-          <div>2024.08.15 09:12:03 认证服务出现异常告警</div>
-          <div>2024.08.15 09:18:24 客户反馈多用户无法登录</div>
-          <div>2024.08.15 09:26:40 技术团队确认影响范围并介入</div>
-          <div>2024.08.15 09:38:15 切换备用节点并持续观察</div>
-        </div>
-        <div class="ai-panel-grid">
-          <div>影响范围：VIP客户 · 3 个群组</div>
-          <div>影响时长：28 分钟</div>
-          <div>故障级别：P1</div>
-          <div>修复状态：处理中</div>
-        </div>
-        <div class="ai-panel-banner info">处置动作：重启认证服务、切换备用节点、补发公告。</div>
-        <div class="ai-panel-meta">报告编号：INC-2024-0815-001 · 负责人：王工程师</div>
-      </div>
-    </div>
-  `
+    descText: '基于对话与质检数据自动生成。',
   });
+  if (!currentConversationId) {
+    showNotification(NO_CONVERSATION_MESSAGE, 'warning');
+    renderActionPlaceholder(
+      { titleText: '生成故障报告', badgeText: '报告', descText: '请先选择会话后查看。' },
+      NO_CONVERSATION_MESSAGE,
+    );
+    return;
+  }
+
+  try {
+    const [qualityResponse, aiResponse] = await Promise.all([
+      fetchQualityProfile(currentConversationId),
+      fetchConversationAiAnalysis(currentConversationId),
+    ]);
+    const quality = qualityResponse?.data ?? qualityResponse ?? {};
+    const aiPayload = aiResponse?.data ?? aiResponse ?? {};
+    const actions = quality.actions || aiPayload.detectedIssues || [];
+    const tags = quality.tags || [];
+    const thread = quality.thread || [];
+    const summary = quality.summary || '暂无摘要';
+
+    const threadHtml = thread.length
+      ? thread.map((item) => `<li>${item.role || '客户'}：${item.text || ''}</li>`).join('')
+      : '<li>暂无对话片段</li>';
+
+    const actionsHtml = actions.length
+      ? actions
+          .slice(0, 4)
+          .map((item) => `<li>${item.description || item.suggestedAction || item}</li>`)
+          .join('')
+      : '<li>暂无明确行动建议</li>';
+
+    setAiActionPanelContent({
+      titleText: '生成故障报告',
+      badgeText: '报告',
+      descText: '基于对话与质检数据自动生成。',
+      contentHtml: `
+        <div class="ai-panel-stack">
+          <div class="ai-panel-card">
+            <div class="text-xs text-gray-400 mb-2">故障摘要</div>
+            <div class="text-sm text-gray-700">${summary}</div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              ${(tags || []).slice(0, 4).map((tag) => `<span class="ai-panel-chip">${tag}</span>`).join('')}
+            </div>
+          </div>
+          <div class="ai-panel-card">
+            <div class="text-xs text-gray-400 mb-2">关键行动</div>
+            <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">${actionsHtml}</ul>
+          </div>
+          <div class="ai-panel-card">
+            <div class="text-xs text-gray-400 mb-2">对话节选</div>
+            <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">${threadHtml}</ul>
+          </div>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.warn('[chat] openFaultReport failed', err);
+    renderActionPlaceholder(
+      { titleText: '生成故障报告', badgeText: '报告', descText: '暂无可用数据。' },
+      EMPTY_DATA_MESSAGE,
+    );
+  }
 }
 
-export function openTicketMock() {
+
+export function openTicket() {
   const latest = getLatestCustomerMessageText();
   const now = new Date();
   const dateValue = now.toLocaleDateString('sv-SE');
@@ -763,35 +743,16 @@ export function openTicketMock() {
     const companyInput = qs('#ticket-company');
     const managementBtn = qs('[data-action="open-ticket-management"]');
 
-    const contextText = latest || '';
-    const aiTitle = `工单-${titleSuffix}-${dateValue.replace(/-/g, '')}`;
-    const aiDetail = `问题详情：${latest || '客户反馈出现异常，需要排查。'}\n本地排查：（AI 排查结果），辛苦协助排查。`;
-    const aiDate = dateValue;
-    const aiTime = timeValue;
-    const aiCompany = 'ABC 科技有限公司';
-    const tagValue = /登录|认证|账号|密码/.test(contextText)
-      ? 'auth'
-      : /连接|网络|超时|502|503/.test(contextText)
-        ? 'network'
-        : 'timeout';
-    const productValue = /网络|连接|网关/.test(contextText)
-      ? 'network'
-      : /存储|磁盘/.test(contextText)
-        ? 'storage'
-        : /安全|认证|权限/.test(contextText)
-          ? 'security'
-          : 'cloud';
-
-    if (titleInput) titleInput.value = aiTitle;
-    if (detailInput) detailInput.value = aiDetail;
-    if (tagSelect) tagSelect.value = tagValue;
-    if (dateInput) dateInput.value = aiDate;
-    if (timeInput) timeInput.value = aiTime;
-    if (typeSelect) typeSelect.value = 'investigation';
-    if (productSelect) productSelect.value = productValue;
-    if (impactSelect) impactSelect.value = 'low';
-    if (incidentSelect) incidentSelect.value = 'yes';
-    if (companyInput) companyInput.value = aiCompany;
+    if (titleInput) titleInput.value = '';
+    if (detailInput) detailInput.value = '';
+    if (tagSelect) tagSelect.value = '';
+    if (dateInput) dateInput.value = '';
+    if (timeInput) timeInput.value = '';
+    if (typeSelect) typeSelect.value = '';
+    if (productSelect) productSelect.value = '';
+    if (impactSelect) impactSelect.value = '';
+    if (incidentSelect) incidentSelect.value = '';
+    if (companyInput) companyInput.value = '';
     if (managementBtn) {
       managementBtn.addEventListener('click', () => {
         openTicketManagementPanel();
@@ -803,10 +764,11 @@ export function openTicketMock() {
   }, 0);
 }
 
-export function openTicketManagementPanel() {
+export async function openTicketManagementPanel() {
   openAiAssistantPanel();
   hideRightSidebarOverlay();
-  renderTicketManagementPanel(getTicketManagementBaseList(), { showCreateButton: true });
+  const tickets = await fetchTicketList();
+  renderTicketManagementPanel(tickets, { showCreateButton: true });
 }
 
 function bindTicketFormValidation() {
@@ -859,7 +821,7 @@ function bindTicketFormValidation() {
     return;
   }
 
-  createBtn.addEventListener('click', () => {
+  createBtn.addEventListener('click', async () => {
     let hasError = false;
     fields.forEach(({ el, name, errorKey }) => {
       const value = el?.value?.trim?.() ?? '';
@@ -874,67 +836,79 @@ function bindTicketFormValidation() {
     if (hasError) {
       return;
     }
-    const ticketData = buildTicketSummary();
-    showNotification('已创建工单及群聊，请前往WPS协作查看', 'success');
-    renderTicketManagementPanel(ticketData.list, { showCreateButton: true });
+
+    if (!isApiEnabled()) {
+      showNotification('API 未启用，无法创建工单', 'warning');
+      return;
+    }
+
+    try {
+      await createTask(buildTicketPayload());
+      showNotification('工单已创建', 'success');
+      const tickets = await fetchTicketList();
+      renderTicketManagementPanel(tickets, { showCreateButton: true });
+    } catch (err) {
+      console.warn('[ticket] create failed', err);
+      showNotification('工单创建失败，请重试', 'error');
+    }
   });
 }
 
-function getTicketManagementBaseList() {
-  return [
-    {
-      id: 'TK20240815002',
-      title: '多用户登录失败排查',
-      summary: '排查认证服务与网关日志，已定位异常。',
-      customer: 'ABC 科技有限公司',
-      createdAt: '2024-08-15 09:10',
-      status: '处理中',
-      owner: '李工程师',
-      priority: 'P1'
-    },
-    {
-      id: 'TK20240814011',
-      title: '接口超时告警复盘',
-      summary: '复盘完成，等待确认补偿方案。',
-      customer: 'XYZ 智造科技',
-      createdAt: '2024-08-14 17:45',
-      status: '待确认',
-      owner: '陈工程师',
-      priority: 'P2'
+async function fetchTicketList() {
+  if (!isApiEnabled()) {
+    return [];
+  }
+  const activeConversation = document.querySelector('.conversation-item.is-active');
+  const conversationId = activeConversation?.getAttribute('data-id') || '';
+  if (!conversationId) {
+    return [];
+  }
+  try {
+    const response = await fetchTasks({ limit: 20, conversationId });
+    const payload = response?.data ?? response;
+    const items = payload?.items ?? payload?.tasks ?? payload ?? [];
+    if (!Array.isArray(items)) {
+      return [];
     }
-  ];
+    return items.map((task) => ({
+      id: task.id || task.taskId,
+      title: task.title || task.name || '',
+      summary: task.description || task.summary || '',
+      customer: task.customerId || '',
+      createdAt: task.createdAt || '',
+      status: task.status || '',
+      owner: task.assigneeName || task.assigneeId || '',
+      priority: task.priority || '',
+    }));
+  } catch (err) {
+    console.warn('[ticket] list failed', err);
+    return [];
+  }
 }
 
-function buildTicketSummary() {
+function buildTicketPayload() {
   const title = qs('#ticket-title')?.value?.trim() || '客户问题';
   const detail = qs('#ticket-detail')?.value?.trim() || '';
-  const date = qs('#ticket-date')?.value || '';
-  const time = qs('#ticket-time')?.value || '';
-  const company = qs('#ticket-company')?.value?.trim() || '客户';
-  const createdAt = date && time ? `${date} ${time}` : '刚刚';
-  const id = `TK${Date.now()}`;
-
-  const createdTicket = {
-    id,
-    title,
-    summary: detail ? detail.slice(0, 60) : '已创建工单，等待处理。',
-    customer: company,
-    createdAt,
-    status: '处理中',
-    owner: '王工程师',
-    priority: 'P1'
-  };
+  const impact = qs('#ticket-impact')?.value || 'medium';
+  const type = qs('#ticket-type')?.value || 'investigation';
+  const activeConversation = document.querySelector('.conversation-item.is-active');
+  const customerId = activeConversation?.getAttribute('data-customer-id') || '';
+  const conversationId = activeConversation?.getAttribute('data-id') || '';
 
   return {
-    list: [
-      createdTicket,
-      ...getTicketManagementBaseList()
-    ]
+    title,
+    description: detail,
+    priority: impact,
+    type,
+    customerId,
+    conversationId,
   };
 }
 
 function renderTicketManagementPanel(tickets, options = {}) {
   const { showCreateButton = false } = options;
+  const list = Array.isArray(tickets) ? tickets : [];
+  const emptyState = getAiEmptyStateHtml();
   const contentHtml = `
     <div class="ai-panel-stack ai-panel-stack-tight">
       ${showCreateButton
@@ -943,18 +917,18 @@ function renderTicketManagementPanel(tickets, options = {}) {
           </div>`
         : ''}
       <div class="ai-panel-stack ai-panel-stack-tight">
-        ${tickets.map((ticket) => `
+        ${list.length ? list.map((ticket) => `
           <button class="ticket-item ai-panel-card ai-panel-card--compact" data-ticket-id="${ticket.id}">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <div class="ai-panel-title">${ticket.title}</div>
-                <div class="text-xs text-gray-500 mt-1">客户：${ticket.customer} · 创建时间：${ticket.createdAt}</div>
-                <div class="text-xs text-gray-600 mt-2">${ticket.summary}</div>
+                <div class="ai-panel-title">${ticket.title || '暂无数据'}</div>
+                <div class="text-xs text-gray-500 mt-1">客户：${ticket.customer || '暂无数据'} · 创建时间：${ticket.createdAt || '暂无数据'}</div>
+                <div class="text-xs text-gray-600 mt-2">${ticket.summary || '暂无数据'}</div>
               </div>
-              <span class="ticket-status-chip ${getTicketStatusClass(ticket.status)}">${ticket.status}</span>
+              <span class="ticket-status-chip ${getTicketStatusClass(ticket.status || '')}">${ticket.status || '暂无数据'}</span>
             </div>
           </button>
-        `).join('')}
+        `).join('') : emptyState}
       </div>
     </div>
   `;
@@ -966,7 +940,7 @@ function renderTicketManagementPanel(tickets, options = {}) {
     contentHtml
   });
 
-  bindTicketListActions(tickets);
+  bindTicketListActions(list);
 }
 
 function getTicketStatusClass(status) {
@@ -982,7 +956,7 @@ function bindTicketListActions(tickets) {
   actionBody.onclick = (event) => {
     const createBtn = event.target.closest('[data-action="open-ticket-form"]');
     if (createBtn) {
-      openTicketMock();
+      openTicket();
       return;
     }
     const item = event.target.closest('.ticket-item');
@@ -991,16 +965,16 @@ function bindTicketListActions(tickets) {
     const ticket = tickets.find((t) => t.id === ticketId);
     if (!ticket) return;
     showActionModal({
-      title: `工单详情 · ${ticket.id}`,
+      title: `工单详情 · ${ticket.id || '暂无数据'}`,
       bodyHtml: `
         <div class="space-y-2">
-          <div><strong>标题：</strong>${ticket.title}</div>
-          <div><strong>客户：</strong>${ticket.customer}</div>
-          <div><strong>状态：</strong>${ticket.status}</div>
-          <div><strong>优先级：</strong>${ticket.priority}</div>
-          <div><strong>负责人：</strong>${ticket.owner}</div>
-          <div><strong>创建时间：</strong>${ticket.createdAt}</div>
-          <div><strong>摘要：</strong>${ticket.summary}</div>
+          <div><strong>标题：</strong>${ticket.title || '暂无数据'}</div>
+          <div><strong>客户：</strong>${ticket.customer || '暂无数据'}</div>
+          <div><strong>状态：</strong>${ticket.status || '暂无数据'}</div>
+          <div><strong>优先级：</strong>${ticket.priority || '暂无数据'}</div>
+          <div><strong>负责人：</strong>${ticket.owner || '暂无数据'}</div>
+          <div><strong>创建时间：</strong>${ticket.createdAt || '暂无数据'}</div>
+          <div><strong>摘要：</strong>${ticket.summary || '暂无数据'}</div>
         </div>
       `
     });
@@ -1061,81 +1035,57 @@ function bindTicketClarifyAction() {
 export function openClarifyPanel() {
   openAiAssistantPanel();
   hideRightSidebarOverlay();
-  const latest = getLatestCustomerMessageText();
-  const analysis = analyzeClarifyNeeds(latest);
-  if (analysis.needsClarify) {
-    const clarifyQuestions = [
-      '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。',
-      ...analysis.questions,
-    ];
-    setAiClarifyPanelContent(`
-      <div class="ai-panel-stack">
-        <div class="ai-panel-card">
-          <div class="ai-panel-title">问题澄清</div>
-          <div class="ai-panel-text">问题描述仍需澄清，建议补充以下信息：</div>
-          <ul class="ai-panel-list mt-2">
-          ${clarifyQuestions.map((item, index) => `
-            <li class="flex items-start gap-2">
-              <span class="mt-0.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-100 text-[11px] font-semibold text-blue-700">${index + 1}</span>
-              <span>${item}</span>
-            </li>
-          `).join('')}
-          </ul>
-        </div>
-        <div class="ai-panel-banner warn">建议先补齐关键信息，再进行内部问题定位。</div>
-      </div>
-    `);
-  } else {
-    setAiClarifyPanelContent(`
-      <div class="ai-panel-stack">
-        <div class="ai-panel-card">
-          <div class="ai-panel-title">问题澄清</div>
-          <div class="ai-panel-text">问题描述清晰，可执行内部问题定位。</div>
-        </div>
-        <div class="ai-panel-banner success">当前信息已覆盖时间、影响范围与关键报错，可进入排查流程。</div>
-      </div>
-    `);
+  renderClarifyPlaceholder();
+  if (!currentConversationId) {
+    showNotification(NO_CONVERSATION_MESSAGE, 'warning');
+    renderClarifyPlaceholder(NO_CONVERSATION_MESSAGE);
+    return;
   }
+
+  fetchConversationAiAnalysis(currentConversationId)
+    .then((response) => {
+      const payload = response?.data ?? response ?? {};
+      const issueProduct = payload.issueProduct || '产品/模块';
+      const faultLevel = payload.faultLevel || '';
+      const latest = getLatestCustomerMessageText();
+      const questions = [
+        `请确认受影响的${issueProduct}具体模块与环境信息。`,
+        '问题开始出现的具体时间与频次？',
+        '是否有报错码、截图或日志可提供？',
+        '最近是否做过配置/版本/权限变更？',
+      ];
+      if (faultLevel) {
+        questions.unshift(`当前已按${faultLevel}级别跟进，是否需要紧急处理时间目标？`);
+      }
+      if (latest) {
+        questions.push(`针对“${latest.slice(0, 30)}”，还有哪些细节需要补充？`);
+      }
+
+      setAiClarifyPanelContent(`
+        <div class="ai-panel-stack">
+          <div class="ai-panel-card">
+            <div class="text-xs text-gray-400 mb-2">澄清问题清单</div>
+            <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
+              ${questions.map((q) => `<li>${q}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `);
+    })
+    .catch((err) => {
+      console.warn('[chat] openClarifyPanel failed', err);
+      renderClarifyPlaceholder(EMPTY_DATA_MESSAGE);
+    });
 }
 
-function analyzeClarifyNeeds(latestMessage) {
-  const questions = [];
-  const text = latestMessage || '';
-
-  if (!/报错|错误|错误码|提示|截图/.test(text)) {
-    questions.push('请提供具体报错信息或截图。');
-  }
-  if (!/时间|今天|刚才|上午|下午|\d{1,2}:\d{2}/.test(text)) {
-    questions.push('问题出现的具体时间是什么时候？');
-  }
-  if (!/影响|多少|多用户|全部|部分|范围/.test(text)) {
-    questions.push('受影响范围如何？是否为全部用户或部分用户？');
-  }
-  if (!/环境|版本|ip|服务器|实例|节点/.test(text)) {
-    questions.push('涉及的环境/实例信息（如 IP、版本、实例名）是什么？');
-  }
-
-  return {
-    needsClarify: questions.length > 0,
-    questions
-  };
-}
 
 function initConversationList() {
   loadConversationList();
 }
 
-const CONVERSATION_NAME_OVERRIDES = {
-  'conv-001': '小米保障群',
-  'conv-002': '快手保障群',
-  'conv-003': '金山云服务告警',
-};
+const CONVERSATION_NAME_OVERRIDES = {};
 
-const CUSTOMER_NAME_OVERRIDES = {
-  张三: '小米保障群',
-  李四: '快手保障群',
-  王五: '金山云服务告警',
-};
+const CUSTOMER_NAME_OVERRIDES = {};
 
 function getConversationDisplayName(conv) {
   if (!conv) return '客户';
@@ -1159,81 +1109,48 @@ async function loadConversationList() {
 
   if (isApiEnabled()) {
     try {
-      const response = await fetchConversations({
-        agentId: window.config?.userId,
+      const params = {
         status: 'active',
         pageSize: 8,
-      });
+        includeProblem: true,
+      };
+      if (window.config?.userRole === 'agent' && window.config?.userId) {
+        params.agentId = window.config.userId;
+      }
+      const response = await fetchConversations(params);
       const payload = response?.data ?? response;
       const items = payload?.items ?? payload?.conversations ?? [];
       if (items.length) {
         renderConversationItems(container, items);
+        chatController?.primeConversationCache(items);
+        loadConversationStats();
+      } else {
+        container.innerHTML =
+          '<div class="text-xs text-gray-500 p-3">暂无可用会话。</div>';
+        resetConversationSelection();
+        serverStatusCounts = { all: 0, pending: 0, active: 0 };
+        updateStatusCounts(serverStatusCounts);
       }
     } catch (e) {
       console.warn('[chat] fetch conversations failed', e);
-
-      // 降级：使用mock对话列表数据
-      const mockConversations = [
-        {
-          conversationId: 'conv-001',
-          customerName: '小米保障群',
-          lastMessage: '我的服务器无法连接，目前有影响业务，赶快看下',
-          aiSummary: '云服务器连接故障，影响业务；需补充实例ID/IP并按 P2 优先级处理。',
-          updatedAt: new Date(Date.now() - 3600000).toISOString(),
-          channel: 'feishu',
-          slaLevel: 'VIP',
-          urgency: 'high',
-          severity: 'high',
-          unreadCount: 3,
-          sentiment: { type: 'urgent', label: '⚠️ 急切' }
-        },
-        {
-          conversationId: 'conv-002',
-          customerName: '快手保障群',
-          lastMessage: '关于上个月的账单有一些疑问，想咨询一下',
-          aiSummary: '账单核验咨询，等待进一步核对信息。',
-          updatedAt: new Date(Date.now() - 7200000).toISOString(),
-          channel: 'qq',
-          slaLevel: 'KA0',
-          urgency: 'normal',
-          severity: 'normal',
-          unreadCount: 0,
-          sentiment: { type: 'neutral', label: '😐 中性' }
-        },
-        {
-          conversationId: 'conv-003',
-          customerName: '金山云服务告警',
-          lastMessage: '新功能使用很流畅，感谢你们的支持！',
-          aiSummary: '功能体验正向反馈，建议记录为改进建议。',
-          updatedAt: new Date(Date.now() - 86400000).toISOString(),
-          channel: 'wechat',
-          slaLevel: 'KA1',
-          urgency: 'low',
-          severity: 'low',
-          unreadCount: 0,
-          sentiment: { type: 'positive', label: '😊 满意' }
-        },
-        {
-          conversationId: 'conv-004',
-          customerName: '美团保障群',
-          lastMessage: '需要申请新的API密钥，请问如何操作？',
-          aiSummary: '咨询类问题，询问API密钥申请流程。',
-          updatedAt: new Date(Date.now() - 90000000).toISOString(),
-          channel: 'feishu',
-          slaLevel: 'KA0',
-          urgency: 'normal',
-          severity: 'normal',
-          unreadCount: 1,
-          sentiment: { type: 'neutral', label: '😐 中性' }
-        }
-      ];
-
-      renderConversationItems(container, mockConversations);
-      showNotification('后端API暂不可用，已加载示例对话列表以便功能演示', 'warning');
+      container.innerHTML =
+        '<div class="text-xs text-gray-500 p-3">会话列表加载失败，请稍后重试。</div>';
+      showNotification('会话列表加载失败，请稍后重试', 'warning');
+      serverStatusCounts = null;
+      updateStatusCounts({ all: '--', pending: '--' });
     }
+  } else {
+    renderFallbackConversations(container);
+    resetConversationSelection();
+    serverStatusCounts = null;
+    updateStatusCounts({ all: '--', pending: '--' });
   }
 
   bindConversationEvents();
+}
+
+function renderFallbackConversations(container) {
+  container.innerHTML = '<div class="text-xs text-gray-500 p-3">暂无可用会话。</div>';
 }
 
 function bindConversationEvents() {
@@ -1246,19 +1163,27 @@ function bindConversationEvents() {
     on(item, 'click', () => {
       conversationItems.forEach((node) => node.classList.remove('is-active'));
       item.classList.add('is-active');
-      const conversationId = item.getAttribute('data-id') || 'conv-001';
+      const conversationId = item.getAttribute('data-id');
+      if (!conversationId) {
+        return;
+      }
       currentConversationId = conversationId;
       updateChatContent(conversationId);
-      updateCustomerContext(conversationId);
+      updateCustomerContext(conversationId, item.getAttribute('data-customer-id'));
     });
   });
 
   const active = conversationItems.find((node) => node.classList.contains('is-active'));
   if (active) {
-    const activeId = active.getAttribute('data-id') || 'conv-001';
+    const activeId = active.getAttribute('data-id');
+    if (!activeId) {
+      return;
+    }
     currentConversationId = activeId;
     updateChatContent(activeId);
-    updateCustomerContext(activeId);
+    updateCustomerContext(activeId, active.getAttribute('data-customer-id'));
+  } else {
+    resetConversationSelection();
   }
 }
 
@@ -1311,7 +1236,7 @@ function updateConversationSentiment(conversationId, sentiment) {
     existingIcon.textContent = sentimentIcon;
     existingIcon.setAttribute('title', sentiment.label || sentiment.type || '情绪');
   } else {
-    // 在SLA badge后面插入情绪icon
+    // 在客户等级 badge后面插入情绪icon
     const badgeContainer = conversationItem.querySelector('.mt-2 .flex');
     if (badgeContainer) {
       const iconSpan = document.createElement('span');
@@ -1319,7 +1244,7 @@ function updateConversationSentiment(conversationId, sentiment) {
       iconSpan.textContent = sentimentIcon;
       iconSpan.setAttribute('title', sentiment.label || sentiment.type || '情绪');
 
-      // 插入到第一个子元素（SLA badge容器）之后
+      // 插入到第一个子元素（客户等级 badge容器）之后
       const firstChild = badgeContainer.firstElementChild;
       if (firstChild?.nextSibling) {
         badgeContainer.insertBefore(iconSpan, firstChild.nextSibling);
@@ -1338,6 +1263,12 @@ function createConversationMarkup(conv, isActive) {
     conv.summary ||
     conv.lastMessage ||
     '正在加载最新消息...';
+  const senderLabel = conv.lastMessageSenderType
+    ? conv.lastMessageSenderType === 'agent'
+      ? (conv.lastMessageSenderName || '客服')
+      : (conv.lastMessageSenderName || '客户')
+    : '';
+  const summaryWithSender = senderLabel ? `${senderLabel}：${summaryText}` : summaryText;
   const updatedAtValue = conv.updatedAt || conv.lastMessageTime || conv.lastMessageAt || conv.createdAt;
   const updatedAt = updatedAtValue
     ? new Date(updatedAtValue).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -1359,7 +1290,7 @@ function createConversationMarkup(conv, isActive) {
   const unreadCount = conv.unreadCount || 0;
 
   return `
-    <div class="conversation-item ${isActive ? 'is-active' : ''}" data-id="${conv.conversationId}" data-channel="${conv.channel}">
+    <div class="conversation-item ${isActive ? 'is-active' : ''}" data-id="${conv.conversationId}" data-channel="${conv.channel}" data-customer-id="${conv.customerId || ''}" data-status="${conv.problemStatus || ''}">
       <div class="flex items-start">
         <div
           class="avatar w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
@@ -1373,7 +1304,7 @@ function createConversationMarkup(conv, isActive) {
             </div>
             <span class="text-xs text-gray-400">${updatedAt}</span>
           </div>
-          <p class="text-[13px] text-gray-600 mt-1 line-clamp-2">${summaryText}</p>
+          <p class="text-[13px] text-gray-600 mt-1 line-clamp-2">${summaryWithSender}</p>
           <div class="mt-2 flex items-center justify-between text-[11px] text-gray-500">
             <div class="flex items-center gap-2">
               <span class="px-2 py-0.5 rounded-full ${badgeClass}">${conv.slaLevel || '客户等级'}</span>
@@ -1392,7 +1323,35 @@ function createConversationMarkup(conv, isActive) {
   `;
 }
 
+async function loadConversationStats() {
+  if (!isApiEnabled()) {
+    serverStatusCounts = null;
+    updateStatusCounts({ all: '--', pending: '--' });
+    return;
+  }
+
+  try {
+    const params = {
+      channel: filterState.channel || undefined,
+      urgency: filterState.urgency || undefined,
+      sla: filterState.sla || undefined,
+    };
+    const response = await fetchConversationStats(params);
+    const payload = response?.data ?? response;
+    serverStatusCounts = payload?.statusCounts || null;
+    updateStatusCounts(serverStatusCounts || { all: '--', pending: '--' });
+  } catch (err) {
+    console.warn('[chat] load conversation stats failed', err);
+    serverStatusCounts = null;
+    updateStatusCounts({ all: '--', pending: '--' });
+  }
+}
+
 function updateChatContent(conversationId) {
+  if (!conversationId) {
+    resetConversationSelection();
+    return;
+  }
   currentConversationId = conversationId;
   const card = qs(`.conversation-item[data-id="${conversationId}"]`);
 
@@ -1412,7 +1371,13 @@ function updateChatContent(conversationId) {
     customerId: card?.getAttribute('data-customer-id') || conversationId,
     company: card?.getAttribute('data-company') || '',
   });
-  updateCustomerContext(conversationId);
+  updateCustomerContext(conversationId, card?.getAttribute('data-customer-id'));
+}
+
+function resetConversationSelection() {
+  currentConversationId = null;
+  chatController?.setConversation(null);
+  updateCustomerContext(null, null);
 }
 
 function initInputEvents() {
@@ -1673,6 +1638,7 @@ function initConversationFilters() {
     on(channelSelect, 'change', (e) => {
       filterState.channel = e.target.value.toLowerCase();
       applyFilters();
+      loadConversationStats();
     });
   }
 
@@ -1682,6 +1648,7 @@ function initConversationFilters() {
     on(urgencySelect, 'change', (e) => {
       filterState.urgency = e.target.value.toLowerCase();
       applyFilters();
+      loadConversationStats();
     });
   }
 
@@ -1691,6 +1658,7 @@ function initConversationFilters() {
     on(slaSelect, 'change', (e) => {
       filterState.sla = e.target.value.toLowerCase();
       applyFilters();
+      loadConversationStats();
     });
   }
 }
@@ -1823,12 +1791,13 @@ function getConversationStatus(item) {
 function updateStatusCounts(counts) {
   const allBadge = qs('[data-count="all"]');
   const pendingBadge = qs('[data-count="pending"]');
+  const source = serverStatusCounts || counts;
 
   if (allBadge) {
-    allBadge.textContent = counts.all || 0;
+    allBadge.textContent = source?.all ?? '--';
   }
   if (pendingBadge) {
-    pendingBadge.textContent = counts.pending || 0;
+    pendingBadge.textContent = source?.pending ?? '--';
   }
 }
 
@@ -1882,4 +1851,5 @@ export function resetFilters() {
   if (allButton) updateStatusButtonStyles(allButton);
 
   applyFilters();
+  loadConversationStats();
 }

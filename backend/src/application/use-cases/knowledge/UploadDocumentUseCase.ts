@@ -5,6 +5,7 @@ import { KnowledgeItemCreatedEvent } from '@domain/knowledge/events/KnowledgeIte
 export interface UploadDocumentRequest {
   file: Buffer;
   title: string;
+  fileName?: string;
   category?: string;
   companyEntity?: string;
 }
@@ -25,6 +26,7 @@ export class UploadDocumentUseCase {
 
     const taxkbDoc = await this.adapter.uploadDocument(request.file, {
       title: request.title,
+      filename: request.fileName ?? request.title,
       category: {
         business_domain: request.category || '其他',
         company_entity: request.companyEntity,

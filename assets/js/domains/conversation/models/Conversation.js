@@ -8,7 +8,7 @@ import { Participant } from './Participant.js';
  * 职责:
  * - 管理对话的完整生命周期
  * - 维护消息集合
- * - 计算SLA状态
+ * - 计算客户等级状态
  * - 发布领域事件
  *
  * 不变量(Invariants):
@@ -20,7 +20,7 @@ import { Participant } from './Participant.js';
 import { MessageSentEvent } from '../events/MessageSentEvent.js';
 import { ConversationAssignedEvent } from '../events/ConversationAssignedEvent.js';
 import { ConversationClosedEvent } from '../events/ConversationClosedEvent.js';
-import { SLAViolatedEvent } from '../events/SLAViolatedEvent.js';
+import { CustomerLevelViolatedEvent } from '../events/CustomerLevelViolatedEvent.js';
 
 /**
  * 对话状态枚举
@@ -111,7 +111,7 @@ export class Conversation {
     // 参与者
     this.participants = (data.participants || []).map(p => new Participant(p));
 
-    // SLA信息
+    // 客户等级信息
     this.sla = {
       status: data.sla?.status || '银牌',
       firstResponseTarget: data.sla?.firstResponseTarget || 10, // 分钟
@@ -348,10 +348,10 @@ export class Conversation {
   }
 
   /**
-   * 检查SLA是否违反
+   * 检查客户等级是否违反
    */
-  checkSLAViolation() {
-    // 简化的SLA检查逻辑
+  checkCustomerLevelViolation() {
+    // 简化的客户等级检查逻辑
     const firstResponseViolated = this.sla.firstResponseElapsed > this.sla.firstResponseTarget;
     const resolutionViolated = this.sla.resolutionElapsed > this.sla.resolutionTarget;
 
@@ -359,7 +359,7 @@ export class Conversation {
 
     if (this.sla.isViolated) {
       this._addDomainEvent(
-        new SLAViolatedEvent({
+        new CustomerLevelViolatedEvent({
           conversationId: this.id,
           customerId: this.customerId,
           violationType: firstResponseViolated ? 'firstResponse' : 'resolution',

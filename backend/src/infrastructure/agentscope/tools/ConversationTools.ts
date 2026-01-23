@@ -21,7 +21,7 @@ export function buildConversationTools(deps: AgentScopeDependencies): MCPToolDef
         channel: { type: 'string', required: true, description: '渠道类型' },
         agentId: { type: 'string', description: '指定接待的坐席' },
         priority: { type: 'string', description: '优先级 low|normal|high' },
-        slaDeadline: { type: 'string', description: 'SLA截止时间 ISO 格式' },
+        slaDeadline: { type: 'string', description: '客户等级截止时间 ISO 格式' },
         metadata: { type: 'object', description: '附加元数据' },
         initialMessage: { type: 'object', description: '初始消息内容' },
       },

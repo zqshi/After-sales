@@ -9,7 +9,7 @@ export class TaxKBKnowledgeRepository implements IKnowledgeRepository {
   async findById(id: string): Promise<KnowledgeItem | null> {
     try {
       const doc = await this.adapter.getDocument(id, {
-        include: ['tags', 'metadata'],
+        include: ['tags', 'metadata', 'fulltext'],
       });
       return TaxKBMapper.toKnowledgeItem(doc);
     } catch (error) {
@@ -31,7 +31,7 @@ export class TaxKBKnowledgeRepository implements IKnowledgeRepository {
     const items = await Promise.all(
       results.map(async (result) => {
         const doc = await this.adapter.getDocument(result.doc_id, {
-          include: ['tags', 'metadata'],
+          include: ['tags', 'metadata', 'fulltext'],
         });
         return TaxKBMapper.toKnowledgeItem(doc);
       }),
@@ -68,25 +68,58 @@ export class TaxKBKnowledgeRepository implements IKnowledgeRepository {
     await this.adapter.deleteDocument(id);
   }
 
-  async semanticSearch(query: string, options?: { topK?: number }): Promise<KnowledgeItem[]> {
+  async semanticSearch(
+    query: string,
+    options?: { topK?: number; docIds?: string[] },
+  ): Promise<KnowledgeItem[]> {
     const results = await this.adapter.semanticSearch(query, {
       topK: options?.topK,
-      includeChunks: false,
+      docIds: options?.docIds,
+      includeChunks: true,
     });
 
     const items = await Promise.all(
       results.map(async (result) => {
         const doc = await this.adapter.getDocument(result.doc_id, {
-          include: ['tags', 'metadata'],
+          include: ['tags', 'metadata', 'fulltext'],
         });
-        return TaxKBMapper.toKnowledgeItem(doc);
+        const enrichedDoc = doc.content ? doc : { ...doc, content: result.content || '' };
+        return TaxKBMapper.toKnowledgeItem(enrichedDoc);
       }),
     );
 
     return items;
   }
 
-  async searchQA(question: string, topK: number = 5): Promise<ReturnType<TaxKBAdapter['searchQA']>> {
-    return this.adapter.searchQA(question, { top_k: topK });
+  async searchQA(
+    question: string,
+    options?: { topK?: number; docIds?: string[] },
+  ): Promise<ReturnType<TaxKBAdapter['searchQA']>> {
+    return this.adapter.searchQA(question, {
+      top_k: options?.topK ?? 5,
+      doc_ids: options?.docIds,
+    });
+  }
+
+  async findByFileHash(fileName: string, fileHash: string): Promise<KnowledgeItem | null> {
+    if (!fileName || !fileHash) {
+      return null;
+    }
+
+    const results = await this.adapter.searchDocuments(fileName, {
+      status: ['active', 'draft', 'pending_review', 'archived', 'deprecated'],
+      limit: 20,
+    });
+
+    for (const result of results) {
+      const doc = await this.adapter.getDocument(result.doc_id, {
+        include: ['tags', 'metadata', 'fulltext'],
+      });
+      if (doc.file_hash === fileHash) {
+        return TaxKBMapper.toKnowledgeItem(doc);
+      }
+    }
+
+    return null;
   }
 }

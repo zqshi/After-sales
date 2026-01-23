@@ -9,7 +9,7 @@ import { BaseRepository } from './BaseRepository.js';
 export class TaskRepository extends BaseRepository {
   constructor(apiClient) {
     super('task', { apiClient, cacheEnabled: false });
-    this.endpoint = '/tasks';
+    this.endpoint = '/api/tasks';
   }
 
   async list(filters = {}) {

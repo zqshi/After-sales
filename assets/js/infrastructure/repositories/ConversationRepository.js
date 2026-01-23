@@ -8,7 +8,7 @@ import { BaseRepository } from './BaseRepository.js';
 
 export class ConversationRepository extends BaseRepository {
   constructor(apiClient) {
-    super(apiClient, '/conversations');
+    super('conversation', { apiClient, endpoint: '/api/conversations' });
   }
 
   /**

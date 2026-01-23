@@ -78,7 +78,7 @@ describe('事件流端到端测试', () => {
         customerId: 'CUST-001',
         oldLevel: 'low',
         newLevel: 'high',
-        reason: '多次SLA违规',
+        reason: '多次客户等级违规',
         triggerType: 'auto',
       };
 

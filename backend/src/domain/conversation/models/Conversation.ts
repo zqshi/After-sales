@@ -3,11 +3,11 @@ import { ConversationCreatedEvent } from '../events/ConversationCreatedEvent';
 import { ConversationClosedEvent } from '../events/ConversationClosedEvent';
 import { ConversationAssignedEvent } from '../events/ConversationAssignedEvent';
 import { MessageSentEvent } from '../events/MessageSentEvent';
-import { SLAViolatedEvent } from '../events/SLAViolatedEvent';
+import { CustomerLevelViolatedEvent } from '../events/CustomerLevelViolatedEvent';
 import { Message } from './Message';
 import { Channel } from '../value-objects/Channel';
-import { ConversationStatus, MessagePriority, SLAStatus } from '../types';
-import { SLACalculatorService, slaCalculator } from '../services/SLACalculatorService';
+import { ConversationStatus, MessagePriority, CustomerLevelStatus } from '../types';
+import { CustomerLevelCalculatorService, slaCalculator } from '../services/CustomerLevelCalculatorService';
 
 export type AgentMode = 'agent_auto' | 'agent_supervised' | 'human_first';
 
@@ -17,7 +17,7 @@ interface ConversationProps {
   channel: Channel;
   status: ConversationStatus;
   priority: MessagePriority;
-  slaStatus: SLAStatus;
+  slaStatus: CustomerLevelStatus;
   slaDeadline?: Date;
   messages: Message[];
   mode?: AgentMode; // Agent处理模式
@@ -28,9 +28,9 @@ interface ConversationProps {
 }
 
 export class Conversation extends AggregateRoot<ConversationProps> {
-  private readonly slaService: SLACalculatorService;
+  private readonly slaService: CustomerLevelCalculatorService;
 
-  private constructor(props: ConversationProps, slaService: SLACalculatorService, id?: string) {
+  private constructor(props: ConversationProps, slaService: CustomerLevelCalculatorService, id?: string) {
     super(props, id);
     this.slaService = slaService;
   }
@@ -43,7 +43,7 @@ export class Conversation extends AggregateRoot<ConversationProps> {
     slaDeadline?: Date;
     mode?: AgentMode;
     metadata?: Record<string, unknown>;
-  }, slaService: SLACalculatorService = slaCalculator): Conversation {
+  }, slaService: CustomerLevelCalculatorService = slaCalculator): Conversation {
     const now = new Date();
 
     const conversation = new Conversation(
@@ -77,7 +77,7 @@ export class Conversation extends AggregateRoot<ConversationProps> {
     );
 
     if (data.slaDeadline) {
-      conversation.evaluateSLA(now);
+      conversation.evaluateCustomerLevel(now);
     }
 
     return conversation;
@@ -103,7 +103,7 @@ export class Conversation extends AggregateRoot<ConversationProps> {
     return this.props.priority;
   }
 
-  get slaStatus(): SLAStatus {
+  get slaStatus(): CustomerLevelStatus {
     return this.props.slaStatus;
   }
 
@@ -140,6 +140,32 @@ export class Conversation extends AggregateRoot<ConversationProps> {
       throw new Error('无法修改已关闭对话的模式');
     }
     this.props.mode = mode;
+    this.props.updatedAt = new Date();
+  }
+
+  public mergeMetadata(metadata: Record<string, unknown>): void {
+    if (!metadata || Object.keys(metadata).length === 0) {
+      return;
+    }
+
+    this.props.metadata = {
+      ...(this.props.metadata || {}),
+      ...metadata,
+    };
+    this.props.updatedAt = new Date();
+  }
+
+  public updateStatus(status: ConversationStatus, resolution?: string): void {
+    if (this.status === 'closed' && status !== 'closed') {
+      throw new Error('无法重新打开已关闭的对话');
+    }
+
+    if (status === 'closed') {
+      this.close(resolution || 'Closed via API');
+      return;
+    }
+
+    this.props.status = status;
     this.props.updatedAt = new Date();
   }
 
@@ -189,20 +215,20 @@ export class Conversation extends AggregateRoot<ConversationProps> {
     );
   }
 
-  public setSLADeadline(deadline: Date): void {
+  public setCustomerLevelDeadline(deadline: Date): void {
     this.props.slaDeadline = deadline;
     this.props.updatedAt = new Date();
 
-    this.evaluateSLA();
+    this.evaluateCustomerLevel();
   }
 
-  public checkSLAStatus(now: Date = new Date()): SLAStatus {
-    this.evaluateSLA(now);
+  public checkCustomerLevelStatus(now: Date = new Date()): CustomerLevelStatus {
+    this.evaluateCustomerLevel(now);
     return this.props.slaStatus;
   }
 
-  public getSLAInfo(): {
-    status: SLAStatus;
+  public getCustomerLevelInfo(): {
+    status: CustomerLevelStatus;
     responseTime: number;
     threshold: number;
     violated: boolean;
@@ -212,7 +238,7 @@ export class Conversation extends AggregateRoot<ConversationProps> {
     const hasDeadline = Boolean(deadline);
     const evaluation = hasDeadline
       ? this.slaService.evaluate(deadline as Date, now)
-      : { status: 'normal' as SLAStatus, remainingMs: 0 };
+      : { status: 'normal' as CustomerLevelStatus, remainingMs: 0 };
 
     const responseTime = hasDeadline
       ? Math.max(0, deadline!.getTime() - now.getTime())
@@ -279,7 +305,7 @@ export class Conversation extends AggregateRoot<ConversationProps> {
     );
   }
 
-  private evaluateSLA(now: Date = new Date()): void {
+  private evaluateCustomerLevel(now: Date = new Date()): void {
     if (!this.props.slaDeadline) {
       return;
     }
@@ -291,7 +317,7 @@ export class Conversation extends AggregateRoot<ConversationProps> {
 
     if (previousStatus !== 'violated' && evaluation.status === 'violated') {
       this.addDomainEvent(
-        new SLAViolatedEvent(
+        new CustomerLevelViolatedEvent(
           { aggregateId: this.id },
           {
             deadline: this.props.slaDeadline,
@@ -305,7 +331,7 @@ export class Conversation extends AggregateRoot<ConversationProps> {
   static rehydrate(
     props: ConversationProps,
     id: string,
-    slaService: SLACalculatorService = slaCalculator,
+    slaService: CustomerLevelCalculatorService = slaCalculator,
   ): Conversation {
     return new Conversation(props, slaService, id);
   }

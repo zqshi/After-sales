@@ -16,7 +16,7 @@
 #### Conversation Context（对话上下文）
 - **职责**: 管理客户与客服的对话生命周期
 - **聚合根**: Conversation, Message
-- **核心价值**: AI辅助对话、智能分配、SLA管理
+- **核心价值**: AI辅助对话、智能分配、客户等级管理
 - **团队**: 核心团队
 - **代码路径**: `/backend/src/domain/conversation/`
 

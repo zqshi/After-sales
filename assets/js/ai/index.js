@@ -56,7 +56,7 @@ async function runAnalysisFlow(triggerBtn = null) {
   } catch (err) {
     console.warn('[ai] analyze failed', err);
     renderAnalysisResultFallback();
-    showNotification('对话分析异常，已使用本地提示', 'warning');
+    showNotification('对话分析异常，暂无可用数据', 'warning');
   } finally {
     if (btn) {
       btn.innerHTML = originalText;
@@ -94,8 +94,8 @@ function renderAnalysisResult(data) {
 
 function renderAnalysisResultFallback() {
   renderAnalysisResult({
-    summary: 'AI 服务暂未就绪，正在使用本地经验提供建议。',
-    issues: ['建议检查登录凭据与认证服务', '确认网络/限流后再联系客户', '记录当前快照供后续分析'],
+    summary: '暂无数据',
+    issues: [],
   });
 }
 
@@ -111,82 +111,56 @@ async function handleApplySolution(btn) {
   const originalText = btn.innerHTML;
   btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
   btn.disabled = true;
-  let usedFallback = false;
 
   if (!isApiEnabled()) {
-    usedFallback = true;
-    await fallbackApplySolution(type);
-  } else {
-    try {
-      await applySolutionFlow(type, template);
-    } catch (err) {
-      console.warn('[ai] apply solution failed', err);
-      usedFallback = true;
-      await fallbackApplySolution(type);
-    }
+    showNotification('AI 服务未就绪，暂无可用数据', 'warning');
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    return;
+  }
+  try {
+    await applySolutionFlow(type, template);
+  } catch (err) {
+    console.warn('[ai] apply solution failed', err);
+    showNotification('解决方案生成失败，暂无可用数据', 'warning');
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    return;
   }
 
   btn.innerHTML = originalText;
   btn.disabled = false;
-  showNotification(usedFallback ? 'AI 服务未就绪，已使用本地建议' : '已应用解决方案', usedFallback ? 'warning' : 'success');
+  showNotification('已应用解决方案', 'success');
 }
 
 async function applySolutionFlow(type, template) {
-  const fallback = buildSolutionContent(type);
+  const conversationId = getActiveConversationId();
+  if (!conversationId) {
+    showNotification('暂无可用会话', 'warning');
+    return;
+  }
   const response = await apiApplySolution({
     solutionType: type,
-    conversationId: getActiveConversationId(),
+    conversationId,
     messageTemplate: template,
   });
   const solution = response?.data ?? response;
-  const messageContent = solution?.message || fallback.message;
-  const name = solution?.title || fallback.title;
+  const messageContent = solution?.message;
+  const name = solution?.title;
+  if (!messageContent) {
+    showNotification('暂无可用数据', 'warning');
+    return;
+  }
   addMessage('engineer', messageContent);
-  await createRelatedTask(type, name, solution?.taskDraft);
-}
-
-async function fallbackApplySolution(type) {
-  const fallback = buildSolutionContent(type);
-  await delay(1000);
-  addMessage('engineer', fallback.message);
-  await createRelatedTask(type, fallback.title);
+  if (name) {
+    await createRelatedTask(type, name, solution?.taskDraft);
+  }
 }
 
 function getActiveConversationId() {
-  return qs('.conversation-item.is-active')?.getAttribute('data-id') || 'conv-001';
+  return qs('.conversation-item.is-active')?.getAttribute('data-id') || null;
 }
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function buildSolutionContent(type) {
-  switch (type) {
-    case 'login-diagnosis':
-      return {
-        title: '登录问题跟进',
-        message:
-          '根据诊断，建议执行以下步骤解决登录问题：<br>1. 清除浏览器缓存和Cookie<br>2. 尝试使用无痕模式登录<br>3. 验证用户名和密码是否正确<br>4. 检查网络连接状态',
-      };
-    case 'security-check':
-      return {
-        title: '账户安全加固',
-        message:
-          '账户安全检查结果：<br>1. 建议立即修改密码<br>2. 开启双因素认证<br>3. 检查近期登录记录<br>4. 更新安全问题设置',
-      };
-    case 'system-diagnosis':
-      return {
-        title: '系统优化建议',
-        message:
-          '系统故障排查结果：<br>1. 检测到服务器响应延迟<br>2. 建议重启应用程序<br>3. 检查系统更新状态<br>4. 验证数据库连接',
-      };
-    default:
-      return {
-        title: '自动任务',
-        message: '已应用解决方案',
-      };
-  }
-}
 
 export function analyzeConversation() {
   runAnalysisFlow(qs('#reanalyze-btn'));

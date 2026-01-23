@@ -6,9 +6,10 @@ import { buildMessageNode } from './AgentMessageRenderer.js';
 import { AgentWebSocket } from '../../infrastructure/websocket/AgentWebSocket.js';
 import { AiAssistantPanel } from './AiAssistantPanel.js';
 import { AiAnalysisCache } from '../../infrastructure/cache/AiAnalysisCache.js';
+import { LRUCache } from '../../infrastructure/cache/LRUCache.js';
 
-const DEFAULT_CUSTOMER = 'customer-001';
-const DEFAULT_CONVERSATION = 'conv-001';
+const DEFAULT_CUSTOMER = null;
+const DEFAULT_CONVERSATION = null;
 
 export class UnifiedChatController {
   constructor() {
@@ -32,6 +33,10 @@ export class UnifiedChatController {
 
     // 初始化AI分析缓存（最多缓存10个会话，有效期1分钟）
     this.aiAnalysisCache = new AiAnalysisCache(10, 60000);
+
+    // 会话消息缓存（避免切换时重复拉取）
+    this.messagesCache = new LRUCache(20);
+    this.messageFetchInFlight = new Map();
 
     // 存储消息与AI分析的映射关系
     this.messageAnalysisMap = new Map();
@@ -58,7 +63,9 @@ export class UnifiedChatController {
     }
 
     this.setMode(this.mode);
-    this.loadConversation(this.conversationId);
+    if (this.conversationId) {
+      this.loadConversation(this.conversationId);
+    }
   }
 
   async setMode(mode = 'agent_auto', saveToBackend = true) {
@@ -99,6 +106,10 @@ export class UnifiedChatController {
       showNotification('请输入消息内容', 'warning');
       return;
     }
+    if (!this.conversationId || !this.customerId) {
+      showNotification('请先选择会话', 'warning');
+      return;
+    }
 
     // 1. 立即显示客服回复（右侧样式）
     const messageId = this.appendMessage({
@@ -106,6 +117,13 @@ export class UnifiedChatController {
       author: '客服',
       content: text,
       timestamp: new Date().toISOString(),
+    });
+    this.storeMessage(this.conversationId, {
+      id: messageId,
+      senderType: 'agent',
+      senderName: '客服',
+      content: text,
+      sentAt: new Date().toISOString(),
     });
 
     if (this.input) {
@@ -177,6 +195,7 @@ export class UnifiedChatController {
       content: message.content,
       timestamp: message.timestamp,
       messageId: finalMessageId,
+      metadata: message.metadata || {},
       sentiment: message.sentiment, // 传递情绪数据
     });
     this.messagesContainer.appendChild(node);
@@ -242,6 +261,22 @@ export class UnifiedChatController {
     }
   }
 
+  async primeConversationCache(conversations = []) {
+    if (!Array.isArray(conversations) || !conversations.length) {
+      return;
+    }
+
+    const ids = conversations
+      .map((conv) => conv?.conversationId)
+      .filter(Boolean);
+
+    if (!ids.length) {
+      return;
+    }
+
+    await Promise.allSettled(ids.map((id) => this.fetchAndCacheConversationMessages(id)));
+  }
+
   async loadConversation(conversationId) {
     if (!conversationId) return;
     this.clearMessages();
@@ -249,76 +284,16 @@ export class UnifiedChatController {
     // 清空AI辅助面板和消息映射
     this.aiPanel?.clear();
     this.messageAnalysisMap.clear();
+    this.lastCustomerMessageId = null;
 
     try {
-      const payload = await fetchConversationMessages(conversationId, { limit: 40 });
-      const data = payload?.data ?? payload ?? {};
-      const items = data?.items ?? data?.messages ?? [];
+      const items = await this.fetchAndCacheConversationMessages(conversationId);
       if (Array.isArray(items)) {
-        items.forEach((entry) => {
-          // 修正：后端返回的是 'agent' 或 'customer'，不是 'internal'
-          const role = (entry.senderType === 'agent' || entry.senderType === 'internal') ? 'agent' : 'customer';
-          const author = entry.senderName || (role === 'agent' ? '客服' : '客户');
-
-          // 调试：打印sentiment数据
-          if (entry.sentiment) {
-            console.log('[UnifiedChat] 消息情绪数据:', entry.id, entry.sentiment);
-          }
-
-          const messageId = this.appendMessage({
-            role,
-            author,
-            content: entry.content,
-            timestamp: entry.sentAt ?? entry.createdAt ?? entry.timestamp,
-            sentiment: entry.sentiment, // 传递情绪数据
-          }, entry.id);
-
-          // 如果有AI分析数据，存储映射
-          if (entry.aiAnalysis) {
-            this.messageAnalysisMap.set(messageId, entry.aiAnalysis);
-            this.updateMessageIssueIndicator(messageId, entry.aiAnalysis);
-          }
-        });
+        this.renderConversationMessages(items);
       }
     } catch (error) {
       console.warn('[UnifiedChat] 无法加载历史消息', error);
-
-      // 降级：注入mock消息数据以保证功能演示
-      this.appendMessage({
-        role: 'customer',
-        author: '客户',
-        content: '我的服务器无法连接，目前有影响业务，赶快看下',
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        sentiment: {
-          emotion: 'urgent',
-          score: 0.86,
-          confidence: 0.92
-        }
-      });
-      this.appendMessage({
-        role: 'agent',
-        author: '客服',
-        content: '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。',
-        timestamp: new Date(Date.now() - 2700000).toISOString(),
-      });
-      this.appendMessage({
-        role: 'customer',
-        author: '客户',
-        content: '服务器实例为test123，ip是192.168.10.2',
-        timestamp: new Date(Date.now() - 1200000).toISOString(),
-        sentiment: {
-          emotion: 'urgent',
-          score: 0.8,
-          confidence: 0.9
-        }
-      });
-      this.appendMessage({
-        role: 'agent',
-        author: '客服',
-        content: '收到，我们高优排查该问题，有进展第一时间同步。',
-        timestamp: new Date(Date.now() - 900000).toISOString(),
-      });
-      showNotification('后端API暂不可用，已加载示例对话以便功能演示', 'warning');
+      showNotification('历史消息加载失败，请稍后重试', 'warning');
     }
 
     // 加载AI分析数据（带缓存）
@@ -347,25 +322,6 @@ export class UnifiedChatController {
         }
       }
 
-      // === 临时测试数据 - 确保detectedIssues存在，触发问题模式 ===
-      if (!analysisData.detectedIssues || analysisData.detectedIssues.length === 0) {
-        console.warn('[临时] 后端未返回问题数据，添加测试问题以触发完整AI辅助');
-        analysisData.detectedIssues = [{
-          type: 'system_error',
-          severity: 'p2',
-          description: '故障处理问题：云服务器无法连接，预定级 P2'
-        }];
-        // 同时添加负面情感，确保hasIssue为true
-        if (!analysisData.lastCustomerSentiment || analysisData.lastCustomerSentiment.emotion !== 'urgent') {
-          analysisData.lastCustomerSentiment = {
-            emotion: 'urgent',
-            score: 0.86,
-            confidence: 0.92
-          };
-        }
-      }
-      // === 临时测试数据结束 ===
-
       // 检查是否有问题需要显示AI入口
       const hasIssue = analysisData.detectedIssues?.length > 0 ||
                        ['negative', 'angry', 'frustrated', 'anxious', 'urgent'].includes(
@@ -379,40 +335,7 @@ export class UnifiedChatController {
       this.aiPanel?.hide();
     } catch (error) {
       console.warn('[UnifiedChat] 无法加载AI分析', error);
-
-      // 降级：使用mock AI分析数据
-      const mockAnalysis = {
-        lastCustomerSentiment: {
-          emotion: 'urgent',
-          score: 0.86,
-          confidence: 0.92
-        },
-        detectedIssues: [{
-          type: 'system_error',
-          severity: 'p2',
-          description: '故障处理问题：云服务器无法连接，预定级 P2'
-        }],
-        replySuggestion: {
-          suggestedReply: '收到，我们高优排查该问题，有进展第一时间同步。',
-          confidence: 0.9,
-          needsHumanReview: false
-        },
-        knowledgeRecommendations: [
-          { id: 'kb-011', title: '云服务器无法连接排查手册', category: '故障处理', score: 0.93, url: '/knowledge/kb-011' },
-          { id: 'kb-014', title: '实例网络连通性诊断指南', category: '云服务器', score: 0.9, url: '/knowledge/kb-014' },
-          { id: 'kb-018', title: 'P2故障升级与通报流程', category: '应急预案', score: 0.84, url: '/knowledge/kb-018' }
-        ],
-        relatedTasks: [
-          { id: 2231, title: '云服务器实例无法连接 - P2', priority: 'high', url: '/tasks/2231' },
-          { id: 2232, title: '客户实例test123网络排查', priority: 'high', url: '/tasks/2232' },
-          { id: 2233, title: '云服务器连通性异常告警复盘', priority: 'medium', url: '/tasks/2233' }
-        ]
-      };
-
-      this.attachConversationIssueToLatestMessage(mockAnalysis);
-      this.aiPanel?.hide();
-
-      showNotification('后端AI分析暂不可用，已加载示例分析以便功能演示', 'warning');
+      showNotification('AI分析加载失败，请稍后重试', 'warning');
     }
 
     scrollToBottom();
@@ -420,7 +343,18 @@ export class UnifiedChatController {
   }
 
   async setConversation(conversationId, details = {}) {
-    this.conversationId = conversationId || DEFAULT_CONVERSATION;
+    if (!conversationId) {
+      this.conversationId = null;
+      this.customerId = null;
+      this.updateHeader({
+        title: '暂无会话',
+        summary: '请选择左侧会话开始处理',
+        sla: '客户等级未知',
+      });
+      this.clearMessages();
+      return;
+    }
+    this.conversationId = conversationId;
     this.customerId = details.customerId || this.customerId;
 
     // 恢复该会话的mode配置（不保存到后端，因为是恢复）
@@ -494,6 +428,185 @@ export class UnifiedChatController {
     if (payload.type === 'human_input_required') {
       this.showEscalationBanner(payload.message || 'Agent 请求人工介入');
     }
+
+    const incoming = this.extractIncomingMessage(payload);
+    if (incoming) {
+      this.handleIncomingMessage(incoming);
+    }
+  }
+
+  extractIncomingMessage(payload) {
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+
+    if (payload.type && !['message', 'incoming_message', 'new_message', 'chat_message'].includes(payload.type)) {
+      return null;
+    }
+
+    const message = payload.message || payload.data?.message || payload.data;
+    if (!message || typeof message !== 'object') {
+      return null;
+    }
+
+    const conversationId = payload.conversationId || message.conversationId || payload.data?.conversationId || this.conversationId;
+    if (!conversationId) {
+      return null;
+    }
+
+    return { conversationId, message };
+  }
+
+  handleIncomingMessage({ conversationId, message }) {
+    if (!conversationId || !message) {
+      return;
+    }
+
+    const normalized = this.normalizeMessage(message);
+    if (!normalized) {
+      return;
+    }
+
+    const stored = this.storeMessage(conversationId, normalized);
+    if (!stored) {
+      return;
+    }
+
+    if (conversationId === this.conversationId) {
+      const role = (normalized.senderType === 'agent' || normalized.senderType === 'internal') ? 'agent' : 'customer';
+      const author = normalized.senderName || (role === 'agent' ? '客服' : '客户');
+      const messageId = this.appendMessage({
+        role,
+        author,
+        content: normalized.content,
+        timestamp: normalized.sentAt ?? normalized.createdAt ?? normalized.timestamp,
+        metadata: normalized.metadata || {},
+        sentiment: normalized.sentiment,
+      }, normalized.id);
+
+      if (normalized.aiAnalysis) {
+        this.messageAnalysisMap.set(messageId, normalized.aiAnalysis);
+        this.updateMessageIssueIndicator(messageId, normalized.aiAnalysis);
+      }
+
+      if (normalized.sentiment) {
+        this.updateMessageSentiment({ sentiment: normalized.sentiment });
+      }
+
+      scrollToBottom();
+    }
+  }
+
+  async fetchAndCacheConversationMessages(conversationId, options = {}) {
+    if (!conversationId) {
+      return [];
+    }
+
+    if (this.messagesCache.has(conversationId)) {
+      const cached = this.messagesCache.get(conversationId);
+      return cached?.items || [];
+    }
+
+    if (this.messageFetchInFlight.has(conversationId)) {
+      return await this.messageFetchInFlight.get(conversationId);
+    }
+
+    const { limit = 40 } = options;
+
+    const fetchPromise = (async () => {
+      const payload = await fetchConversationMessages(conversationId, { limit });
+      const data = payload?.data ?? payload ?? {};
+      const items = Array.isArray(data?.items) ? data.items : (data?.messages || []);
+      const normalized = Array.isArray(items) ? items.map((entry) => this.normalizeMessage(entry)).filter(Boolean) : [];
+
+      const cacheEntry = this.buildCacheEntry(normalized);
+      this.messagesCache.set(conversationId, cacheEntry);
+      return normalized;
+    })()
+      .finally(() => {
+        this.messageFetchInFlight.delete(conversationId);
+      });
+
+    this.messageFetchInFlight.set(conversationId, fetchPromise);
+    return await fetchPromise;
+  }
+
+  buildCacheEntry(items = []) {
+    const ids = new Set();
+    items.forEach((entry) => {
+      if (entry?.id) {
+        ids.add(entry.id);
+      }
+    });
+    return { items, ids };
+  }
+
+  storeMessage(conversationId, entry) {
+    if (!conversationId || !entry) {
+      return false;
+    }
+
+    const normalized = this.normalizeMessage(entry);
+    if (!normalized) {
+      return false;
+    }
+
+    const cacheEntry = this.messagesCache.get(conversationId) || { items: [], ids: new Set() };
+    if (normalized.id && cacheEntry.ids.has(normalized.id)) {
+      return false;
+    }
+
+    cacheEntry.items.push(normalized);
+    if (normalized.id) {
+      cacheEntry.ids.add(normalized.id);
+    }
+    this.messagesCache.set(conversationId, cacheEntry);
+    return true;
+  }
+
+  normalizeMessage(entry) {
+    if (!entry || typeof entry !== 'object') {
+      return null;
+    }
+
+    const senderType = entry.senderType || entry.role || (entry.senderRole === 'agent' ? 'agent' : entry.senderRole);
+    return {
+      id: entry.id || entry.messageId || entry.msgId,
+      senderType: senderType || 'customer',
+      senderName: entry.senderName || entry.author,
+      content: entry.content || entry.text || '',
+      sentAt: entry.sentAt || entry.createdAt || entry.timestamp,
+      createdAt: entry.createdAt,
+      timestamp: entry.timestamp,
+      metadata: entry.metadata || {},
+      sentiment: entry.sentiment,
+      aiAnalysis: entry.aiAnalysis,
+    };
+  }
+
+  renderConversationMessages(items = []) {
+    items.forEach((entry) => {
+      const role = (entry.senderType === 'agent' || entry.senderType === 'internal') ? 'agent' : 'customer';
+      const author = entry.senderName || (role === 'agent' ? '客服' : '客户');
+
+      if (entry.sentiment) {
+        console.log('[UnifiedChat] 消息情绪数据:', entry.id, entry.sentiment);
+      }
+
+      const messageId = this.appendMessage({
+        role,
+        author,
+        content: entry.content,
+        timestamp: entry.sentAt ?? entry.createdAt ?? entry.timestamp,
+        metadata: entry.metadata || {},
+        sentiment: entry.sentiment,
+      }, entry.id);
+
+      if (entry.aiAnalysis) {
+        this.messageAnalysisMap.set(messageId, entry.aiAnalysis);
+        this.updateMessageIssueIndicator(messageId, entry.aiAnalysis);
+      }
+    });
   }
 
   updateStatus(state, label) {
@@ -675,40 +788,19 @@ export class UnifiedChatController {
     }
 
     // 更新回复建议
-    if (analysisData.replySuggestion) {
+    if (analysisData.replySuggestion?.suggestedReply) {
       this.aiPanel?.updateReplySuggestion(analysisData.replySuggestion);
     }
 
     // 自动生成解决步骤（仅问题模式）
-    if (hasIssue) {
-      const issueContext = {
-        description: analysisData.detectedIssues?.[0]?.description || '当前问题',
-        severity: analysisData.detectedIssues?.[0]?.severity || 'medium'
-      };
-      const solutionSteps = this.aiPanel?.generateSolutionSteps(issueContext);
-      if (solutionSteps) {
-        this.aiPanel?.updateSolutionSteps(solutionSteps);
-      }
+    if (hasIssue && analysisData.detectedIssues?.length > 0) {
+      const solutionSteps = analysisData.detectedIssues.map((issue, index) => ({
+        step: issue.type || `问题 ${index + 1}`,
+        description: issue.description || '暂无数据',
+        status: 'pending',
+      }));
+      this.aiPanel?.updateSolutionSteps(solutionSteps);
     }
-
-    // === 临时测试数据 - 后端API未返回知识库和工单，先用mock数据验证显示 ===
-    if (hasIssue && (!analysisData.knowledgeRecommendations || analysisData.knowledgeRecommendations.length === 0)) {
-      console.warn('[临时] 后端未返回知识库数据，使用测试数据');
-      analysisData.knowledgeRecommendations = [
-        { id: 'kb-011', title: '云服务器无法连接排查手册', category: '故障处理', score: 0.93, url: '/knowledge/kb-011' },
-        { id: 'kb-014', title: '实例网络连通性诊断指南', category: '云服务器', score: 0.9, url: '/knowledge/kb-014' },
-        { id: 'kb-018', title: 'P2故障升级与通报流程', category: '应急预案', score: 0.84, url: '/knowledge/kb-018' }
-      ];
-    }
-    if (hasIssue && (!analysisData.relatedTasks || analysisData.relatedTasks.length === 0)) {
-      console.warn('[临时] 后端未返回工单数据，使用测试数据');
-      analysisData.relatedTasks = [
-        { id: 2231, title: '云服务器实例无法连接 - P2', priority: 'high', url: '/tasks/2231' },
-        { id: 2232, title: '客户实例test123网络排查', priority: 'high', url: '/tasks/2232' },
-        { id: 2233, title: '云服务器连通性异常告警复盘', priority: 'medium', url: '/tasks/2233' }
-      ];
-    }
-    // === 临时测试数据结束 ===
 
     // 更新知识库推荐（仅问题模式）
     if (hasIssue && analysisData.knowledgeRecommendations?.length > 0) {

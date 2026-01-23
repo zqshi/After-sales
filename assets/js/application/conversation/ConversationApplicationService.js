@@ -160,7 +160,7 @@ export class ConversationApplicationService {
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt,
         closedAt: conversation.closedAt,
-        slaInfo: conversation.getSLAInfo(),
+        slaInfo: conversation.getCustomerLevelInfo(),
       };
     } catch (error) {
       console.error('[ConversationApplicationService] getConversation error:', error);
@@ -184,7 +184,7 @@ export class ConversationApplicationService {
         messageCount: conv.messages.length,
         createdAt: conv.createdAt,
         updatedAt: conv.updatedAt,
-        slaStatus: conv.getSLAInfo().status,
+        slaStatus: conv.getCustomerLevelInfo().status,
       }));
     } catch (error) {
       console.error('[ConversationApplicationService] getConversationList error:', error);

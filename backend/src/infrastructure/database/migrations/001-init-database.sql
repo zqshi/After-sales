@@ -2,6 +2,9 @@
 -- 智能售后工作台 - 数据库初始化脚本
 -- 创建日期: 2024-12-14
 
+-- 依赖扩展（UUID生成）
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ==================================================
 -- 1. 创建对话表（Conversations）
 -- ==================================================
@@ -39,8 +42,8 @@ COMMENT ON COLUMN conversations.agent_id IS '客服ID';
 COMMENT ON COLUMN conversations.channel IS '渠道: chat, email, phone, feishu';
 COMMENT ON COLUMN conversations.status IS '状态: open(进行中), pending(待处理), closed(已关闭)';
 COMMENT ON COLUMN conversations.priority IS '优先级: low, normal, high, urgent';
-COMMENT ON COLUMN conversations.sla_status IS 'SLA状态: normal, warning, violated';
-COMMENT ON COLUMN conversations.sla_deadline IS 'SLA截止时间';
+COMMENT ON COLUMN conversations.sla_status IS '客户等级状态: normal, warning, violated';
+COMMENT ON COLUMN conversations.sla_deadline IS '客户等级截止时间';
 COMMENT ON COLUMN conversations.metadata IS '扩展元数据（JSON格式）';
 
 -- ==================================================
@@ -86,6 +89,12 @@ CREATE TABLE IF NOT EXISTS customer_profiles (
     contact_info JSONB DEFAULT '{}'::jsonb,
     sla_info JSONB DEFAULT '{}'::jsonb,
     metrics JSONB DEFAULT '{}'::jsonb,
+    insights JSONB DEFAULT '[]'::jsonb,
+    interactions JSONB DEFAULT '[]'::jsonb,
+    service_records JSONB DEFAULT '[]'::jsonb,
+    commitments JSONB DEFAULT '[]'::jsonb,
+    is_vip BOOLEAN DEFAULT false,
+    risk_level VARCHAR(10) DEFAULT 'low',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_health_score CHECK (health_score >= 0 AND health_score <= 100)
@@ -101,7 +110,7 @@ COMMENT ON TABLE customer_profiles IS '客户画像表 - 存储客户详细信�
 COMMENT ON COLUMN customer_profiles.customer_id IS '客户ID（业务主键）';
 COMMENT ON COLUMN customer_profiles.health_score IS '客户健康度评分（0-100）';
 COMMENT ON COLUMN customer_profiles.contact_info IS '联系信息（email, phone等）';
-COMMENT ON COLUMN customer_profiles.sla_info IS 'SLA承诺信息';
+COMMENT ON COLUMN customer_profiles.sla_info IS '客户等级承诺信息';
 COMMENT ON COLUMN customer_profiles.metrics IS '客户指标（订单数、消费金额等）';
 
 -- ==================================================
@@ -110,6 +119,7 @@ COMMENT ON COLUMN customer_profiles.metrics IS '客户指标（订单数、消�
 
 CREATE TABLE IF NOT EXISTS requirements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id VARCHAR(50),
     conversation_id UUID REFERENCES conversations(id),
     title VARCHAR(200) NOT NULL,
     description TEXT,
@@ -122,7 +132,7 @@ CREATE TABLE IF NOT EXISTS requirements (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     metadata JSONB DEFAULT '{}'::jsonb,
     CONSTRAINT chk_requirement_priority CHECK (priority IN ('low', 'medium', 'high', 'critical')),
-    CONSTRAINT chk_requirement_status CHECK (status IN ('pending', 'approved', 'rejected', 'implemented'))
+    CONSTRAINT chk_requirement_status CHECK (status IN ('pending', 'approved', 'resolved', 'ignored', 'cancelled'))
 );
 
 -- 索引

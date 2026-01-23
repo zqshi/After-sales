@@ -1,0 +1,8 @@
+<xml>
+   <ToUserName><![CDATA[CorpID]]></ToUserName>
+   <FromUserName><![CDATA[sys]]></FromUserName>
+   <CreateTime>1723099000</CreateTime>
+   <MsgType><![CDATA[event]]></MsgType>
+   <AgentID>2000004</AgentID>
+   <Event><![CDATA[msgaudit_notify]]></Event>
+</xml>

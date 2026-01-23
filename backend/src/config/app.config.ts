@@ -1,6 +1,22 @@
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
-dotenv.config();
+const resolveEnvPath = (): string | undefined => {
+  const explicit = process.env.DOTENV_CONFIG_PATH;
+  if (explicit) {
+    return explicit;
+  }
+  const cwd = process.cwd();
+  const candidates = [
+    path.resolve(cwd, '.env'),
+    path.resolve(cwd, 'backend/.env'),
+    path.resolve(cwd, '..', '.env'),
+  ];
+  return candidates.find((candidate) => fs.existsSync(candidate));
+};
+
+dotenv.config({ path: resolveEnvPath() });
 
 export const config = {
   env: process.env.NODE_ENV || 'development',
@@ -29,6 +45,11 @@ export const config = {
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  },
+
+  auth: {
+    allowSignup: process.env.AUTH_ALLOW_SIGNUP === 'true',
+    defaultRole: process.env.AUTH_DEFAULT_ROLE || 'agent',
   },
 
   feishu: {

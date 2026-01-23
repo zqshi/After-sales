@@ -1,0 +1,17 @@
+[
+  {
+    "chatid": "wrOgQhDgAAMYQiS5ol9G7gK9JVAAAA",
+    "msgtype": "text",
+    "text": {
+      "content": "您好，这里是金山云客服。我们已收到问题并开始排查。"
+    },
+    "safe": 0
+  },
+  {
+    "chatid": "wrOgQhDgAALvK0KZtD5wq2QxAAAA",
+    "msgtype": "markdown",
+    "markdown": {
+      "content": "**故障通告**\n> 当前对象存储延迟已恢复\n> 我们将继续监控并同步最终结果"
+    }
+  }
+]

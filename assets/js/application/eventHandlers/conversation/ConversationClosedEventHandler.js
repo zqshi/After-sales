@@ -42,16 +42,16 @@ export class ConversationClosedEventHandler {
 
       console.log('[ConversationClosedEventHandler] 已添加互动记录到客户画像');
 
-      // 如果对话有SLA违规，创建质检任务
+      // 如果对话触发客户等级规则，创建质检任务
       if (event.slaViolated) {
-        console.log('[ConversationClosedEventHandler] 检测到SLA违规，创建质检任务');
+        console.log('[ConversationClosedEventHandler] 检测到客户等级规则异常，创建质检任务');
         try {
           const task = await this.taskService.createTask({
             type: 'quality-check',
-            title: `对话SLA违规质检 - ${event.conversationId}`,
+            title: `对话客户等级异常质检 - ${event.conversationId}`,
             priority: 'high',
             conversationId: event.conversationId,
-            description: `该对话违反了SLA规定，需要进行质量检查。对话ID: ${event.conversationId}`,
+            description: `该对话触发客户等级规则异常，需要进行质量检查。对话ID: ${event.conversationId}`,
           });
           console.log('[ConversationClosedEventHandler] 已创建质检任务:', task.id);
         } catch (error) {

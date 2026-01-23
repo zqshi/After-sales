@@ -401,5 +401,14 @@ export function openFullAnalysisPanel() {
 
 export function openAiAssistantPanel() {
   setDrawerMode('ai');
+  const aiPanel = qs('#ai-assistant-drawer');
+  const analysisPanel = qs('#analysis-panel');
+  if (aiPanel) {
+    aiPanel.classList.remove('hidden');
+    aiPanel.style.display = '';
+  }
+  if (analysisPanel) {
+    analysisPanel.classList.add('hidden');
+  }
   toggleRightSidebar(true);
 }

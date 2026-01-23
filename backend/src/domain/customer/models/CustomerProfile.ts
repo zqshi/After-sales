@@ -1,6 +1,6 @@
 import { AggregateRoot } from '@domain/shared/AggregateRoot';
 import { ContactInfo } from '../value-objects/ContactInfo';
-import { SLAInfo } from '../value-objects/SLAInfo';
+import { CustomerLevelInfo } from '../value-objects/CustomerLevelInfo';
 import { Metrics } from '../value-objects/Metrics';
 import { Insight } from '../value-objects/Insight';
 import { Interaction } from '../value-objects/Interaction';
@@ -24,7 +24,7 @@ interface CustomerProfileProps {
   customerId: string;
   name: string;
   contactInfo: ContactInfo;
-  slaInfo: SLAInfo;
+  slaInfo: CustomerLevelInfo;
   metrics: Metrics;
   insights: Insight[];
   interactions: Interaction[];
@@ -55,7 +55,7 @@ export class CustomerProfile extends AggregateRoot<CustomerProfileProps> {
     customerId: string;
     name: string;
     contactInfo: ContactInfo;
-    slaInfo: SLAInfo;
+    slaInfo: CustomerLevelInfo;
     metrics: Metrics;
     healthCalculator?: HealthScoreCalculator;
     riskEvaluator?: RiskEvaluator;
@@ -97,7 +97,7 @@ export class CustomerProfile extends AggregateRoot<CustomerProfileProps> {
     return this.props.contactInfo;
   }
 
-  get slaInfo(): SLAInfo {
+  get slaInfo(): CustomerLevelInfo {
     return this.props.slaInfo;
   }
 

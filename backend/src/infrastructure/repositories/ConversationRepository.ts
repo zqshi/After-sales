@@ -7,14 +7,14 @@ import { ConversationEntity } from '@infrastructure/database/entities/Conversati
 import { DomainEventEntity } from '@infrastructure/database/entities/DomainEventEntity';
 import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
 import { ConversationMapper } from './mappers/ConversationMapper';
-import { ConversationStatus, SLAStatus } from '@domain/conversation/types';
+import { ConversationStatus, CustomerLevelStatus } from '@domain/conversation/types';
 
 export interface ConversationFilters {
   status?: ConversationStatus;
   agentId?: string;
   customerId?: string;
   channel?: string;
-  slaStatus?: SLAStatus;
+  slaStatus?: CustomerLevelStatus;
 }
 
 export interface PaginationOptions {
@@ -140,6 +140,30 @@ export class ConversationRepository implements IConversationRepository {
     const qb = this.repository.createQueryBuilder('conversation');
     this.applyFilters(qb, filters);
     return qb.getCount();
+  }
+
+  async deleteByCustomerId(customerId: string): Promise<number> {
+    const conversations = await this.repository.find({
+      where: { customerId },
+      relations: ['messages'],
+    });
+    if (conversations.length === 0) {
+      return 0;
+    }
+    await this.repository.remove(conversations);
+    return conversations.length;
+  }
+
+  async deleteByChannel(channel: string): Promise<number> {
+    const conversations = await this.repository.find({
+      where: { channel },
+      relations: ['messages'],
+    });
+    if (conversations.length === 0) {
+      return 0;
+    }
+    await this.repository.remove(conversations);
+    return conversations.length;
   }
 
   private applyFilters(

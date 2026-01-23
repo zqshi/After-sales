@@ -1,6 +1,6 @@
 import { Conversation, AgentMode } from '@domain/conversation/models/Conversation';
 import { Message, SenderType } from '@domain/conversation/models/Message';
-import { ConversationStatus, MessagePriority, SLAStatus } from '@domain/conversation/types';
+import { ConversationStatus, MessagePriority, CustomerLevelStatus } from '@domain/conversation/types';
 import { Channel } from '@domain/conversation/value-objects/Channel';
 import { ConversationEntity } from '@infrastructure/database/entities/ConversationEntity';
 import { MessageEntity } from '@infrastructure/database/entities/MessageEntity';
@@ -62,7 +62,7 @@ export class ConversationMapper {
         channel: Channel.fromString(entity.channel),
         status: entity.status as ConversationStatus,
         priority: entity.priority as MessagePriority,
-        slaStatus: entity.slaStatus as SLAStatus,
+        slaStatus: entity.slaStatus as CustomerLevelStatus,
         slaDeadline: entity.slaDeadline ?? undefined,
         mode: (entity.mode as AgentMode) ?? 'agent_auto',
         messages,

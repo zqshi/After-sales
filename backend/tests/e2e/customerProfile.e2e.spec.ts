@@ -9,7 +9,7 @@ import { createApp } from '../../src/app';
 import { getTestDataSource, closeTestDataSource } from '../helpers/testDatabase';
 import { CustomerProfile } from '../../src/domain/customer/models/CustomerProfile';
 import { ContactInfo } from '../../src/domain/customer/value-objects/ContactInfo';
-import { SLAInfo } from '../../src/domain/customer/value-objects/SLAInfo';
+import { CustomerLevelInfo } from '../../src/domain/customer/value-objects/CustomerLevelInfo';
 import { Metrics } from '../../src/domain/customer/value-objects/Metrics';
 import { CustomerProfileRepository } from '../../src/infrastructure/repositories/CustomerProfileRepository';
 
@@ -37,7 +37,7 @@ describe('Customer Profile API E2E Tests', () => {
         phone: '+123456789',
         preferredChannel: 'chat',
       }),
-      slaInfo: SLAInfo.create({
+      slaInfo: CustomerLevelInfo.create({
         serviceLevel: 'gold',
         responseTimeTargetMinutes: 5,
         resolutionTimeTargetMinutes: 60,

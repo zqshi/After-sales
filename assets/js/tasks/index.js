@@ -9,122 +9,6 @@ import {
 } from '../api.js';
 import { taskController } from '../presentation/task/TaskController.js';
 
-const qualityProfiles = {
-  'conv-001': {
-    title: '云服务器无法连接 - 小米保障群',
-    score: 92,
-    summary: '响应及时，建议补充实例信息与网络诊断记录，并同步排查进展。',
-    dimensions: [
-      { label: '合规', score: 96, hint: '未触发敏感词与越权操作' },
-      { label: '完整度', score: 91, hint: '实例信息已收集，但诊断结果待同步' },
-      { label: '情绪', score: 88, hint: '安抚到位，仍需持续跟进情绪回落' },
-    ],
-    actions: ['导出质检报告', '生成排查清单', '触发满意度回访'],
-  },
-  'conv-002': {
-    title: '账单咨询 - 李四',
-    score: 86,
-    summary: '信息核对充分，但等待时间略长；可推送自助账单核验指南。',
-    dimensions: [
-      { label: '合规', score: 93, hint: '对账过程遵循规范' },
-      { label: '完整度', score: 82, hint: '未告知账期调整变更' },
-      { label: '情绪', score: 84, hint: '保持友好但缺少致歉语' },
-    ],
-    actions: ['推送自助指南', '提醒补充致歉话术', '记录账期调整风险'],
-  },
-  'conv-003': {
-    title: '功能体验反馈 - 王五',
-    score: 90,
-    summary: '体验反馈清晰，建议沉淀为知识库并跟踪改版需求。',
-    dimensions: [
-      { label: '合规', score: 95, hint: '沟通过程合规' },
-      { label: '完整度', score: 88, hint: '暂未给出改进时间表' },
-      { label: '情绪', score: 92, hint: '态度积极，维持良好关系' },
-    ],
-    actions: ['生成知识库草稿', '添加迭代需求卡片', '安排回访时间'],
-  },
-};
-
-const conversationQcProfiles = {
-  'conv-001': {
-    title: '小米保障群 · 云服务器无法连接',
-    urgency: '高紧急',
-    urgencyClass: 'chip-urgent',
-    tone: 'urgent',
-    sla: 'VIP',
-    impact: '业务受阻',
-    channel: '飞书',
-    time: '10:30',
-    summary: '群聊客户反馈云服务器无法连接，影响业务运行；需补充实例ID/IP并按 P2 流程推进。',
-    tags: ['云服务器', '连接失败', '响应时效', 'P2升级'],
-    metrics: { urgency: '85%', emotion: 65, eta: '15min' },
-    dimensions: {
-      emotion: { score: 72, label: '情感态度 · 安抚有效', bar: 72 },
-      quality: { score: 88, label: '回复质量 · 需补充诊断结果', bar: 88 },
-      satisfaction: { score: 76, label: '响应时效 · 偏紧张', bar: 76 },
-    },
-    tip: '建议固定 10 分钟节奏同步进展，并补充网络诊断结论与复测证据。',
-    threadTitle: '对话节选 · conv-001',
-    thread: [
-      { role: '客户', text: '我的服务器无法连接，目前有影响业务，赶快看下。', sentiment: '⚠️ 急切', tag: '高紧急' },
-      { role: '工程师', text: '您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。', sentiment: '🧭 协调中', tag: '信息确认' },
-      { role: '客户', text: '服务器实例为test123，ip是192.168.10.2。', sentiment: '🙂 稍缓', tag: '已补充' },
-    ],
-    insights: ['群聊集中反馈需同步责任人与时间点，避免多头回复', '响应节奏需固定，防止用户重复追问', '回复质量需补充诊断结论与复测证据'],
-  },
-  'conv-002': {
-    title: '恒星数据 · 账单核验',
-    urgency: '处理中',
-    urgencyClass: 'chip-soft',
-    tone: 'soft',
-    sla: 'KA0',
-    impact: '等待确认',
-    channel: '企业QQ',
-    time: '09:45',
-    summary: '群聊内多名用户关注账单差异，已推送核验指引，等待客户反馈。',
-    tags: ['账单核验', '群聊咨询', '响应时效', '待回执'],
-    metrics: { urgency: '62%', emotion: 48, eta: '—' },
-    dimensions: {
-      emotion: { score: 56, label: '情感态度 · 需致歉安抚', bar: 56 },
-      quality: { score: 82, label: '回复质量 · 账期说明不足', bar: 82 },
-      satisfaction: { score: 68, label: '响应时效 · 等待偏长', bar: 68 },
-    },
-    tip: '建议在群内补充致歉话术，并统一账期变更说明模板。',
-    threadTitle: '对话节选 · conv-002',
-    thread: [
-      { role: '客户', text: '上个月账单有差异，请帮忙核对。', sentiment: '😐 关注', tag: '待核验' },
-      { role: '工程师', text: '已推送账单核验指引，请按步骤反馈异常截图。', sentiment: '📨 已响应', tag: '指引已发' },
-      { role: '客户', text: '收到，等我核对后回复。', sentiment: '🙂 中性', tag: '等待反馈' },
-    ],
-    insights: ['需在 2 小时内二次跟进，降低群内等待焦虑', '补充致歉语与账期变更说明，提升回复质量', '记录账期调整需求并同步FAQ'],
-  },
-  'conv-003': {
-    title: '万象互动 · 功能体验反馈',
-    urgency: '已解决',
-    urgencyClass: 'chip-neutral',
-    tone: 'neutral',
-    sla: 'KA1',
-    impact: '体验优化',
-    channel: '微信',
-    time: '昨天',
-    summary: '群聊内体验反馈已处理，待回访确认满意度并收集改进建议。',
-    tags: ['体验反馈', '群聊收集', '响应时效', '待回访'],
-    metrics: { urgency: '30%', emotion: 82, eta: '—' },
-    dimensions: {
-      emotion: { score: 84, label: '情感态度 · 正向', bar: 84 },
-      quality: { score: 88, label: '回复质量 · 待补时间表', bar: 88 },
-      satisfaction: { score: 82, label: '响应时效 · 稳定', bar: 82 },
-    },
-    tip: '建议回访确认满意度，并补充改版时间表与跟进节点。',
-    threadTitle: '对话节选 · conv-003',
-    thread: [
-      { role: '客户', text: '新功能体验不错，但希望加个快捷入口。', sentiment: '😊 积极', tag: '建议' },
-      { role: '工程师', text: '感谢反馈，已记录并会在下个版本评估上线时间。', sentiment: '🤝 确认', tag: '待排期' },
-      { role: '客户', text: '好的，期待更新。', sentiment: '🙂 满意', tag: '待回访' },
-    ],
-    insights: ['安排回访并记录满意度得分，形成群内闭环', '输出知识库草稿并补充上线时间表', '将需求同步到需求统计，避免遗漏'],
-  },
-};
 
 async function loadTasksFromApi() {
   if (!isApiEnabled()) {
@@ -188,7 +72,7 @@ function mapTaskPriority(priority) {
 }
 
 function getActiveConversationId() {
-  return qs('.conversation-item.is-active')?.getAttribute('data-id') || 'conv-001';
+  return qs('.conversation-item.is-active')?.getAttribute('data-id') || null;
 }
 
 export function initAgentTasks() {
@@ -333,7 +217,10 @@ export function initAgentTasks() {
   setupLayoutPreview({ layoutInput, layoutPreview, layoutLabel, layoutApplyBtn, layoutChips });
   setupSidebarTasks(sidebarTasksList, sidebarCreateBtn);
   setupTaskConversationFlow();
-  renderQualityDrawer('conv-001', false, false);
+  const activeConversationId = getActiveConversationId();
+  if (activeConversationId) {
+    renderQualityDrawer(activeConversationId, false, false);
+  }
   initQcLeanControls();
   loadTasksFromApi();
 }
@@ -777,7 +664,7 @@ function setupSidebarTasks(listEl, createBtn) {
       qs('#open-task-editor')?.click();
       showNotification(`进入编辑：${taskTitle}`, 'info');
     } else if (target.classList.contains('task-view-btn')) {
-      showNotification(`查看任务详情：${taskTitle}（可对接实际数据）`, 'info');
+      showNotification(`查看任务详情：${taskTitle}`, 'info');
     }
   });
 }
@@ -821,37 +708,46 @@ function setupQualityPanel() {
   const chipsEl = qs('#quality-dimension-chips');
   const actionsEl = qs('#quality-actions');
 
-  const render = (id) => {
-    const profile = qualityProfiles[id];
-    if (!profile) {
+  const render = async (id) => {
+    if (!id || !isApiEnabled()) {
       return;
     }
+    try {
+      const response = await fetchQualityProfile(id);
+      const payload = response?.data ?? response;
+      if (!payload) {
+        return;
+      }
 
-    if (scoreEl) {
-      scoreEl.textContent = `${profile.score} 分`;
-    }
-    if (summaryEl) {
-      summaryEl.textContent = profile.summary;
-    }
+      if (scoreEl) {
+        scoreEl.textContent = `${payload.score ?? '--'} 分`;
+      }
+      if (summaryEl) {
+        summaryEl.textContent = payload.summary || '暂无质检摘要';
+      }
 
-    if (chipsEl) {
-      chipsEl.innerHTML = '';
-      profile.dimensions.forEach((dim) => {
-        const chip = document.createElement('span');
-        chip.className = 'quality-chip';
-        chip.innerHTML = `<strong>${dim.label}</strong> ${dim.score} · ${dim.hint}`;
-        chipsEl.appendChild(chip);
-      });
-    }
+      if (chipsEl) {
+        chipsEl.innerHTML = '';
+        const dims = payload.dimensions || [];
+        dims.forEach((dim) => {
+          const chip = document.createElement('span');
+          chip.className = 'quality-chip';
+          chip.innerHTML = `<strong>${dim.label || '维度'}</strong> ${dim.score || '--'} · ${dim.hint || ''}`;
+          chipsEl.appendChild(chip);
+        });
+      }
 
-    if (actionsEl) {
-      actionsEl.innerHTML = '';
-      profile.actions.forEach((action) => {
-        const item = document.createElement('div');
-        item.className = 'quality-action';
-        item.innerHTML = `<i class="fa fa-check-circle text-green-500 mr-2"></i>${action}`;
-        actionsEl.appendChild(item);
-      });
+      if (actionsEl) {
+        actionsEl.innerHTML = '';
+        (payload.actions || []).forEach((action) => {
+          const item = document.createElement('div');
+          item.className = 'quality-action';
+          item.innerHTML = `<i class="fa fa-check-circle text-green-500 mr-2"></i>${action}`;
+          actionsEl.appendChild(item);
+        });
+      }
+    } catch (err) {
+      console.warn('[quality] load failed', err);
     }
   };
 
@@ -877,7 +773,7 @@ function setupTaskCommandConsole() {
     }
     addCommandLog(text, log);
     input.value = '';
-    showNotification('指令已派发到质检/运营中枢（示例）', 'success');
+    showNotification('指令已派发到质检/运营中枢', 'success');
   };
 
   on(submitBtn, 'click', dispatch);
@@ -921,7 +817,7 @@ function setupReportShortcuts() {
   reportBtns.forEach((btn) => {
     on(btn, 'click', () => {
       const name = btn.getAttribute('data-report-name') || '报表';
-      showNotification(`${name}入口已为领导班子加载（示例）`, 'info');
+      showNotification(`${name}入口已加载`, 'info');
     });
   });
 }
@@ -972,12 +868,16 @@ function setupTaskConversationFlow() {
   }
   qcButtons.forEach((btn) => {
     on(btn, 'click', () => {
-      const convId = btn.getAttribute('data-conv-id') || 'conv-001';
+      const convId = btn.getAttribute('data-conv-id') || getActiveConversationId();
+      if (!convId) {
+        showNotification('暂无可用会话', 'warning');
+        return;
+      }
       renderQualityDrawer(convId, true, true);
     });
   });
 
-  const dispatch = () => {
+  const dispatch = async () => {
     const text = input?.value.trim();
     if (!text) {
       showNotification('请输入要派发的指令', 'warning');
@@ -992,8 +892,25 @@ function setupTaskConversationFlow() {
       input.value = '';
     }
 
-    // 2. 模拟Agent思考/回复
-    simulateAgentReply(text, log);
+    // 2. 创建任务并回写结果
+    try {
+      const intent = inferTaskIntent(text);
+      const result = await taskController.createTask({
+        title: intent.title,
+        description: intent.desc,
+        priority: intent.priority,
+        type: intent.isLongTerm ? 'long_term' : 'agent_command',
+        assigneeId: window.config?.userId,
+      });
+      const taskId = result?.data?.id || result?.id || `task-${Date.now()}`;
+      appendMessage(`已创建任务：${taskId}`, 'agent');
+      showNotification('任务已创建', 'success');
+      await loadTasksFromApi();
+    } catch (err) {
+      console.warn('[tasks] create task failed', err);
+      appendMessage('任务创建失败，请稍后重试。', 'agent');
+      showNotification('任务创建失败', 'error');
+    }
   };
 
   if (sendBtn) {
@@ -1058,84 +975,7 @@ function appendMessage(text, role, extraContent = '') {
   logContainer.scrollTop = logContainer.scrollHeight;
 }
 
-function simulateAgentReply(userText, logContainer) {
-  if (!logContainer) {
-    return;
-  }
-
-  // 模拟思考延迟
-  setTimeout(() => {
-    const intent = inferTaskIntent(userText);
-    let replyText = '';
-    let actionWidget = '';
-
-    if (intent.isLongTerm) {
-      replyText = `我理解您希望建立一个长期的${intent.keyword}任务。我已经为您准备好了快捷指令。`;
-      actionWidget = `
-                <div class="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-sm">
-                    <div class="flex items-center gap-2 mb-2">
-                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                         <span class="font-semibold text-emerald-900">建议：沉淀为长期指令</span>
-                    </div>
-                    <p class="text-emerald-800 mb-3 text-xs">"${intent.title}"</p>
-                    <button class="save-long-term-btn w-full py-1.5 bg-white border border-emerald-200 text-emerald-700 rounded hover:bg-emerald-100 transition-colors text-xs font-medium" 
-                      data-title="${intent.title}" data-desc="${intent.desc}" data-priority="${intent.priority}">
-                      <i class="fa fa-save mr-1"></i> 保存到任务栏
-                    </button>
-                </div>`;
-    } else {
-      replyText = `收到，我这就为您执行：${intent.title}。`;
-      actionWidget = `
-               <div class="bg-white border border-gray-200 rounded-lg p-3 text-sm shadow-sm mt-1">
-                    <div class="flex items-center gap-2 text-gray-500 mb-2" id="exec-status-${intent.taskId}">
-                        <i class="fa fa-spinner fa-spin text-primary"></i>
-                        <span>正在执行中...</span>
-                    </div>
-                    <div class="execution-result hidden text-gray-700 bg-gray-50 p-2 rounded" id="exec-result-${intent.taskId}">
-                        ${generateMockResult(intent)}
-                    </div>
-               </div>
-            `;
-
-      // 异步更新结果
-      setTimeout(() => {
-        const statusEl = document.querySelector(`#exec-status-${intent.taskId}`);
-        const resultEl = document.querySelector(`#exec-result-${intent.taskId}`);
-        if (statusEl) {
-          statusEl.innerHTML = '<i class="fa fa-check-circle text-green-500"></i><span class="text-green-600 font-medium">执行完成</span>';
-        }
-        if (resultEl) {
-          resultEl.classList.remove('hidden');
-        }
-      }, 2000);
-    }
-
-    appendMessage(replyText, 'agent', actionWidget);
-
-    // 绑定事件 (对于新生成的 DOM)
-    // 由于 innerHTML 替换比较粗暴，最好是用事件委托绑定在 container 上，
-    // 或者在这里查找刚刚插入的元素。
-    // 简单起见，我们在 container 上做一次针对新按钮的绑定，或者直接利用全局委托。
-    // 这里尝试直接查找最新插入的按钮
-    const lastBtn = logContainer.querySelector('.save-long-term-btn:last-of-type');
-    if (lastBtn && !lastBtn.dataset.bound) {
-      lastBtn.dataset.bound = 'true';
-      on(lastBtn, 'click', (e) => {
-        const btn = e.target.closest('button');
-        if (btn.disabled) {
-          return;
-        }
-        saveAsLongTermTask(btn.dataset.title, btn.dataset.desc, btn.dataset.priority);
-        btn.innerHTML = '<i class="fa fa-check mr-1"></i> 已保存';
-        btn.disabled = true;
-        btn.classList.add('opacity-50', 'cursor-not-allowed');
-      });
-    }
-
-  }, 600); // 600ms network delay simulation
-}
-
-function saveAsLongTermTask(title, desc, priority) {
+async function saveAsLongTermTask(title, desc, priority) {
   const sidebarTasks = qs('#sidebar-tasks-list');
   if (!sidebarTasks) {
     return;
@@ -1168,23 +1008,20 @@ function saveAsLongTermTask(title, desc, priority) {
         <button class="task-delete-btn text-xs text-red-600 hover:text-red-700">移除</button>
       </div>`;
 
-  // 插入到列表顶部，或者专门的长期任务区域。这里直接插顶部。
-  sidebarTasks.prepend(wrapper);
-  showNotification('已沉淀为长期快捷指令', 'success');
-}
-
-function generateMockResult(intent) {
-  const text = intent.title;
-  if (text.includes('状态') || text.includes('巡检')) {
-    return '系统核心服务运行正常，CPU负载 45%，内存使用率 60%。未发现异常报警。';
+  try {
+    await taskController.createTask({
+      title,
+      description: desc,
+      priority,
+      type: 'long_term',
+      assigneeId: window.config?.userId,
+    });
+    sidebarTasks.prepend(wrapper);
+    showNotification('已沉淀为长期快捷指令', 'success');
+  } catch (err) {
+    console.warn('[tasks] save long term failed', err);
+    showNotification('保存长期任务失败', 'error');
   }
-  if (text.includes('报表') || text.includes('报告')) {
-    return '已生成《今日质量日报》，并发送至您的邮箱。关键指标：客户满意度 4.8，平均响应时间 2m。';
-  }
-  if (text.includes('公告')) {
-    return '已生成系统维护公告草稿，并通过内部IM发送给您预览。请确认后发布。';
-  }
-  return '指令已执行完成。相关数据已更新至仪表盘。';
 }
 
 function inferTaskIntent(text) {
@@ -1208,19 +1045,32 @@ function inferTaskIntent(text) {
 }
 
 async function renderQualityDrawer(conversationId, shouldOpen = false, useLean = false) {
-  let data = conversationQcProfiles[conversationId] || conversationQcProfiles['conv-001'];
-  if (isApiEnabled()) {
-    try {
-      const response = await fetchQualityProfile(conversationId);
-      const payload = response?.data ?? response;
-      if (payload && Object.keys(payload).length) {
-        data = { ...data, ...payload };
-      }
-    } catch (err) {
-      console.warn('[tasks] fetch quality profile failed', err);
-    }
+  if (!isApiEnabled()) {
+    showNotification('API 未启用，无法加载质检数据', 'warning');
+    return;
   }
+
+  const normalizedConversationId =
+    conversationId && conversationId.startsWith('conv-')
+      ? getActiveConversationId()
+      : conversationId;
+  if (!normalizedConversationId) {
+    showNotification('暂无可用会话', 'warning');
+    return;
+  }
+
+  let data = null;
+  try {
+    const response = await fetchQualityProfile(normalizedConversationId);
+    data = response?.data ?? response;
+  } catch (err) {
+    console.warn('[tasks] fetch quality profile failed', err);
+    showNotification('质检数据加载失败', 'warning');
+    return;
+  }
+
   if (!data) {
+    showNotification('暂无质检数据', 'info');
     return;
   }
 

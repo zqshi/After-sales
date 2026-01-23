@@ -24,7 +24,7 @@ export class CustomerProfile {
     this.updatedAt = data.updatedAt || '';
     this.focus = data.focus || '';
     this.contacts = new ContactInfo(data.contacts || {});
-    this.sla = new SLAInfo(data.sla, data.slaStatus, data.expire);
+    this.sla = new CustomerLevelInfo(data.sla, data.slaStatus, data.expire);
     this.products = data.products || [];
     this.metrics = new Metrics(data.metrics || {});
     this.insights = (data.insights || []).map(i => new Insight(i));
@@ -81,9 +81,9 @@ export class CustomerProfile {
       updatedFields.push('contacts');
     }
 
-    // 更新SLA信息
+    // 更新客户等级信息
     if (newData.sla) {
-      this.sla = new SLAInfo(newData.sla, newData.slaStatus, newData.expire);
+      this.sla = new CustomerLevelInfo(newData.sla, newData.slaStatus, newData.expire);
       updatedFields.push('sla');
     }
 
@@ -445,9 +445,9 @@ export class ContactInfo {
 }
 
 /**
- * SLA信息值对象
+ * 客户等级信息值对象
  */
-export class SLAInfo {
+export class CustomerLevelInfo {
   constructor(sla, status, expire) {
     this.level = sla || '';
     this.status = status || '';

@@ -6,7 +6,7 @@
  * 核心业务规则：
  * 1. VIP客户优先分配给高质量客服
  * 2. 高风险客户优先分配给熟悉的客服
- * 3. 紧急SLA优先分配给低负载客服
+ * 3. 紧急客户等级优先分配给低负载客服
  * 4. 常规情况综合评分最高者
  */
 
@@ -33,7 +33,7 @@ export interface AssignmentContext {
   customerTier: 'VIP' | 'KA' | 'Regular'; // 客户等级
   customerRiskLevel: 'low' | 'medium' | 'high'; // 风险等级
   conversationPriority: 'urgent' | 'high' | 'medium' | 'low'; // 优先级
-  slaStatus: 'normal' | 'warning' | 'violated'; // SLA状态
+  slaStatus: 'normal' | 'warning' | 'violated'; // 客户等级状态
   channel: string; // 渠道
   conversationTopic?: string; // 对话主题（可选）
 }
@@ -94,7 +94,7 @@ export class ConversationAssignmentPolicyService {
       return this.selectFamiliarAgent(context, onlineCandidates);
     }
 
-    // 规则3: 紧急SLA优先低负载客服
+    // 规则3: 紧急客户等级优先低负载客服
     if (context.slaStatus === 'warning' || context.conversationPriority === 'urgent') {
       return this.selectLowWorkloadAgent(context, onlineCandidates);
     }
@@ -183,7 +183,7 @@ export class ConversationAssignmentPolicyService {
       };
     });
 
-    return this.buildResult(scored, '紧急SLA分配给低负载客服');
+    return this.buildResult(scored, '紧急客户等级分配给低负载客服');
   }
 
   /**

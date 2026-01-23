@@ -1,5 +1,12 @@
 import { qs, qsa, on } from '../core/dom.js';
 import { showNotification } from '../core/notifications.js';
+import {
+  fetchAuditSummary,
+  fetchMonitoringAlerts,
+  createTask,
+  resolveMonitoringAlert,
+  isApiEnabled,
+} from '../api.js';
 
 export function initTools() {
   bindToolsEvents();
@@ -79,113 +86,113 @@ function handleQuickAction(label, button) {
 }
 
 // 服务状态监控
-function openServiceMonitor(button) {
+async function openServiceMonitor(button) {
+  if (!isApiEnabled()) {
+    showModal('服务状态监控', `
+      <div class="p-3 text-sm text-gray-600">
+        API 未启用，暂无监控数据。
+      </div>
+    `);
+    return;
+  }
+
   const originalHTML = button.innerHTML;
   button.innerHTML = '<i class="fa fa-spinner fa-spin text-xl mb-2"></i><span class="text-xs">检查中...</span>';
   button.disabled = true;
 
-  setTimeout(() => {
-    button.innerHTML = originalHTML;
-    button.disabled = false;
+  let alerts = [];
+  try {
+    const response = await fetchMonitoringAlerts('open');
+    alerts = response?.data ?? response ?? [];
+  } catch (error) {
+    console.warn('[tools] fetch monitoring alerts failed', error);
+  }
 
-    // 显示服务状态
-    const services = [
-      { name: 'Web服务', status: 'running', uptime: '99.9%' },
-      { name: 'API服务', status: 'running', uptime: '99.8%' },
-      { name: '数据库', status: 'running', uptime: '100%' },
-      { name: 'Redis缓存', status: 'running', uptime: '99.5%' },
-      { name: 'WebSocket', status: 'warning', uptime: '98.2%' }
-    ];
+  button.innerHTML = originalHTML;
+  button.disabled = false;
 
-    const statusHTML = services.map(s => {
-      const statusColor = s.status === 'running' ? 'green' : s.status === 'warning' ? 'yellow' : 'red';
-      return `
-        <div class="flex items-center justify-between p-2 border-b border-gray-100">
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-${statusColor}-500"></div>
-            <span class="text-sm">${s.name}</span>
-          </div>
-          <span class="text-xs text-gray-500">运行时间: ${s.uptime}</span>
+  const criticalCount = alerts.filter((alert) => {
+    const level = alert.level || alert.severity || '';
+    return level.toLowerCase() === 'critical' || level.toLowerCase() === 'high';
+  }).length;
+  const warningCount = alerts.length - criticalCount;
+
+  const alertHTML = alerts.length
+    ? alerts.slice(0, 5).map((alert) => `
+      <div class="flex items-start justify-between gap-3 p-2 border border-gray-100 rounded-lg">
+        <div>
+          <div class="text-sm font-medium">${alert.title}</div>
+          <div class="text-xs text-gray-500">${alert.source || '系统'} · ${alert.level}</div>
         </div>
-      `;
-    }).join('');
-
-    showModal('服务状态监控', `
-      <div class="space-y-2">
-        ${statusHTML}
+        <button class="text-xs text-blue-600 hover:text-blue-700" data-alert-id="${alert.id}" data-action="resolve">已处理</button>
       </div>
-    `);
-  }, 800);
+    `).join('')
+    : '<div class="text-xs text-gray-500">暂无未处理告警</div>';
+
+  showModal('服务状态监控', `
+    <div class="space-y-4">
+      <div class="p-3 bg-gray-50 rounded-lg text-sm text-gray-600 space-y-1">
+        <div>未处理告警：${alerts.length}</div>
+        <div>严重告警：${criticalCount}</div>
+        <div>警告告警：${warningCount}</div>
+      </div>
+      <div class="pt-2 border-t border-gray-100">
+        <div class="text-xs font-semibold text-gray-600 mb-2">监控告警</div>
+        <div class="space-y-2">${alertHTML}</div>
+      </div>
+    </div>
+  `);
+
+  const modal = qs('.modal-overlay');
+  if (modal && alerts.length && isApiEnabled()) {
+    modal.addEventListener('click', async (event) => {
+      const target = event.target.closest('[data-action="resolve"]');
+      if (!target) {
+        return;
+      }
+      const alertId = target.getAttribute('data-alert-id');
+      if (!alertId) {
+        return;
+      }
+      try {
+        await resolveMonitoringAlert(alertId);
+        target.closest('div')?.remove();
+        showNotification('已处理告警', 'success');
+      } catch (error) {
+        console.warn('[tools] resolve alert failed', error);
+        showNotification('处理告警失败', 'error');
+      }
+    }, { once: true });
+  }
 }
 
 // 数据库管理
 function openDatabaseManager(button) {
+  const tip = isApiEnabled() ? '数据库管理功能暂未接入。' : 'API 未启用，无法获取数据库状态。';
   showModal('数据库管理', `
-    <div class="space-y-3">
-      <div class="p-3 bg-blue-50 rounded-lg">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-medium">数据库连接</span>
-          <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">正常</span>
-        </div>
-        <div class="text-xs text-gray-600 space-y-1">
-          <div>主机: localhost:5432</div>
-          <div>数据库: aftersales_db</div>
-          <div>连接池: 8/20 活跃</div>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm" onclick="alert('备份功能执行中...')">
-          <i class="fa fa-download mr-1"></i>备份数据库
-        </button>
-        <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm" onclick="alert('优化功能执行中...')">
-          <i class="fa fa-wrench mr-1"></i>优化表
-        </button>
-      </div>
+    <div class="p-3 text-sm text-gray-600">
+      ${tip}
     </div>
   `);
 }
 
 // 用户权限管理
 function openUserPermissions(button) {
+  const tip = isApiEnabled() ? '权限数据尚未接入。' : 'API 未启用，无法获取权限数据。';
   showModal('用户权限管理', `
-    <div class="space-y-3">
-      <div class="text-sm text-gray-600">当前登录用户权限</div>
-      <div class="space-y-2">
-        <label class="flex items-center gap-2">
-          <input type="checkbox" checked disabled class="rounded">
-          <span class="text-sm">查看对话</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" checked disabled class="rounded">
-          <span class="text-sm">发送消息</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" checked class="rounded">
-          <span class="text-sm">访问知识库</span>
-        </label>
-        <label class="flex items-center gap-2">
-          <input type="checkbox" class="rounded">
-          <span class="text-sm">管理用户（需要管理员权限）</span>
-        </label>
-      </div>
-      <div class="text-xs text-gray-500 pt-2 border-t">
-        提示：修改权限需要管理员审核
-      </div>
+    <div class="p-3 text-sm text-gray-600">
+      ${tip}
     </div>
   `);
 }
 
 // 数据备份
 function performDataBackup(button) {
-  const originalHTML = button.innerHTML;
-  button.innerHTML = '<i class="fa fa-spinner fa-spin text-xl mb-2"></i><span class="text-xs">备份中...</span>';
-  button.disabled = true;
-
-  setTimeout(() => {
-    button.innerHTML = originalHTML;
-    button.disabled = false;
-    showNotification('数据备份已创建，保存在: /backups/backup_' + new Date().toISOString().slice(0,10) + '.sql', 'success');
-  }, 2000);
+  if (!isApiEnabled()) {
+    showNotification('API 未启用，无法执行备份', 'warning');
+    return;
+  }
+  showNotification('数据备份功能尚未接入', 'info');
 }
 
 // 登录诊断
@@ -198,35 +205,9 @@ function runLoginDiagnostics(button) {
     button.textContent = originalHTML;
     button.disabled = false;
 
-    const diagnostics = [
-      { item: '数据库连接', status: 'pass', message: '连接正常' },
-      { item: '认证服务', status: 'pass', message: 'OAuth服务运行中' },
-      { item: '会话管理', status: 'pass', message: 'Redis连接正常' },
-      { item: 'Token验证', status: 'warning', message: '3个过期token待清理' },
-      { item: 'CORS配置', status: 'pass', message: '跨域配置正确' }
-    ];
-
-    const diagnosticsHTML = diagnostics.map(d => {
-      const icon = d.status === 'pass' ? 'check-circle' : d.status === 'warning' ? 'exclamation-triangle' : 'times-circle';
-      const color = d.status === 'pass' ? 'green' : d.status === 'warning' ? 'yellow' : 'red';
-      return `
-        <div class="flex items-start gap-2 p-2">
-          <i class="fa fa-${icon} text-${color}-500 mt-1"></i>
-          <div class="flex-1">
-            <div class="text-sm font-medium">${d.item}</div>
-            <div class="text-xs text-gray-600">${d.message}</div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
     showModal('登录诊断结果', `
-      <div class="space-y-1">
-        ${diagnosticsHTML}
-      </div>
-      <div class="mt-4 p-3 bg-green-50 rounded text-sm">
-        <i class="fa fa-check-circle text-green-600 mr-2"></i>
-        系统整体运行正常，建议定期清理过期token
+      <div class="p-3 text-sm text-gray-600">
+        暂无诊断数据，请先接入监控/审计服务。
       </div>
     `);
   }, 1500);
@@ -244,28 +225,9 @@ function querySystemLogs(button) {
     button.innerHTML = '查询';
     button.disabled = false;
 
-    const logs = [
-      { time: '14:32:15', level: 'INFO', message: '用户登录成功 - 张三' },
-      { time: '14:31:42', level: 'INFO', message: 'API调用: GET /conversations' },
-      { time: '14:30:18', level: 'WARN', message: '响应时间较慢: 2.3s' },
-      { time: '14:29:05', level: 'ERROR', message: 'WebSocket连接超时重试' },
-      { time: '14:28:30', level: 'INFO', message: '消息发送成功' }
-    ];
-
-    const logsHTML = logs.map(log => {
-      const levelColor = log.level === 'ERROR' ? 'red' : log.level === 'WARN' ? 'yellow' : 'blue';
-      return `
-        <div class="font-mono text-xs p-2 border-b border-gray-100 hover:bg-gray-50">
-          <span class="text-gray-500">[${log.time}]</span>
-          <span class="text-${levelColor}-600 font-medium">[${log.level}]</span>
-          <span class="text-gray-700">${log.message}</span>
-        </div>
-      `;
-    }).join('');
-
     showModal('系统日志 - ' + timeRange, `
-      <div class="max-h-96 overflow-y-auto">
-        ${logsHTML}
+      <div class="p-3 text-sm text-gray-600">
+        暂无日志数据，请先接入日志服务。
       </div>
     `);
   }, 800);
@@ -280,34 +242,9 @@ function viewUserSessions(button) {
     button.textContent = '查看会话';
     button.disabled = false;
 
-    const sessions = [
-      { user: '张三', ip: '192.168.1.100', device: 'Chrome / Windows', loginTime: '14:20', active: true },
-      { user: '李四', ip: '192.168.1.101', device: 'Safari / macOS', loginTime: '13:45', active: true },
-      { user: '王五', ip: '192.168.1.102', device: 'Firefox / Linux', loginTime: '12:30', active: false }
-    ];
-
-    const sessionsHTML = sessions.map(s => {
-      const statusColor = s.active ? 'green' : 'gray';
-      return `
-        <div class="p-3 border border-gray-200 rounded-lg">
-          <div class="flex items-center justify-between mb-2">
-            <span class="font-medium text-sm">${s.user}</span>
-            <span class="px-2 py-0.5 bg-${statusColor}-100 text-${statusColor}-700 text-xs rounded-full">
-              ${s.active ? '在线' : '离线'}
-            </span>
-          </div>
-          <div class="text-xs text-gray-600 space-y-1">
-            <div><i class="fa fa-desktop mr-1"></i>${s.device}</div>
-            <div><i class="fa fa-map-marker mr-1"></i>${s.ip}</div>
-            <div><i class="fa fa-clock-o mr-1"></i>登录时间: ${s.loginTime}</div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
     showModal('用户会话管理', `
-      <div class="space-y-2">
-        ${sessionsHTML}
+      <div class="p-3 text-sm text-gray-600">
+        暂无会话数据，请先接入权限/审计服务。
       </div>
     `);
   }, 600);
@@ -333,11 +270,27 @@ function sendSystemNotification(button) {
           <option>指定用户</option>
         </select>
       </div>
-      <button class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark" onclick="this.closest('.modal-overlay')?.remove();window.showNotification?.('通知已发送', 'success')">
+      <button class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark" data-action="send-notification">
         发送通知
       </button>
     </div>
   `);
+
+  const modal = qs('.modal-overlay');
+  if (!modal) {
+    return;
+  }
+  modal.addEventListener('click', (event) => {
+    const submitBtn = event.target.closest('[data-action="send-notification"]');
+    if (!submitBtn) {
+      return;
+    }
+    if (!isApiEnabled()) {
+      showNotification('API 未启用，无法发送通知', 'warning');
+      return;
+    }
+    showNotification('通知发送功能尚未接入', 'info');
+  }, { once: true });
 }
 
 // 创建工单
@@ -346,26 +299,57 @@ function createTicket(button) {
     <div class="space-y-3">
       <div>
         <label class="block text-sm font-medium mb-1">工单标题</label>
-        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="简要描述问题">
+        <input id="tool-ticket-title" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="简要描述问题">
       </div>
       <div>
         <label class="block text-sm font-medium mb-1">优先级</label>
-        <select class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-          <option>低</option>
-          <option>中</option>
-          <option>高</option>
-          <option>紧急</option>
+        <select id="tool-ticket-priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+          <option value="low">低</option>
+          <option value="medium">中</option>
+          <option value="high">高</option>
+          <option value="urgent">紧急</option>
         </select>
       </div>
       <div>
         <label class="block text-sm font-medium mb-1">问题描述</label>
-        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" rows="4" placeholder="详细描述问题"></textarea>
+        <textarea id="tool-ticket-detail" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" rows="4" placeholder="详细描述问题"></textarea>
       </div>
-      <button class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark" onclick="this.closest('.modal-overlay')?.remove();window.showNotification?.('工单已创建，编号: TK' + Date.now(), 'success')">
+      <button class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark" data-action="submit-ticket">
         创建工单
       </button>
     </div>
   `);
+
+  const modal = qs('.modal-overlay');
+  if (!modal) {
+    return;
+  }
+  modal.addEventListener('click', async (event) => {
+    const submitBtn = event.target.closest('[data-action="submit-ticket"]');
+    if (!submitBtn) {
+      return;
+    }
+    const title = qs('#tool-ticket-title')?.value?.trim() || '';
+    const description = qs('#tool-ticket-detail')?.value?.trim() || '';
+    const priority = qs('#tool-ticket-priority')?.value || 'medium';
+
+    if (!title) {
+      showNotification('请填写工单标题', 'warning');
+      return;
+    }
+    if (!isApiEnabled()) {
+      showNotification('API 未启用，无法创建工单', 'warning');
+      return;
+    }
+    try {
+      await createTask({ title, description, priority });
+      showNotification('工单已创建', 'success');
+      modal.remove();
+    } catch (error) {
+      console.warn('[tools] create ticket failed', error);
+      showNotification('工单创建失败，请重试', 'error');
+    }
+  }, { once: true });
 }
 
 // 升级问题
@@ -389,49 +373,113 @@ function escalateIssue(button) {
         <label class="block text-sm font-medium mb-1">补充说明</label>
         <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" rows="3" placeholder="说明升级原因和已采取的措施"></textarea>
       </div>
-      <button class="w-full py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700" onclick="this.closest('.modal-overlay')?.remove();window.showNotification?.('问题已升级到高级支持团队', 'warning')">
+      <button class="w-full py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700" data-action="submit-escalate">
         确认升级
       </button>
     </div>
   `);
+
+  const modal = qs('.modal-overlay');
+  if (!modal) {
+    return;
+  }
+  modal.addEventListener('click', (event) => {
+    const submitBtn = event.target.closest('[data-action="submit-escalate"]');
+    if (!submitBtn) {
+      return;
+    }
+    if (!isApiEnabled()) {
+      showNotification('API 未启用，无法升级问题', 'warning');
+      return;
+    }
+    showNotification('升级流程尚未接入', 'info');
+  }, { once: true });
 }
 
 // 生成报告
-function generateReport(button) {
+async function generateReport(button) {
   const originalContent = button.innerHTML;
   button.innerHTML = '<i class="fa fa-spinner fa-spin"></i><span class="text-sm">生成中...</span>';
   button.disabled = true;
 
-  setTimeout(() => {
-    button.innerHTML = originalContent;
-    button.disabled = false;
+  let summary = null;
+  if (isApiEnabled()) {
+    try {
+      const response = await fetchAuditSummary(7);
+      summary = response?.data ?? response;
+    } catch (error) {
+      console.warn('[tools] fetch audit summary failed', error);
+    }
+  }
 
-    showModal('生成报告', `
-      <div class="space-y-3">
-        <div class="p-3 bg-green-50 rounded-lg">
-          <i class="fa fa-check-circle text-green-600 mr-2"></i>
-          <span class="text-sm">报告生成成功</span>
-        </div>
-        <div class="text-sm text-gray-700">
-          <div class="mb-2 font-medium">报告摘要：</div>
+  button.innerHTML = originalContent;
+  button.disabled = false;
+
+  const report = summary?.report || null;
+  const hasSummary = Boolean(report);
+  const formatCount = (value, suffix) => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+      return '--';
+    }
+    return suffix ? `${num} ${suffix}` : `${num}`;
+  };
+  const formatMinutes = (value) => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+      return '--';
+    }
+    return `${num.toFixed(1)} 分钟`;
+  };
+  const formatPercent = (value) => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+      return '--';
+    }
+    const normalized = num > 1 ? num : num * 100;
+    return `${normalized.toFixed(1)}%`;
+  };
+
+  showModal('生成报告', `
+    <div class="space-y-3">
+      <div class="p-3 bg-green-50 rounded-lg">
+        <i class="fa fa-check-circle text-green-600 mr-2"></i>
+        <span class="text-sm">报告生成成功</span>
+      </div>
+      <div class="text-sm text-gray-700 space-y-3">
+        <div>
+          <div class="mb-2 font-medium">核心指标（近7天）：</div>
           <ul class="space-y-1 text-xs text-gray-600">
-            <li>• 处理对话数: 8</li>
-            <li>• 平均响应时间: 2.5分钟</li>
-            <li>• 问题解决率: 87.5%</li>
-            <li>• 客户满意度: 4.2/5.0</li>
+            <li>• 会话总量: ${hasSummary ? formatCount(report?.totalConversations, '个') : '--'}</li>
+            <li>• 活跃会话: ${hasSummary ? formatCount(report?.activeConversations, '个') : '--'}</li>
+            <li>• 工单创建量: ${hasSummary ? formatCount(report?.ticketsCreated, '个') : '--'}</li>
+            <li>• 平均首响: ${hasSummary ? formatMinutes(report?.avgFirstResponseMinutes) : '--'}</li>
+            <li>• 5分钟达标率: ${hasSummary ? formatPercent(report?.firstResponseSlaRate) : '--'}</li>
+            <li>• 30分钟同步率: ${hasSummary ? formatPercent(report?.updateSyncRate) : '--'}</li>
           </ul>
         </div>
-        <div class="flex gap-2">
-          <button class="flex-1 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark text-sm" onclick="alert('下载PDF...')">
-            <i class="fa fa-download mr-1"></i>下载PDF
-          </button>
-          <button class="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm" onclick="alert('下载Excel...')">
-            <i class="fa fa-table mr-1"></i>下载Excel
-          </button>
+        <div>
+          <div class="mb-2 font-medium">质量与工单：</div>
+          <ul class="space-y-1 text-xs text-gray-600">
+            <li>• 解决率: ${hasSummary ? formatPercent(report?.resolutionRate) : '--'}</li>
+            <li>• 满意度: ${hasSummary ? formatCount(report?.satisfactionScore, '分') : '--'}</li>
+            <li>• 违规事件数: ${hasSummary ? formatCount(report?.violationCount, '次') : '--'}</li>
+            <li>• 工单完成量: ${hasSummary ? formatCount(report?.ticketsResolved, '单') : '--'}</li>
+            <li>• 平均处理时长: ${hasSummary ? formatMinutes(report?.avgTicketHandleMinutes) : '--'}</li>
+            <li>• 15分钟升级率: ${hasSummary ? formatPercent(report?.escalationComplianceRate) : '--'}</li>
+          </ul>
         </div>
       </div>
-    `);
-  }, 1500);
+      <div class="flex gap-2">
+        <button class="flex-1 py-2 bg-primary text-white rounded-lg text-sm opacity-60 cursor-not-allowed" disabled>
+          <i class="fa fa-download mr-1"></i>下载PDF
+        </button>
+        <button class="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm opacity-60 cursor-not-allowed" disabled>
+          <i class="fa fa-table mr-1"></i>下载Excel
+        </button>
+      </div>
+    </div>
+  `);
 }
 
 // 通用模态框显示

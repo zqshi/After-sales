@@ -1,60 +1,185 @@
 import { qs, on } from '../core/dom.js';
 import { toggleRightSidebar } from '../ui/layout.js';
 import { fetchProfile, fetchProfileInteractions, isApiEnabled } from '../api.js';
-import { MOCK_CUSTOMER_PROFILES } from '../../mock-data/customer-profiles.js';
 
-// 注意：DEFAULT_PROFILES 已移至独立的 mock 数据文件
-// 开发环境：使用 mock 数据
-// 生产环境：完全依赖 API 数据
-const DEFAULT_PROFILES = window.__DEV__ ? MOCK_CUSTOMER_PROFILES : {};
-
-let currentConversationId = 'conv-001';
+let currentConversationId = null;
 const interactionFilter = {
   range: '7d',
   type: '全部',
 };
 let interactionFilterBound = false;
-let activeProfile = DEFAULT_PROFILES['conv-001'];
+let activeProfile = buildEmptyProfile();
+
+function buildEmptyProfile() {
+  return {
+    name: '客户',
+    title: '',
+    tags: [],
+    updatedAt: '-',
+    focus: '',
+    contacts: {
+      phone: '-',
+      email: '-',
+      wechat: '-',
+    },
+    sla: '-',
+    slaStatus: '-',
+    expire: '-',
+    products: [],
+    metrics: {
+      contractAmount: '-',
+      satisfaction: '-',
+      duration: '-',
+    },
+    insights: [],
+    interactions: [],
+    conversationHistory: [],
+    serviceRecords: [],
+    commitments: [],
+    contractRange: '',
+  };
+}
+
+function mapProfileResponse(payload) {
+  const contactInfo = payload.contactInfo || {};
+  const slaInfo = payload.slaInfo || {};
+  const metrics = payload.metrics || {};
+  const satisfactionScore = metrics.satisfactionScore ?? '-';
+  const satisfactionText =
+    typeof satisfactionScore === 'number'
+      ? satisfactionScore > 1
+        ? `${satisfactionScore}/5`
+        : `${Math.round(satisfactionScore * 5)}/5`
+      : '-';
+
+  return {
+    name: payload.name || '客户',
+    title: payload.company || '',
+    tags: payload.tags || [],
+    updatedAt: payload.updatedAt || '-',
+    focus: payload.insights?.[0]?.detail || '',
+    contacts: {
+      phone: contactInfo.phone || '-',
+      email: contactInfo.email || '-',
+      wechat: contactInfo.preferredChannel || '-',
+    },
+    sla: slaInfo.serviceLevel || (payload.isVIP ? 'VIP' : '普通'),
+    slaStatus: payload.riskLevel || '-',
+    expire: '-',
+    products: payload.products || [],
+    metrics: {
+      contractAmount: metrics.totalRevenue ? `¥${metrics.totalRevenue}` : '-',
+      satisfaction: satisfactionText,
+      duration: metrics.averageResolutionMinutes ? `${metrics.averageResolutionMinutes}分钟` : '-',
+    },
+    insights: (payload.insights || []).map((item) => ({
+      title: item.title || '洞察',
+      desc: item.detail || '',
+      action: item.source || '',
+    })),
+    interactions: mapInteractions(payload.interactions || []),
+    conversationHistory: payload.conversationHistory || [],
+    serviceRecords: (payload.serviceRecords || []).map((record) => ({
+      id: record.id || record.recordedAt || `${record.title}-${record.recordedAt}`,
+      title: record.title,
+      date: record.recordedAt || '-',
+      status: record.outcome || '进行中',
+      promise: record.description || '',
+      promiseStatus: record.outcome || '',
+      duration: record.actualHours ? `${record.actualHours}h` : '-',
+      owner: record.ownerId || '-',
+      result: record.description || '',
+      evidence: '',
+      commitmentId: '',
+      relatedConversations: [],
+      actions: [],
+      detail: record.description || '',
+      due: '',
+    })),
+    commitments: (payload.commitments || []).map((commitment) => ({
+      id: commitment.id,
+      title: commitment.title,
+      metric: '',
+      used: commitment.progress || 0,
+      total: 100,
+      progress: commitment.progress || 0,
+      status: '进行中',
+      remark: '',
+      nextDue: '',
+      risk: null,
+    })),
+    contractRange: payload.contractRange || '',
+  };
+}
+
+function mapInteractions(interactions) {
+  return (interactions || []).map((item) => ({
+    title: item.title || '客户互动',
+    desc: item.notes || item.description || '',
+    date: item.occurredAt || item.timestamp || '-',
+    icon: 'fa-comment',
+    type: item.type || item.interactionType || '互动',
+    window: item.window || '7d',
+    channel: item.channel || '-',
+    result: item.status || '已记录',
+  }));
+}
+
+function showEmptyCustomerProfile() {
+  activeProfile = buildEmptyProfile();
+  renderProfile(activeProfile);
+  renderConversationTimeline(activeProfile);
+  renderCommitmentSummary(activeProfile);
+  renderServiceRecords(activeProfile);
+  renderContractRange(activeProfile.contractRange);
+  renderInteractions(activeProfile);
+  renderInsights(activeProfile);
+}
 
 export function initCustomerProfile() {
   bindInteractionFilters();
-  updateCustomerContext('conv-001');
+  showEmptyCustomerProfile();
   bindHistoryDetails();
 }
 
-export function updateCustomerContext(conversationId) {
-  currentConversationId = conversationId || 'conv-001';
-  loadCustomerProfile(currentConversationId);
+export function updateCustomerContext(conversationId, customerId = null) {
+  currentConversationId = conversationId || null;
+  const targetCustomerId = customerId || null;
+  if (!targetCustomerId) {
+    showEmptyCustomerProfile();
+    return;
+  }
+  loadCustomerProfile(targetCustomerId);
 }
 
-async function loadCustomerProfile(conversationId) {
-  let profile = {
-    ...(DEFAULT_PROFILES[conversationId] || DEFAULT_PROFILES['conv-001']),
-  };
+async function loadCustomerProfile(customerId) {
+  let profile = buildEmptyProfile();
 
   if (isApiEnabled()) {
     try {
-      const response = await fetchProfile(conversationId);
+      const response = await fetchProfile(customerId);
       const payload = response?.data ?? response;
       if (payload) {
-        profile = { ...profile, ...payload };
+        profile = mapProfileResponse(payload);
       }
     } catch (err) {
       console.warn('[customer] fetch profile failed', err);
     }
     try {
-      const interactionResponse = await fetchProfileInteractions(conversationId, {
+      const interactionResponse = await fetchProfileInteractions(customerId, {
         range: interactionFilter.range,
       });
       const data = interactionResponse?.data ?? interactionResponse;
       // API返回 {success, data: {interactions: [...], total, customerId, range}}
       const interactions = data?.interactions ?? data?.list ?? data?.items ?? data;
       if (Array.isArray(interactions) && interactions.length) {
-        profile.interactions = interactions;
+        profile.interactions = mapInteractions(interactions);
       }
     } catch (err) {
       console.warn('[customer] fetch interactions failed', err);
     }
+  } else {
+    showEmptyCustomerProfile();
   }
 
   activeProfile = profile;
@@ -83,7 +208,7 @@ function renderProfile(profile) {
   setText('#customer-contract-amount', profile.metrics.contractAmount);
   setText('#customer-satisfaction', profile.metrics.satisfaction);
   setText('#customer-duration', profile.metrics.duration);
-  setText('#customer-focus', profile.focus || '保持本周触达');
+  setText('#customer-focus', profile.focus || '-');
   setText('#customer-updated-at-secondary', profile.updatedAt || '-');
   setText('#customer-expire-secondary', profile.expire || '-');
 

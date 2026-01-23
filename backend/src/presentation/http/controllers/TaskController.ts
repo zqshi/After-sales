@@ -126,6 +126,43 @@ export class TaskController {
     }
   }
 
+  async handleAction(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const { action } = request.body as { action: string };
+
+      if (!action) {
+        reply.code(400).send({
+          success: false,
+          error: { message: 'action is required', code: 'VALIDATION_ERROR' },
+        });
+        return;
+      }
+
+      if (action === 'cancel') {
+        const result = await this.updateTaskStatusUseCase.execute(id, { status: 'cancelled' });
+        reply.code(200).send({ success: true, data: result });
+        return;
+      }
+
+      if (action === 'execute') {
+        const result = await this.updateTaskStatusUseCase.execute(id, { status: 'in_progress' });
+        reply.code(200).send({ success: true, data: result });
+        return;
+      }
+
+      reply.code(400).send({
+        success: false,
+        error: { message: `unsupported action: ${action}`, code: 'INVALID_INPUT' },
+      });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
   private handleError(error: unknown, reply: FastifyReply): void {
     if (error instanceof Error) {
       const statusCode = this.getStatusCode(error.message);

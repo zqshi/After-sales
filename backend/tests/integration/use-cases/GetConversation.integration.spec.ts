@@ -95,7 +95,7 @@ describe('GetConversation Integration Test', () => {
     expect(result.messages).toHaveLength(0); // 不包含消息
   });
 
-  it('应该返回完整的SLA信息', async () => {
+  it('应该返回完整的客户等级信息', async () => {
     // Arrange
     const request = {
       conversationId: testConversation.id,

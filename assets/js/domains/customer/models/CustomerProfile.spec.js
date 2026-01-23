@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CustomerProfile, ContactInfo, SLAInfo, Metrics, Commitment } from './Profile.js';
+import { CustomerProfile, ContactInfo, CustomerLevelInfo, Metrics, Commitment } from './Profile.js';
 
 describe('CustomerProfile - 聚合根', () => {
   let profile;
@@ -57,7 +57,7 @@ describe('CustomerProfile - 聚合根', () => {
       expect(profile.title).toBe('CTO');
       expect(profile.tags).toEqual(['企业客户']);
       expect(profile.contacts).toBeInstanceOf(ContactInfo);
-      expect(profile.sla).toBeInstanceOf(SLAInfo);
+      expect(profile.sla).toBeInstanceOf(CustomerLevelInfo);
       expect(profile.metrics).toBeInstanceOf(Metrics);
     });
 

@@ -9,7 +9,7 @@ import { EventBus } from '../../infrastructure/events/EventBus.js';
 // Conversation事件处理器
 import { MessageSentEventHandler } from './conversation/MessageSentEventHandler.js';
 import { ConversationClosedEventHandler } from './conversation/ConversationClosedEventHandler.js';
-import { SLAViolatedEventHandler } from './conversation/SLAViolatedEventHandler.js';
+import { CustomerLevelViolatedEventHandler } from './conversation/CustomerLevelViolatedEventHandler.js';
 
 // Customer事件处理器
 import { ProfileRefreshedEventHandler } from './customer/ProfileRefreshedEventHandler.js';
@@ -41,7 +41,7 @@ export class EventSubscriptionManager {
     // 实例化所有处理器
     this.handlers.set('messageSent', new MessageSentEventHandler());
     this.handlers.set('conversationClosed', new ConversationClosedEventHandler());
-    this.handlers.set('slaViolated', new SLAViolatedEventHandler());
+    this.handlers.set('slaViolated', new CustomerLevelViolatedEventHandler());
     this.handlers.set('profileRefreshed', new ProfileRefreshedEventHandler());
     this.handlers.set('riskLevelChanged', new RiskLevelChangedEventHandler());
     this.handlers.set('requirementCreated', new RequirementCreatedEventHandler());
@@ -77,8 +77,8 @@ export class EventSubscriptionManager {
       await this.handlers.get('conversationClosed').handle(event);
     });
 
-    // SLAViolated事件 → 发送警报
-    this.eventBus.subscribe('SLAViolated', async (event) => {
+    // CustomerLevelViolated事件 → 发送警报
+    this.eventBus.subscribe('CustomerLevelViolated', async (event) => {
       await this.handlers.get('slaViolated').handle(event);
     });
 

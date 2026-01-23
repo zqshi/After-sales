@@ -1,112 +1,30 @@
 import { qs, qsa, on } from '../core/dom.js';
+import { showNotification } from '../core/notifications.js';
+import {
+  createKnowledgeItem,
+  deleteKnowledgeItem,
+  fetchKnowledge,
+  fetchKnowledgeProgress,
+  isApiEnabled,
+  fetchCurrentUser,
+  retryKnowledgeUpload,
+  syncKnowledgeItem,
+  updateKnowledgeItem,
+  uploadKnowledgeDocument,
+} from '../api.js';
 
 const MAX_CATEGORY_DEPTH = 3;
 
-const DOC_ALLOWED_STATUSES = ['active', 'archived', 'deprecated'];
+const DOC_ALLOWED_STATUSES = ['active', 'archived', 'deprecated', 'processing', 'disabled', 'retry'];
 
-const knowledgeTaxonomy = [
-  {
-    id: 'root-ks-cloud',
-    name: '金山云',
-    children: [
-      { id: 'ks-cloud-salary-tax', name: '薪酬个税', children: [] },
-      { id: 'ks-cloud-insurance', name: '五险一金', children: [] },
-      { id: 'ks-cloud-benefit', name: '福利管理', children: [] },
-      { id: 'ks-cloud-attendance', name: '考勤休假', children: [] },
-      { id: 'ks-cloud-transfer', name: '入转调离', children: [] },
-      { id: 'ks-cloud-resident', name: '工作居住证', children: [] },
-      { id: 'ks-cloud-archive', name: '档案管理', children: [] },
-      { id: 'ks-cloud-policy', name: '员工政策', children: [] },
-      { id: 'ks-cloud-general', name: '通用', children: [] },
-    ],
-  },
-];
+const CATEGORY_CONFIG_TITLE = 'Knowledge Taxonomy Config';
+const CATEGORY_CONFIG_TYPE = 'category-config';
 
-const docs = [
-  {
-    id: 'doc-001',
-    title: '个税专项扣除材料提交流程',
-    status: 'active',
-    summary: '说明专项附加扣除材料提交清单与时间节点。',
-    content: '适用范围：金山云-薪酬个税。\n1. 提交材料清单。\n2. 线上提交入口与截止时间。\n3. 常见问题与反馈渠道。',
-    category: '金山云 / 薪酬个税',
-    tags: ['专项扣除', '流程'],
-    owner: '李文',
-    source: 'HR政策库',
-    createdAt: '2024-02-10 10:20',
-    updatedAt: '2024-02-18 09:30',
-    fileHash: 'hash-ks-001',
-    relatedFaqIds: ['faq-001'],
-  },
-  {
-    id: 'doc-002',
-    title: '考勤异常处理指引',
-    status: 'archived',
-    summary: '覆盖补卡、迟到、旷工判定及审批路径。',
-    content: '流程说明：\n- 员工发起异常说明\n- 主管审批\n- HR复核与结论通知',
-    category: '金山云 / 考勤休假',
-    tags: ['考勤', '审批'],
-    owner: '赵琪',
-    source: '服务台知识沉淀',
-    createdAt: '2024-02-01 09:10',
-    updatedAt: '2024-02-16 14:05',
-    fileHash: 'hash-ks-002',
-    relatedFaqIds: ['faq-002'],
-  },
-  {
-    id: 'doc-003',
-    title: '员工档案迁转说明',
-    status: 'deprecated',
-    summary: '归档、迁转与存放政策概览。',
-    content: '档案迁转需提前 3 个工作日预约，并由 HR 统一对接。',
-    category: '金山云 / 档案管理',
-    tags: ['档案', '流程'],
-    owner: '王珊',
-    source: '历史归档',
-    createdAt: '2023-12-28 15:30',
-    updatedAt: '2024-02-10 18:20',
-    fileHash: 'hash-ks-003',
-    relatedFaqIds: [],
-  },
-  {
-    id: 'doc-004',
-    title: '通用福利发放说明',
-    status: 'active',
-    summary: '节日福利发放周期、领取方式与差异化策略。',
-    content: '发放周期：季度末。\n领取方式：线上兑换码或实物邮寄。\n如有疑问请联系 HR 伙伴。',
-    category: '金山云 / 通用',
-    tags: ['福利', '发放'],
-    owner: '陈琳',
-    source: '运营配置',
-    createdAt: '2024-01-20 11:05',
-    updatedAt: '2024-02-12 10:10',
-    fileHash: 'hash-ks-004',
-    relatedFaqIds: [],
-  },
-];
-
-const faqs = [
-  {
-    id: 'faq-001',
-    question: '如何提交个税专项扣除材料？',
-    answer: '进入薪酬个税模块，下载材料清单并在规定时间内提交。',
-    status: 'active',
-    similarQuestions: ['专项扣除材料提交入口在哪？', '个税专项扣除如何补交？'],
-    sourceDocIds: ['doc-001'],
-    createdAt: '2024-02-08 10:10',
-    updatedAt: '2024-02-18 10:10',
-  },
-  {
-    id: 'faq-002',
-    question: '补卡流程需要哪些审批？',
-    answer: '员工提交申请后由主管审批，HR 复核后生效。',
-    status: 'archived',
-    similarQuestions: ['考勤补卡怎么走流程？'],
-    sourceDocIds: ['doc-002'],
-    createdAt: '2024-01-15 09:00',
-    updatedAt: '2024-02-11 09:20',
-  },
-];
+let knowledgeTaxonomy = [];
+let docs = [];
+let faqs = [];
+let knowledgeConfigItem = null;
+let currentUserName = '';
 
 const treeState = new Map();
 let selectedCategory = '';
@@ -125,6 +43,8 @@ let faqSimilarList = [];
 let simpleKnowledgeRows = [];
 let activeKnowledgeCard = null;
 let simpleEmptyText = '';
+const uploadProgressTimers = new Map();
+const uploadRetryCache = new Map();
 
 export function initKnowledgeBase() {
   const treeSearchInput = qs('#knowledge-tree-search');
@@ -161,11 +81,8 @@ export function initKnowledgeBase() {
   const faqDeleteCancelBtn = qs('#knowledge-faq-delete-cancel');
   const faqDeleteConfirmBtn = qs('#knowledge-faq-delete-confirm');
 
-  renderTree();
-  renderCategoryOptions();
-  renderDocList();
-  renderFaqList();
-  renderBreadcrumb();
+  void loadKnowledgeData();
+  void loadCurrentUser();
 
   on(treeSearchInput, 'input', (event) => {
     treeQuery = event.target.value.trim();
@@ -208,40 +125,49 @@ export function initKnowledgeBase() {
   on(tabDocBtn, 'click', () => switchLibrary('doc'));
   on(tabFaqBtn, 'click', () => switchLibrary('faq'));
 
-  on(deleteConfirmBtn, 'click', () => {
+  on(deleteConfirmBtn, 'click', async () => {
     if (!pendingDeleteId) {
       return;
     }
-    const targetIndex = docs.findIndex((doc) => doc.id === pendingDeleteId);
-    if (targetIndex > -1 && DOC_ALLOWED_STATUSES.includes(docs[targetIndex].status)) {
-      const removedId = docs[targetIndex].id;
-      docs.splice(targetIndex, 1);
-      faqs.forEach((faq) => {
-        if (faq.sourceDocIds?.includes(removedId)) {
-          faq.sourceDocIds = faq.sourceDocIds.filter((id) => id !== removedId);
-        }
-      });
-      renderDocList();
+    if (!isApiEnabled()) {
+      showNotification('知识库 API 未配置', 'warning');
+      return;
     }
-    closeDeleteModal();
+    try {
+      const deleteRelated = qs('#knowledge-delete-related-faq')?.checked;
+      await deleteKnowledgeItem(pendingDeleteId, { deleteRelatedFaq: Boolean(deleteRelated) });
+      docs = docs.filter((doc) => doc.id !== pendingDeleteId);
+      if (deleteRelated) {
+        faqs = faqs.filter((faq) => !faq.sourceDocIds?.includes(pendingDeleteId));
+      }
+      renderDocList();
+      renderFaqList();
+      showNotification('文档已删除', 'success');
+    } catch (error) {
+      showNotification('文档删除失败', 'error');
+    } finally {
+      closeDeleteModal();
+    }
   });
 
-  on(faqDeleteConfirmBtn, 'click', () => {
+  on(faqDeleteConfirmBtn, 'click', async () => {
     if (!pendingFaqDeleteId) {
       return;
     }
-    const targetIndex = faqs.findIndex((faq) => faq.id === pendingFaqDeleteId);
-    if (targetIndex > -1 && DOC_ALLOWED_STATUSES.includes(faqs[targetIndex].status)) {
-      const removedId = faqs[targetIndex].id;
-      faqs.splice(targetIndex, 1);
-      docs.forEach((doc) => {
-        if (doc.relatedFaqIds?.includes(removedId)) {
-          doc.relatedFaqIds = doc.relatedFaqIds.filter((id) => id !== removedId);
-        }
-      });
-      renderFaqList();
+    if (!isApiEnabled()) {
+      showNotification('知识库 API 未配置', 'warning');
+      return;
     }
-    closeFaqDeleteModal();
+    try {
+      await deleteKnowledgeItem(pendingFaqDeleteId);
+      faqs = faqs.filter((faq) => faq.id !== pendingFaqDeleteId);
+      renderFaqList();
+      showNotification('FAQ 已删除', 'success');
+    } catch (error) {
+      showNotification('FAQ 删除失败', 'error');
+    } finally {
+      closeFaqDeleteModal();
+    }
   });
 
   on(fileInput, 'change', (event) => {
@@ -326,7 +252,7 @@ export function initKnowledgeBase() {
     if (actionBtn) {
       const action = actionBtn.dataset.treeAction;
       const nodeId = actionBtn.dataset.treeId || '';
-      handleTreeAction(action, nodeId);
+      void handleTreeAction(action, nodeId);
       return;
     }
 
@@ -371,6 +297,9 @@ export function initKnowledgeBase() {
       const action = actionBtn.dataset.docAction;
       if (action === 'view') {
         openDetailModal(doc);
+      }
+      if (action === 'retry') {
+        void handleRetryUpload(doc);
       }
       if (action === 'delete' && DOC_ALLOWED_STATUSES.includes(doc.status)) {
         openDeleteModal(doc);
@@ -435,6 +364,450 @@ export function initKnowledgeBase() {
   });
 
   initSimpleKnowledgePage();
+}
+
+async function loadCurrentUser() {
+  if (!isApiEnabled()) {
+    return;
+  }
+  try {
+    const response = await fetchCurrentUser();
+    const payload = response?.data ?? response;
+    currentUserName = payload?.name || payload?.email || payload?.id || '';
+  } catch (error) {
+    currentUserName = '';
+  }
+}
+
+async function loadKnowledgeData() {
+  if (!isApiEnabled()) {
+    showNotification('知识库 API 未配置', 'warning');
+    knowledgeTaxonomy = [createNode('默认分类')];
+    renderTree();
+    renderCategoryOptions();
+    renderDocList();
+    renderFaqList();
+    renderBreadcrumb();
+    return;
+  }
+
+  try {
+    const response = await fetchKnowledge({ limit: 200, page: 1 });
+    const items = extractKnowledgeItems(response);
+
+    knowledgeConfigItem = items.find(isCategoryConfig) || null;
+    const dataItems = items.filter((item) => !isCategoryConfig(item));
+
+    docs = dataItems
+      .filter((item) => item.category !== 'faq')
+      .map((item) => mapKnowledgeDoc(item));
+
+    faqs = dataItems
+      .filter((item) => item.category === 'faq')
+      .map((item) => mapKnowledgeFaq(item));
+
+    knowledgeTaxonomy = getTaxonomyFromConfig() || buildTaxonomyFromDocs(docs);
+    ensureTaxonomyDefaults();
+  } catch (error) {
+    showNotification('加载知识库失败，请稍后重试', 'error');
+  }
+
+  renderTree();
+  renderCategoryOptions();
+  renderDocList();
+  renderFaqList();
+  renderBreadcrumb();
+  startUploadProgressPolling(docs);
+}
+
+function extractKnowledgeItems(response) {
+  const payload = response?.data ?? response;
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (Array.isArray(payload?.items)) {
+    return payload.items;
+  }
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+  return [];
+}
+
+function normalizeMetadata(raw) {
+  return typeof raw === 'object' && raw ? raw : {};
+}
+
+function isCategoryConfig(item) {
+  const metadata = normalizeMetadata(item?.metadata);
+  return metadata.type === CATEGORY_CONFIG_TYPE;
+}
+
+function normalizeSummary(summary, content) {
+  const value = summary || buildSummary(content);
+  if (!value) {
+    return '';
+  }
+  if (value.includes('文档上传处理中') && value.includes('解析完成后可查看摘要')) {
+    return '文档上传处理中，处理完成后可查看摘要。';
+  }
+  return value;
+}
+
+function mapKnowledgeDoc(item) {
+  const metadata = normalizeMetadata(item.metadata);
+  const status = metadata.status || (item.isArchived ? 'archived' : 'active');
+  return {
+    id: item.id,
+    title: item.title,
+    status,
+    summary: normalizeSummary(metadata.summary, item.content),
+    content: item.content,
+    category: metadata.taxonomyPath || '未分类',
+    tags: Array.isArray(item.tags) ? item.tags : [],
+    owner: metadata.owner || '--',
+    source: item.source || metadata.source || '-',
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    fileHash: metadata.fileHash || '',
+    metadata,
+  };
+}
+
+function startUploadProgressPolling(docList) {
+  if (!Array.isArray(docList)) {
+    return;
+  }
+  docList.forEach((doc) => trackUploadProgress(doc));
+}
+
+function trackUploadProgress(doc) {
+  const uploadDocId = doc?.metadata?.uploadDocId;
+  if (!uploadDocId || doc.status !== 'processing') {
+    return;
+  }
+  if (uploadProgressTimers.has(uploadDocId)) {
+    return;
+  }
+
+  const scheduleNext = () => {
+    const timer = setTimeout(() => {
+      void pollUploadProgress();
+    }, 5000);
+    uploadProgressTimers.set(uploadDocId, timer);
+  };
+
+  const pollUploadProgress = async () => {
+    try {
+      const response = await fetchKnowledgeProgress(uploadDocId);
+      const progress = response?.data ?? response;
+      if (!progress) {
+        scheduleNext();
+        return;
+      }
+
+      const nextStatus = resolveProgressStatus(progress);
+      const progressChanged = progress?.overall_progress !== doc?.metadata?.processing?.overall_progress;
+      const statusChanged = nextStatus !== doc.status;
+
+      if (progressChanged || statusChanged) {
+        doc.metadata = {
+          ...doc.metadata,
+          status: nextStatus,
+          processing: progress,
+        };
+        doc.status = nextStatus;
+        renderDocList();
+      }
+
+      if (isTerminalProgress(nextStatus)) {
+        uploadProgressTimers.delete(uploadDocId);
+        if (statusChanged) {
+          await updateKnowledgeItem(doc.id, { metadata: doc.metadata });
+        }
+        if (nextStatus === 'active') {
+          await syncParsedContent(doc);
+        }
+        return;
+      }
+    } catch (error) {
+      scheduleNext();
+      return;
+    }
+
+    scheduleNext();
+  };
+
+  scheduleNext();
+}
+
+function resolveProgressStatus(progress) {
+  const raw = String(progress?.overall_status || '').toLowerCase();
+  if (raw.includes('disable')) {
+    return 'disabled';
+  }
+  if (raw.includes('fail') || raw.includes('error')) {
+    return 'deprecated';
+  }
+  if (raw.includes('complete') || raw.includes('success')) {
+    return 'active';
+  }
+  if (typeof progress?.overall_progress === 'number' && progress.overall_progress >= 100) {
+    return 'active';
+  }
+  return 'processing';
+}
+
+function isTerminalProgress(status) {
+  return ['active', 'deprecated', 'disabled', 'archived'].includes(status);
+}
+
+function queueUploadForDoc(doc, file, category) {
+  if (!doc?.id || !file) {
+    return;
+  }
+  uploadRetryCache.set(doc.id, { file, category });
+  void uploadFileForDoc(doc, file, category);
+}
+
+async function uploadFileForDoc(doc, file, category) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('category', category);
+
+  let uploadDocId = null;
+  let uploadMessage = '';
+  let uploadStatus = '';
+  try {
+    const uploadResponse = await uploadKnowledgeDocument(formData);
+    const payload = uploadResponse?.data ?? uploadResponse;
+    uploadDocId = payload?.docId || null;
+    uploadMessage = uploadResponse?.message || '';
+    uploadStatus = payload?.status || '';
+  } catch (error) {
+    await markUploadRetry(doc, error);
+    return;
+  }
+
+  let parseStatus = 'processing';
+  if (uploadMessage.includes('未启用')) {
+    parseStatus = 'disabled';
+  } else if (typeof uploadStatus === 'string' && uploadStatus) {
+    const normalizedStatus = uploadStatus.toLowerCase();
+    if (['active', 'archived', 'deprecated'].includes(normalizedStatus)) {
+      parseStatus = normalizedStatus;
+    }
+  }
+
+  const nextMetadata = {
+    ...(doc.metadata || {}),
+    status: parseStatus,
+    uploadDocId,
+    uploadPending: false,
+    uploadError: undefined,
+  };
+
+  await persistDocUpdate(doc, nextMetadata, parseStatus);
+  uploadRetryCache.delete(doc.id);
+
+  if (parseStatus === 'processing') {
+    trackUploadProgress(doc);
+  }
+}
+
+async function markUploadRetry(doc, error) {
+  const message = error instanceof Error ? error.message : '上传失败';
+  const nextMetadata = {
+    ...(doc.metadata || {}),
+    status: 'retry',
+    uploadPending: false,
+    uploadError: message,
+  };
+  await persistDocUpdate(doc, nextMetadata, 'retry');
+}
+
+async function persistDocUpdate(doc, metadata, status) {
+  try {
+    await updateKnowledgeItem(doc.id, { metadata });
+  } catch (error) {
+    // ignore persistence errors; UI still reflects local state
+  }
+  doc.metadata = metadata;
+  doc.status = status;
+  docs = docs.map((entry) => (entry.id === doc.id ? doc : entry));
+  renderDocList();
+}
+
+async function handleRetryUpload(doc) {
+  try {
+    const response = await retryKnowledgeUpload(doc.id);
+    const payload = response?.data ?? response;
+    if (!payload) {
+      showNotification('重试失败，请稍后再试', 'error');
+      return;
+    }
+    const mapped = mapKnowledgeDoc(payload);
+    docs = docs.map((entry) => (entry.id === doc.id ? mapped : entry));
+    renderDocList();
+    if (mapped.status === 'processing') {
+      trackUploadProgress(mapped);
+    } else if (mapped.status === 'active') {
+      await syncParsedContent(mapped);
+    }
+  } catch (error) {
+    showNotification('重试失败，请稍后再试', 'error');
+  }
+}
+
+async function syncParsedContent(doc) {
+  if (!doc?.id) {
+    return;
+  }
+  if (doc.metadata?.taxkbSyncedAt) {
+    return;
+  }
+  try {
+    const response = await syncKnowledgeItem(doc.id);
+    const payload = response?.data ?? response;
+    if (!payload) {
+      return;
+    }
+    const mapped = mapKnowledgeDoc(payload);
+    docs = docs.map((entry) => (entry.id === doc.id ? mapped : entry));
+    renderDocList();
+    if (mapped.metadata?.faqMining?.enabled) {
+      await loadKnowledgeData();
+    }
+  } catch (error) {
+    // Sync errors should not block the UI.
+  }
+}
+
+function mapKnowledgeFaq(item) {
+  const metadata = normalizeMetadata(item.metadata);
+  const status = metadata.status || (item.isArchived ? 'archived' : 'active');
+  return {
+    id: item.id,
+    question: item.title,
+    answer: item.content,
+    status,
+    similarQuestions: Array.isArray(metadata.similarQuestions) ? metadata.similarQuestions : [],
+    sourceDocIds: Array.isArray(metadata.sourceDocIds) ? metadata.sourceDocIds : [],
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    metadata,
+  };
+}
+
+function getTaxonomyFromConfig() {
+  const metadata = normalizeMetadata(knowledgeConfigItem?.metadata);
+  const taxonomy = metadata.taxonomy;
+  if (!Array.isArray(taxonomy)) {
+    return null;
+  }
+  return sanitizeTaxonomyTree(taxonomy);
+}
+
+function sanitizeTaxonomyTree(nodes = []) {
+  return nodes
+    .map((node) => {
+      const name = String(node?.name || '').trim();
+      if (!name) {
+        return null;
+      }
+      const children = sanitizeTaxonomyTree(node.children || []);
+      return {
+        id: node.id || createNode(name).id,
+        name,
+        children,
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildTaxonomyFromDocs(docList) {
+  const roots = [];
+  docList.forEach((doc) => {
+    const path = String(doc.category || '未分类').trim();
+    if (!path) {
+      return;
+    }
+    const parts = path.split(' / ').map((part) => part.trim()).filter(Boolean);
+    let nodes = roots;
+    parts.forEach((part) => {
+      let node = nodes.find((entry) => entry.name === part);
+      if (!node) {
+        node = createNode(part);
+        nodes.push(node);
+      }
+      nodes = node.children;
+    });
+  });
+  return roots;
+}
+
+function ensureTaxonomyDefaults() {
+  if (!knowledgeTaxonomy.length) {
+    knowledgeTaxonomy = [createNode('默认分类')];
+  }
+}
+
+function buildSummary(content = '') {
+  const trimmed = String(content || '').replace(/\s+/g, ' ').trim();
+  if (!trimmed) {
+    return '';
+  }
+  return trimmed.length > 80 ? `${trimmed.slice(0, 80)}...` : trimmed;
+}
+
+async function persistTaxonomyConfig() {
+  const metadata = {
+    ...(normalizeMetadata(knowledgeConfigItem?.metadata)),
+    type: CATEGORY_CONFIG_TYPE,
+    taxonomy: knowledgeTaxonomy,
+  };
+
+  if (knowledgeConfigItem?.id) {
+    const response = await updateKnowledgeItem(knowledgeConfigItem.id, { metadata });
+    const payload = response?.data ?? response;
+    if (payload) {
+      knowledgeConfigItem = payload;
+    }
+    return;
+  }
+
+  const response = await createKnowledgeItem({
+    title: CATEGORY_CONFIG_TITLE,
+    content: 'Knowledge taxonomy configuration',
+    category: 'other',
+    tags: ['system'],
+    source: 'system',
+    metadata,
+  });
+  const payload = response?.data ?? response;
+  if (payload) {
+    knowledgeConfigItem = payload;
+  }
+}
+
+async function safePersistTaxonomy() {
+  try {
+    await persistTaxonomyConfig();
+  } catch (error) {
+    const message = error?.message || '分类保存失败，请稍后重试';
+    console.error('[knowledge] failed to persist taxonomy', error);
+    showNotification(message, 'error');
+  }
+}
+
+async function updateDocTaxonomyPath(doc, newPath) {
+  const metadata = {
+    ...(doc.metadata || {}),
+    taxonomyPath: newPath,
+  };
+  await updateKnowledgeItem(doc.id, { metadata });
+  doc.category = newPath;
+  doc.metadata = metadata;
 }
 
 function renderTree() {
@@ -589,6 +962,9 @@ function renderDocList() {
           <div class="knowledge-cell text-xs text-gray-500 px-0">${doc.updatedAt}</div>
           <div class="knowledge-cell flex items-center justify-end gap-2 px-0">
             <button class="text-xs text-primary hover:underline" data-doc-action="view">查看</button>
+            ${doc.status === 'retry'
+              ? '<button class="text-xs text-amber-600 hover:underline" data-doc-action="retry">重试</button>'
+              : ''}
             ${DOC_ALLOWED_STATUSES.includes(doc.status)
               ? '<button class="text-xs text-red-600 hover:underline" data-doc-action="delete">删除</button>'
               : '<span class="text-xs text-gray-300">删除</span>'}
@@ -744,9 +1120,25 @@ function formatStatusBadge(status) {
     active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     archived: 'bg-amber-50 text-amber-700 border-amber-200',
     deprecated: 'bg-red-50 text-red-600 border-red-200',
+    processing: 'bg-blue-50 text-blue-600 border-blue-200',
+    disabled: 'bg-gray-100 text-gray-500 border-gray-200',
+    retry: 'bg-amber-50 text-amber-700 border-amber-200',
   };
+  const labels = getStatusLabels();
   const style = styles[status] || 'bg-gray-50 text-gray-500 border-gray-200';
-  return `<span class="text-[11px] px-2 py-0.5 rounded-full border ${style}">${status}</span>`;
+  const label = labels[status] || status || '-';
+  return `<span class="text-[11px] px-2 py-0.5 rounded-full border ${style}">${label}</span>`;
+}
+
+function getStatusLabels() {
+  return {
+    active: '已生效',
+    archived: '已归档',
+    deprecated: '已废弃',
+    processing: '解析中',
+    disabled: '未启用',
+    retry: '需重试',
+  };
 }
 
 function switchLibrary(type) {
@@ -813,6 +1205,9 @@ function openDetailModal(doc) {
   const modal = qs('#knowledge-detail-modal');
   const title = qs('#knowledge-detail-title');
   const status = qs('#knowledge-detail-status');
+  const detailId = qs('#knowledge-detail-id');
+  const detailUploadId = qs('#knowledge-detail-upload-id');
+  const detailProgress = qs('#knowledge-detail-progress');
   const category = qs('#knowledge-detail-category');
   const tags = qs('#knowledge-detail-tags');
   const owner = qs('#knowledge-detail-owner');
@@ -825,32 +1220,62 @@ function openDetailModal(doc) {
   const relatedFaqEmpty = qs('#knowledge-detail-faq-empty');
   const relatedFaqCount = qs('#knowledge-detail-faq-count');
 
-  if (!modal || !title || !status || !summary || !content || !category || !tags || !owner || !source || !created || !updated) {
+  if (
+    !modal || !title || !status || !summary || !content || !category || !tags ||
+    !owner || !source || !created || !updated || !detailId || !detailUploadId || !detailProgress
+  ) {
     return;
   }
 
+  const uploadDocId = doc?.metadata?.uploadDocId || doc?.metadata?.taxkbDocId || '-';
+  const taxkbSyncedAt = doc?.metadata?.taxkbSyncedAt;
+  const aiSummaryAt = doc?.metadata?.aiSummaryAt;
+  const aiTagsAt = doc?.metadata?.aiTagsAt;
+  const placeholderContent = String(doc?.content || '').includes('文档上传处理中');
   title.textContent = doc.title;
-  status.textContent = doc.status;
+  const statusLabels = getStatusLabels();
+  status.textContent = statusLabels[doc.status] || doc.status || '-';
+  detailId.textContent = doc.id || '-';
+  detailUploadId.textContent = uploadDocId || '-';
+  detailProgress.textContent = doc.status === 'processing'
+    ? '解析中...'
+    : formatProgressStatus(doc.status);
   category.textContent = doc.category || '-';
-  tags.textContent = doc.tags?.length ? doc.tags.join('、') : '-';
-  owner.textContent = doc.owner || '-';
+  const tagList = Array.isArray(doc.tags) ? doc.tags.slice(0, 10) : [];
+  if (!aiTagsAt) {
+    tags.textContent = '处理中...';
+  } else {
+    tags.textContent = tagList.length ? tagList.join('、') : '--';
+  }
+  owner.textContent = doc.owner || '--';
   source.textContent = doc.source || '-';
   created.textContent = doc.createdAt || '-';
   updated.textContent = doc.updatedAt || '-';
-  summary.textContent = doc.summary || '-';
-  content.textContent = doc.content || '-';
+  if (!aiSummaryAt) {
+    summary.textContent = '处理中...';
+  } else {
+    summary.textContent = doc.summary || '--';
+  }
+
+  if (!taxkbSyncedAt) {
+    content.textContent = '处理中...';
+  } else {
+    const contentText = placeholderContent ? '--' : (doc.content || '--');
+    content.textContent = contentText;
+  }
   renderRelatedFaqs(doc, relatedFaqList, relatedFaqEmpty, relatedFaqCount);
   modal.classList.remove('hidden');
+
+  if (uploadDocId && uploadDocId !== '-' && doc.status === 'processing') {
+    void refreshDetailProgress(uploadDocId, detailProgress);
+  }
 }
 
 function renderRelatedFaqs(doc, list, empty, count) {
   if (!list || !empty || !count) {
     return;
   }
-  const relatedIds = doc.relatedFaqIds || [];
-  const relatedItems = relatedIds
-    .map((id) => faqs.find((faq) => faq.id === id))
-    .filter(Boolean);
+  const relatedItems = getFaqsLinkedToDoc(doc.id);
   count.textContent = relatedItems.length ? `${relatedItems.length}条` : '0条';
   if (!relatedItems.length) {
     empty.classList.remove('hidden');
@@ -874,6 +1299,43 @@ function closeDetailModal() {
   const modal = qs('#knowledge-detail-modal');
   if (modal) {
     modal.classList.add('hidden');
+  }
+}
+
+function formatProgressStatus(rawStatus) {
+  const normalized = String(rawStatus || '').toLowerCase();
+  const map = {
+    active: '已完成',
+    archived: '已归档',
+    deprecated: '已废弃',
+    processing: '解析中',
+    running: '解析中',
+    pending: '等待中',
+    queued: '排队中',
+    success: '已完成',
+    completed: '已完成',
+    complete: '已完成',
+    failed: '失败',
+    error: '失败',
+    disabled: '未启用',
+    retry: '需重试',
+  };
+  return map[normalized] || rawStatus || '解析中';
+}
+
+async function refreshDetailProgress(uploadDocId, target) {
+  try {
+    const response = await fetchKnowledgeProgress(uploadDocId);
+    const progress = response?.data ?? response;
+    if (!progress) {
+      target.textContent = '未获取到进度';
+      return;
+    }
+    const percent = typeof progress.overall_progress === 'number' ? `${progress.overall_progress}%` : '-';
+    const label = formatProgressStatus(progress.overall_status);
+    target.textContent = `${label} (${percent})`;
+  } catch (error) {
+    target.textContent = '进度查询失败';
   }
 }
 
@@ -966,6 +1428,10 @@ async function handleSubmit() {
   const category = qs('#knowledge-add-category')?.value || '';
   const miningEnabled = qs('#knowledge-faq-mining-toggle')?.checked;
   const miningCount = Number(qs('#knowledge-faq-mining-count')?.value || 0);
+  if (!isApiEnabled()) {
+    showNotification('知识库 API 未配置', 'warning');
+    return;
+  }
   if (!category) {
     showAddError('必须选择分类');
     return;
@@ -1018,26 +1484,48 @@ async function handleSubmit() {
     }
   }
 
-  const now = new Date();
-  const newDoc = {
-    id: `doc-${now.getTime()}`,
-    title: nextTitle,
-    status: 'active',
-    summary: '新增文档默认摘要，待补充。',
-    content: '新增文档默认内容，待补充。',
-    category: category,
-    tags: ['待补充'],
-    owner: '待分配',
-    source: '人工上传',
-    createdAt: formatDate(now),
-    updatedAt: formatDate(now),
-    fileHash: hashes[0],
-    relatedFaqIds: [],
-  };
+  try {
+    for (let index = 0; index < selectedFiles.length; index += 1) {
+      const file = selectedFiles[index];
+      const fileHash = hashes[index];
 
-  docs.push(newDoc);
-  renderDocList();
-  closeAddModal();
+      const title = file.name;
+      const response = await createKnowledgeItem({
+        title,
+        content: '文档上传处理中，系统会自动解析。',
+        category: 'guide',
+        tags: ['上传文档'],
+        source: 'upload',
+        metadata: {
+          taxonomyPath: category,
+          status: 'processing',
+          summary: '文档上传处理中，处理完成后可查看摘要。',
+          owner: currentUserName || undefined,
+          fileName: file.name,
+          fileSize: file.size,
+          fileHash,
+          uploadDocId: null,
+          uploadPending: true,
+          faqMining: {
+            enabled: Boolean(miningEnabled),
+            count: miningCount,
+          },
+        },
+      });
+      const payload = response?.data ?? response;
+      if (payload) {
+        const mapped = mapKnowledgeDoc(payload);
+        docs.push(mapped);
+        renderDocList();
+        queueUploadForDoc(mapped, file, category);
+      }
+    }
+
+    closeAddModal();
+    showNotification('文档上传已提交', 'success');
+  } catch (error) {
+    showAddError('文档上传失败，请稍后重试');
+  }
 }
 
 function updateTitleFromFiles() {
@@ -1073,7 +1561,23 @@ function openDeleteModal(doc) {
     return;
   }
   pendingDeleteId = doc.id;
-  message.textContent = `确认删除“${doc.title}”？删除后将从列表移除。`;
+  const relatedFaqs = getFaqsLinkedToDoc(doc.id);
+  const faqCount = relatedFaqs.length;
+  const faqHint = faqCount
+    ? `
+      <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        关联FAQ：${faqCount}条。删除文档不会删除FAQ，建议确认是否需要同时删除。
+        <label class="mt-2 flex items-center gap-2 text-amber-700">
+          <input id="knowledge-delete-related-faq" type="checkbox" class="rounded border-amber-300" />
+          同时删除关联FAQ
+        </label>
+      </div>
+    `
+    : '';
+  message.innerHTML = `
+    <div>确认删除“${doc.title}”？删除后将从列表移除。</div>
+    ${faqHint}
+  `;
   modal.classList.remove('hidden');
 }
 
@@ -1112,7 +1616,7 @@ function openFaqModal(mode, faq) {
   detectResults.classList.add('hidden');
   detectResults.innerHTML = '';
   renderFaqSimilarList();
-  renderFaqSourceList(faq?.sourceDocIds || [], sourceList);
+  renderFaqSourceList(faq?.sourceDocIds || [], sourceList, { mode });
 
   statusWrap.classList.toggle('hidden', mode === 'add');
   if (mode === 'add') {
@@ -1171,15 +1675,25 @@ function closeFaqModal() {
   faqSimilarList = [];
 }
 
-function renderFaqSourceList(selectedIds, container) {
+function renderFaqSourceList(selectedIds, container, options = {}) {
   if (!container) {
     return;
   }
-  if (!docs.length) {
+  const mode = options.mode || 'edit';
+  const sourceDocs = mode === 'view'
+    ? docs.filter((doc) => selectedIds.includes(doc.id))
+    : docs;
+  if (!sourceDocs.length) {
     container.innerHTML = '<div class="text-xs text-gray-400">暂无可关联文档</div>';
     return;
   }
-  container.innerHTML = docs
+  if (mode === 'view') {
+    container.innerHTML = sourceDocs
+      .map((doc) => `<div class="text-xs text-gray-600 truncate">${doc.title}</div>`)
+      .join('');
+    return;
+  }
+  container.innerHTML = sourceDocs
     .map((doc) => {
       const checked = selectedIds.includes(doc.id) ? 'checked' : '';
       return `
@@ -1194,23 +1708,6 @@ function renderFaqSourceList(selectedIds, container) {
 
 function getSelectedFaqSourceIds() {
   return qsa('#knowledge-faq-source-list input[type="checkbox"]:checked').map((input) => input.value);
-}
-
-function syncFaqDocLinks(faqId, newDocIds = [], prevDocIds = []) {
-  const newSet = new Set(newDocIds);
-  const prevSet = new Set(prevDocIds);
-
-  docs.forEach((doc) => {
-    const list = doc.relatedFaqIds || [];
-    const hadPrev = prevSet.has(doc.id);
-    const hasNew = newSet.has(doc.id);
-    if (hadPrev && !hasNew) {
-      doc.relatedFaqIds = list.filter((id) => id !== faqId);
-    }
-    if (!hadPrev && hasNew) {
-      doc.relatedFaqIds = [...list, faqId];
-    }
-  });
 }
 
 function openFaqDeleteModal(faq) {
@@ -1245,6 +1742,11 @@ function handleFaqSave() {
   error.classList.add('hidden');
   error.textContent = '';
 
+  if (!isApiEnabled()) {
+    showNotification('知识库 API 未配置', 'warning');
+    return;
+  }
+
   if (!question) {
     showFaqError('问题为必填');
     return;
@@ -1265,36 +1767,41 @@ function handleFaqSave() {
     return;
   }
 
-  const now = new Date();
-  if (faqModalMode === 'edit' && editingFaqId) {
-    const target = faqs.find((faq) => faq.id === editingFaqId);
-    if (target) {
-      const prevSourceDocIds = target.sourceDocIds ? [...target.sourceDocIds] : [];
-      target.status = status;
-      target.question = question;
-      target.answer = answer;
-      target.similarQuestions = [...faqSimilarList];
-      target.sourceDocIds = [...sourceDocIds];
-      target.updatedAt = formatDate(now);
-      syncFaqDocLinks(target.id, sourceDocIds, prevSourceDocIds);
-    }
-  } else {
-    const newFaqId = `faq-${now.getTime()}`;
-    faqs.push({
-      id: newFaqId,
-      question: question,
-      answer: answer,
-      status: status,
+  const payload = {
+    title: question,
+    content: answer,
+    category: 'faq',
+    tags: ['FAQ'],
+    metadata: {
+      status,
       similarQuestions: [...faqSimilarList],
       sourceDocIds: [...sourceDocIds],
-      createdAt: formatDate(now),
-      updatedAt: formatDate(now),
-    });
-    syncFaqDocLinks(newFaqId, sourceDocIds, []);
-  }
+    },
+  };
 
-  renderFaqList();
-  closeFaqModal();
+  const savePromise = faqModalMode === 'edit' && editingFaqId
+    ? updateKnowledgeItem(editingFaqId, payload)
+    : createKnowledgeItem({ ...payload, source: 'knowledge' });
+
+  savePromise
+    .then((response) => {
+      const data = response?.data ?? response;
+      if (!data) {
+        throw new Error('Invalid response');
+      }
+      const mapped = mapKnowledgeFaq(data);
+      if (faqModalMode === 'edit' && editingFaqId) {
+        faqs = faqs.map((faq) => (faq.id === editingFaqId ? mapped : faq));
+      } else {
+        faqs.push(mapped);
+      }
+      renderFaqList();
+      closeFaqModal();
+      showNotification('FAQ 已保存', 'success');
+    })
+    .catch(() => {
+      showFaqError('FAQ 保存失败，请稍后重试');
+    });
 }
 
 function handleFaqDetect() {
@@ -1443,7 +1950,11 @@ function isNodeExpanded(nodeId) {
   return treeState.get(nodeId);
 }
 
-function handleTreeAction(action, nodeId) {
+async function handleTreeAction(action, nodeId) {
+  if (!isApiEnabled()) {
+    showNotification('知识库 API 未配置', 'warning');
+    return;
+  }
   if (action === 'add-root') {
     const name = prompt('请输入一级分类名称');
     const trimmed = String(name || '').trim();
@@ -1461,6 +1972,7 @@ function handleTreeAction(action, nodeId) {
     const newNode = createNode(trimmed);
     knowledgeTaxonomy.push(newNode);
     treeState.set(newNode.id, true);
+    await safePersistTaxonomy();
     renderTree();
     renderCategoryOptions();
     return;
@@ -1494,6 +2006,7 @@ function handleTreeAction(action, nodeId) {
     if (selectedCategory === nodeInfo.path) {
       selectedCategory = '';
     }
+    await safePersistTaxonomy();
     renderTree();
     renderCategoryOptions();
     return;
@@ -1516,11 +2029,12 @@ function handleTreeAction(action, nodeId) {
     if (selectedCategory && selectedCategory.startsWith(oldPath)) {
       selectedCategory = selectedCategory.replace(oldPath, newPath);
     }
-    docs.forEach((doc) => {
-      if (doc.category?.startsWith(oldPath)) {
-        doc.category = doc.category.replace(oldPath, newPath);
-      }
-    });
+    const docsToUpdate = docs.filter((doc) => doc.category?.startsWith(oldPath));
+    for (const doc of docsToUpdate) {
+      const nextPath = doc.category.replace(oldPath, newPath);
+      await updateDocTaxonomyPath(doc, nextPath);
+    }
+    await safePersistTaxonomy();
     renderTree();
     renderCategoryOptions();
     renderDocList();
@@ -1547,6 +2061,7 @@ function handleTreeAction(action, nodeId) {
     if (selectedCategory && selectedCategory.startsWith(removed.path)) {
       selectedCategory = '';
     }
+    await persistTaxonomyConfig();
     renderTree();
     renderCategoryOptions();
     renderDocList();

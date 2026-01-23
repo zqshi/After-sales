@@ -12,10 +12,10 @@ import {
   toggleAiPlan,
   openAiReplyPanel,
   openAiSolutionPanel,
-  openAssistCheckMock,
+  openAssistCheck,
   openClarifyPanel,
-  openFaultReportMock,
-  openTicketMock,
+  openFaultReport,
+  openTicket,
   openTicketManagementPanel,
   openRequirementPanel,
 } from './chat/index.js';
@@ -129,12 +129,16 @@ window.submitSatisfaction = submitSatisfaction;
 window.toggleAiPlan = toggleAiPlan;
 window.openAiReplyPanel = openAiReplyPanel;
 window.openAiSolutionPanel = openAiSolutionPanel;
-window.openAssistCheckMock = openAssistCheckMock;
+window.openAssistCheck = openAssistCheck;
 window.openClarifyPanel = openClarifyPanel;
-window.openFaultReportMock = openFaultReportMock;
-window.openTicketMock = openTicketMock;
+window.openFaultReport = openFaultReport;
+window.openTicket = openTicket;
 window.openTicketManagementPanel = openTicketManagementPanel;
 window.openRequirementPanel = openRequirementPanel;
+// 兼容 dist/app.html 中的 mock 入口
+window.openAssistCheckMock = openAssistCheck;
+window.openFaultReportMock = openFaultReport;
+window.openTicketMock = openTicket;
 
 window.initAiSolutions = initAiSolutions;
 window.analyzeConversation = analyzeConversation;
@@ -186,7 +190,7 @@ function initUserMenu() {
 
   if (logoutButton) {
     logoutButton.addEventListener('click', () => {
-      window.location.href = 'login.html';
+      window.location.href = 'index.html';
     });
   }
 }

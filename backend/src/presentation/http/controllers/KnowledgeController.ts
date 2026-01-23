@@ -9,7 +9,10 @@ import {
 import { UploadDocumentUseCase } from '../../../application/use-cases/knowledge/UploadDocumentUseCase';
 import { UpdateKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/UpdateKnowledgeItemUseCase';
 import { DeleteKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/DeleteKnowledgeItemUseCase';
-import { TaxKBAdapter } from '../../../infrastructure/adapters/TaxKBAdapter';
+import { SyncKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/SyncKnowledgeItemUseCase';
+import { RetryKnowledgeUploadUseCase } from '../../../application/use-cases/knowledge/RetryKnowledgeUploadUseCase';
+import { TaxKBAdapter, TaxKBError } from '../../../infrastructure/adapters/TaxKBAdapter';
+import { randomUUID } from 'crypto';
 
 export class KnowledgeController {
   constructor(
@@ -20,6 +23,8 @@ export class KnowledgeController {
     private readonly deleteUseCase: DeleteKnowledgeItemUseCase,
     private readonly searchKnowledgeUseCase: SearchKnowledgeUseCase,
     private readonly uploadDocumentUseCase: UploadDocumentUseCase,
+    private readonly syncKnowledgeItemUseCase: SyncKnowledgeItemUseCase,
+    private readonly retryKnowledgeUploadUseCase: RetryKnowledgeUploadUseCase,
     private readonly taxkbAdapter: TaxKBAdapter,
   ) {}
 
@@ -36,6 +41,18 @@ export class KnowledgeController {
         source: string;
         metadata?: Record<string, unknown>;
       };
+      const user = request.user as { name?: string; email?: string; sub?: string } | undefined;
+      const owner =
+        user?.name ||
+        user?.email ||
+        user?.sub ||
+        undefined;
+      if (owner) {
+        payload.metadata = {
+          ...(payload.metadata ?? {}),
+          owner: (payload.metadata as Record<string, unknown> | undefined)?.owner || owner,
+        };
+      }
       const result = await this.createUseCase.execute(payload);
       reply.code(201).send({ success: true, data: result });
     } catch (error) {
@@ -113,7 +130,9 @@ export class KnowledgeController {
   ): Promise<void> {
     try {
       const { id } = request.params as { id: string };
-      await this.deleteUseCase.execute({ knowledgeId: id });
+      const query = request.query as { deleteRelatedFaq?: string };
+      const deleteRelatedFaq = query?.deleteRelatedFaq === 'true';
+      await this.deleteUseCase.execute({ knowledgeId: id, deleteRelatedFaq });
       reply.code(204).send();
     } catch (error) {
       this.handleError(error, reply);
@@ -135,7 +154,7 @@ export class KnowledgeController {
 
   async upload(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
-      const file = await request.file();
+      const file = await this.getUploadedFile(request);
       if (!file) {
         throw new Error('No file uploaded');
       }
@@ -146,9 +165,20 @@ export class KnowledgeController {
       const companyEntity =
         typeof body?.companyEntity === 'string' ? body.companyEntity : undefined;
 
+      if (!this.taxkbAdapter.isEnabled()) {
+        const docId = randomUUID();
+        reply.code(202).send({
+          success: true,
+          data: { docId },
+          message: 'TaxKB 未启用，文档已接受，后续解析需手动处理',
+        });
+        return;
+      }
+
       const docId = await this.uploadDocumentUseCase.execute({
         file: buffer,
         title: file.filename,
+        fileName: file.filename,
         category,
         companyEntity,
       });
@@ -159,8 +189,80 @@ export class KnowledgeController {
         message: '文档上传成功，正在处理中',
       });
     } catch (error) {
+      if (error instanceof TaxKBError) {
+        const detail = (error.details as Record<string, unknown> | undefined)?.detail as
+          | Record<string, unknown>
+          | undefined;
+        const existingDoc = detail?.existing_doc as Record<string, unknown> | undefined;
+        const existingDocId = typeof existingDoc?.doc_id === 'string' ? existingDoc.doc_id : '';
+        const existingStatus = typeof existingDoc?.status === 'string' ? existingDoc.status : '';
+        if (error.statusCode === 409 && existingDocId) {
+          reply.code(200).send({
+            success: true,
+            data: { docId: existingDocId, status: existingStatus },
+            message: '文档已存在，已关联解析',
+          });
+          return;
+        }
+
+        request.log.error(
+          { err: error, statusCode: error.statusCode, details: error.details },
+          '[knowledge] TaxKB upload failed',
+        );
+      } else {
+        request.log.error({ err: error }, '[knowledge] Upload failed');
+      }
       this.handleError(error, reply);
     }
+  }
+
+  private async getUploadedFile(request: FastifyRequest): Promise<{
+    filename: string;
+    toBuffer: () => Promise<Buffer>;
+  } | null> {
+    try {
+      const file = await request.file();
+      if (file) {
+        return file;
+      }
+    } catch {
+      // ignore and try fallbacks
+    }
+
+    const body = request.body as Record<string, unknown> | undefined;
+    const bodyFile = body?.file as { filename?: string; toBuffer?: () => Promise<Buffer> } | undefined;
+    if (bodyFile?.toBuffer) {
+      return {
+        filename: bodyFile.filename || 'upload',
+        toBuffer: bodyFile.toBuffer.bind(bodyFile),
+      };
+    }
+
+    const bodyFiles = body?.files as Array<{ filename?: string; toBuffer?: () => Promise<Buffer> }> | undefined;
+    if (Array.isArray(bodyFiles) && bodyFiles.length && bodyFiles[0]?.toBuffer) {
+      const first = bodyFiles[0];
+      return {
+        filename: first.filename || 'upload',
+        toBuffer: first.toBuffer.bind(first),
+      };
+    }
+
+    if (typeof request.files === 'function') {
+      try {
+        for await (const part of request.files()) {
+          if (part?.toBuffer) {
+            return {
+              filename: part.filename || 'upload',
+              toBuffer: part.toBuffer.bind(part),
+            };
+          }
+        }
+      } catch {
+        // ignore iterator errors
+      }
+    }
+
+    return null;
   }
 
   async getProgress(
@@ -168,6 +270,17 @@ export class KnowledgeController {
     reply: FastifyReply,
   ): Promise<void> {
     try {
+      if (!this.taxkbAdapter.isEnabled()) {
+        reply.code(200).send({
+          success: true,
+          data: {
+            overall_status: 'disabled',
+            overall_progress: 0,
+            tasks: [],
+          },
+        });
+        return;
+      }
       const { id } = request.params as { id: string };
       const progress = await this.taxkbAdapter.getProcessingProgress(id);
       reply.code(200).send({ success: true, data: progress });
@@ -176,12 +289,52 @@ export class KnowledgeController {
     }
   }
 
+  async sync(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const payload = request.body as { uploadDocId?: string } | undefined;
+      const result = await this.syncKnowledgeItemUseCase.execute({
+        knowledgeId: id,
+        uploadDocId: payload?.uploadDocId,
+      });
+      reply.code(200).send({ success: true, data: result });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  async retry(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const result = await this.retryKnowledgeUploadUseCase.execute({
+        knowledgeId: id,
+      });
+      reply.code(200).send({ success: true, data: result });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
   private handleError(error: unknown, reply: FastifyReply): void {
     if (error instanceof Error) {
-      const status = this.getStatus(error.message);
+      const status =
+        typeof (error as { statusCode?: number }).statusCode === 'number'
+          ? (error as { statusCode: number }).statusCode
+          : this.getStatus(error.message);
+      const message =
+        typeof (error as { details?: { message?: string } }).details?.message === 'string'
+          ? (error as { details: { message: string } }).details.message
+          : error.message;
+      console.error('[KnowledgeController] request failed:', error);
       reply.code(status).send({
         success: false,
-        error: { message: error.message, code: this.getCode(error.message) },
+        error: { message, code: this.getCode(message) },
       });
       return;
     }
@@ -192,6 +345,9 @@ export class KnowledgeController {
   }
 
   private getStatus(message: string): number {
+    if (message.includes('No file uploaded') || message.includes('file buffer is required')) {
+      return 400;
+    }
     if (message.includes('not found')) {
       return 404;
     }
@@ -202,6 +358,9 @@ export class KnowledgeController {
   }
 
   private getCode(message: string): string {
+    if (message.includes('No file uploaded') || message.includes('file buffer is required')) {
+      return 'VALIDATION_ERROR';
+    }
     if (message.includes('not found')) {
       return 'NOT_FOUND';
     }

@@ -10,9 +10,8 @@ import { IProfileRepository } from '../../domains/customer/repositories/IProfile
 import { fetchProfile, fetchProfileInteractions, refreshProfile, isApiEnabled } from '../../api.js';
 
 export class CustomerProfileRepository extends IProfileRepository {
-  constructor(mockDataProvider = null) {
+  constructor() {
     super();
-    this.mockDataProvider = mockDataProvider;
     this.cache = new Map();
   }
 
@@ -29,19 +28,13 @@ export class CustomerProfileRepository extends IProfileRepository {
 
     let profileData = null;
 
-    // 如果API可用，优先从API获取
     if (isApiEnabled()) {
       try {
         const response = await fetchProfile(conversationId);
         profileData = response?.data ?? response;
       } catch (err) {
         console.warn(`[CustomerProfileRepository] Failed to fetch profile from API: ${err.message}`);
-        // API失败，回退到Mock数据
-        profileData = this._getMockProfile(conversationId);
       }
-    } else {
-      // API未配置，使用Mock数据
-      profileData = this._getMockProfile(conversationId);
     }
 
     if (!profileData) {
@@ -77,38 +70,10 @@ export class CustomerProfileRepository extends IProfileRepository {
         return Array.isArray(interactions) ? interactions : [];
       } catch (err) {
         console.warn(`[CustomerProfileRepository] Failed to fetch interactions: ${err.message}`);
-        // 回退到画像中的互动数据
-        const profile = await this.getByConversationId(conversationId);
-        return profile.interactions.filter(i => {
-          if (filters.range && filters.range !== '全部') {
-            if (i.window !== filters.range) {
-              return false;
-            }
-          }
-          if (filters.type && filters.type !== '全部') {
-            if (i.type !== filters.type) {
-              return false;
-            }
-          }
-          return true;
-        });
+        return [];
       }
     } else {
-      // 使用Mock数据中的互动
-      const profile = await this.getByConversationId(conversationId);
-      return profile.interactions.filter(i => {
-        if (filters.range && filters.range !== '全部') {
-          if (i.window !== filters.range) {
-            return false;
-          }
-        }
-        if (filters.type && filters.type !== '全部') {
-          if (i.type !== filters.type) {
-            return false;
-          }
-        }
-        return true;
-      });
+      return [];
     }
   }
 
@@ -161,30 +126,17 @@ export class CustomerProfileRepository extends IProfileRepository {
   }
 
   /**
-   * 从Mock数据提供者获取数据
-   * @private
-   */
-  _getMockProfile(conversationId) {
-    if (!this.mockDataProvider) {
-      return null;
-    }
-
-    const mockData = this.mockDataProvider.getProfile(conversationId);
-    return mockData;
-  }
-
-  /**
    * 构建默认画像（用于测试或API不可用场景）
    * @private
    */
   _buildFallbackProfile(conversationId) {
     return {
       conversationId,
-      name: '测试客户',
-      title: '未知账户',
+      name: '客户',
+      title: '',
       contacts: {
-        phone: '未知',
-        email: 'unknown@example.com',
+        phone: '-',
+        email: '-',
       },
       sla: {},
       metrics: {},

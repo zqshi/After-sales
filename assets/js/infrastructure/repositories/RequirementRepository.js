@@ -8,7 +8,7 @@ import { BaseRepository } from './BaseRepository.js';
 
 export class RequirementRepository extends BaseRepository {
   constructor(apiClient) {
-    super(apiClient, '/requirements');
+    super('requirement', { apiClient, endpoint: '/api/requirements' });
   }
 
   /**

@@ -36,7 +36,7 @@ export const TaskType = {
   FOLLOW_UP: 'follow_up', // 跟进任务
   REQUIREMENT: 'requirement', // 需求任务
   QUALITY_ISSUE: 'quality_issue', // 质量问题
-  SLA_VIOLATION: 'sla_violation', // SLA违规
+  CustomerLevel_VIOLATION: 'sla_violation', // 客户等级违规
 };
 
 /**

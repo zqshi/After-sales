@@ -10,7 +10,9 @@ export default async function metricsRoutes(fastify: FastifyInstance) {
    * GET /metrics
    * Prometheus指标端点
    */
-  fastify.get('/metrics', async (request, reply) => {
+  fastify.get('/metrics', {
+    config: { permissions: ['monitoring.read'] },
+  }, async (request, reply) => {
     try {
       const metrics = await metricsCollector.getMetrics();
 
@@ -31,7 +33,9 @@ export default async function metricsRoutes(fastify: FastifyInstance) {
    * GET /health
    * 健康检查端点
    */
-  fastify.get('/health', async (request, reply) => {
+  fastify.get('/health', {
+    config: { auth: false },
+  }, async (request, reply) => {
     reply.code(200).send({
       status: 'healthy',
       timestamp: new Date().toISOString(),

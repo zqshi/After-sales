@@ -9,13 +9,13 @@ import {
   ignoreRequirement as ignoreRequirementApi,
 } from '../api.js';
 
-const STORAGE_KEYS = {
-  processed: 'processedRequirements',
-  unprocessed: 'unprocessedRequirements',
+const requirementStore = {
+  processed: [],
+  unprocessed: [],
+  stats: null,
 };
 
 export async function initRequirementsTab() {
-  ensureMockData();
   await refreshRequirementsState();
   bindRequirementControls();
 }
@@ -40,7 +40,6 @@ function bindRequirementControls() {
 }
 
 async function refreshRequirementsState() {
-  ensureMockData();
   await trySyncRequirements();
   renderUnprocessedRequirements();
   renderProcessedRequirements();
@@ -50,86 +49,52 @@ async function refreshRequirementsState() {
 
 async function trySyncRequirements() {
   if (!isApiEnabled()) {
+    requirementStore.processed = [];
+    requirementStore.unprocessed = [];
     return;
   }
 
   try {
     const raw = await fetchRequirementData({ status: 'all' });
     const payload = raw?.data ?? raw;
-    const processed = payload?.processed ?? payload?.processedRequirements ?? [];
-    const unprocessed = payload?.unprocessed ?? payload?.unprocessedRequirements ?? [];
-    if (processed.length || unprocessed.length) {
-      localStorage.setItem(STORAGE_KEYS.processed, JSON.stringify(processed));
-      localStorage.setItem(STORAGE_KEYS.unprocessed, JSON.stringify(unprocessed));
+    let processed = payload?.processed ?? payload?.processedRequirements ?? [];
+    let unprocessed = payload?.unprocessed ?? payload?.unprocessedRequirements ?? [];
+
+    if (Array.isArray(payload?.items) || Array.isArray(payload)) {
+      const items = Array.isArray(payload?.items) ? payload.items : payload;
+      const statusMap = {
+        pending: '待处理',
+        approved: '处理中',
+        resolved: '已完成',
+        ignored: '已拒绝',
+        cancelled: '已拒绝',
+      };
+      processed = items.map((item) => ({
+        id: item.id,
+        content: item.description || item.title || '',
+        status: statusMap[item.status] || '待处理',
+        timestamp: item.updatedAt || item.createdAt || new Date().toISOString(),
+        customer: item.customerId || '客户',
+        customerId: item.customerId || '',
+        createdBy: item.createdBy || '',
+      }));
+      unprocessed = [];
     }
+
+    requirementStore.processed = processed;
+    requirementStore.unprocessed = unprocessed;
 
     const statsRaw = await fetchRequirementStatistics();
     const statsPayload = statsRaw?.data ?? statsRaw;
     if (statsPayload) {
-      localStorage.setItem('requirementStats', JSON.stringify(statsPayload));
+      requirementStore.stats = statsPayload;
     }
   } catch (err) {
-    console.warn('[requirements] API sync failed, using local mock data', err);
+    console.warn('[requirements] API sync failed', err);
+    requirementStore.processed = [];
+    requirementStore.unprocessed = [];
+    requirementStore.stats = null;
   }
-}
-
-function ensureMockData() {
-  const processed = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
-  const unprocessed = JSON.parse(localStorage.getItem(STORAGE_KEYS.unprocessed) || '[]');
-  if (processed.length || unprocessed.length) {
-    return;
-  }
-
-  const now = Date.now();
-  const sampleProcessed = [
-    {
-      id: 'REQ-102301',
-      content: 'ERP登录失败时增加「一键重试」入口，并自动收集诊断日志',
-      status: '处理中',
-      timestamp: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
-      customer: '张三',
-      customerId: 'CUST-001',
-      createdBy: '王工程师',
-    },
-    {
-      id: 'REQ-102187',
-      content: '新增账单导出按部门过滤，并支持定时发送',
-      status: '待处理',
-      timestamp: new Date(now - 24 * 60 * 60 * 1000).toISOString(),
-      customer: '张三',
-      customerId: 'CUST-001',
-      createdBy: '王工程师',
-    },
-    {
-      id: 'REQ-101998',
-      content: '认证服务异常时自动切换备用节点并推送告警',
-      status: '已完成',
-      timestamp: new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      customer: '张三',
-      customerId: 'CUST-001',
-      createdBy: '王工程师',
-    },
-  ];
-
-  const sampleUnprocessed = [
-    {
-      id: `UNPROCESSED-${now - 30 * 60 * 1000}`,
-      content: '希望在移动端看到实时告警，并支持快捷确认',
-      timestamp: new Date(now - 30 * 60 * 1000).toISOString(),
-      customer: '张三',
-      customerId: 'CUST-001',
-    },
-    {
-      id: `UNPROCESSED-${now - 90 * 60 * 1000}`,
-      content: 'API限流阈值能否按租户单独配置？',
-      timestamp: new Date(now - 90 * 60 * 1000).toISOString(),
-      customer: '张三',
-      customerId: 'CUST-001',
-    },
-  ];
-
-  localStorage.setItem(STORAGE_KEYS.processed, JSON.stringify(sampleProcessed));
-  localStorage.setItem(STORAGE_KEYS.unprocessed, JSON.stringify(sampleUnprocessed));
 }
 
 function formatDate(iso) {
@@ -158,7 +123,7 @@ function renderUnprocessedRequirements() {
     return;
   }
 
-  const unprocessed = JSON.parse(localStorage.getItem(STORAGE_KEYS.unprocessed) || '[]');
+  const unprocessed = requirementStore.unprocessed || [];
   container.innerHTML = '';
 
   if (!unprocessed.length) {
@@ -195,7 +160,7 @@ function renderProcessedRequirements(status = '全部状态') {
     return;
   }
 
-  const processed = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
+  const processed = requirementStore.processed || [];
   container.innerHTML = '';
 
   const filtered =
@@ -237,7 +202,7 @@ function initRequirementsChart() {
     return;
   }
 
-  const processed = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
+  const processed = requirementStore.processed || [];
 
   const statusCounts = { 待处理: 0, 处理中: 0, 已完成: 0, 已拒绝: 0 };
   processed.forEach((req) => {
@@ -277,8 +242,8 @@ function initRequirementsChart() {
 }
 
 function updateStatisticsCards() {
-  const unprocessed = JSON.parse(localStorage.getItem(STORAGE_KEYS.unprocessed) || '[]');
-  const processed = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
+  const unprocessed = requirementStore.unprocessed || [];
+  const processed = requirementStore.processed || [];
   const statusCounts = { 待处理: 0, 处理中: 0, 已完成: 0, 已拒绝: 0 };
   processed.forEach((req) => {
     if (statusCounts[req.status] !== undefined) {
@@ -305,96 +270,67 @@ function updateStatisticsCards() {
   }
 }
 
-export async function createRequirementFromList(content, unprocessedId) {
-  const requirementId = `REQ-${Date.now().toString().slice(-6)}`;
+export async function createRequirementFromList(content) {
+  const activeConversation = document.querySelector('.conversation-item.is-active');
+  const customerId = activeConversation?.getAttribute('data-customer-id') || '';
+  const conversationId = activeConversation?.getAttribute('data-id') || '';
+
   const payload = {
-    content,
-    sourceConversationId: 'conv-001',
-    customerId: 'CUST-001',
+    title: content.length > 40 ? `${content.slice(0, 40)}...` : content,
+    description: content,
+    conversationId: conversationId || undefined,
+    customerId,
     priority: 'medium',
     category: 'feature',
   };
 
-  if (isApiEnabled()) {
-    try {
-      await createRequirementApi(payload);
-    } catch (err) {
-      console.warn('[requirements] API create failed, falling back to local data', err);
-      saveProcessedRequirement(requirementId, content, '待处理');
-    }
-  } else {
-    saveProcessedRequirement(requirementId, content, '待处理');
+  if (!isApiEnabled()) {
+    showNotification('API 未启用，无法创建需求', 'warning');
+    return;
+  }
+  if (!customerId) {
+    showNotification('未识别客户信息，无法创建需求', 'warning');
+    return;
   }
 
-  if (unprocessedId) {
-    removeUnprocessedRequirement(unprocessedId);
+  try {
+    await createRequirementApi(payload);
+  } catch (err) {
+    console.warn('[requirements] API create failed', err);
+    showNotification('需求创建失败，请重试', 'error');
+    return;
   }
+
   await loadRequirementsData();
   showNotification('需求卡片创建成功', 'success');
 }
 
 export async function ignoreUnprocessedRequirement(id) {
-  if (isApiEnabled()) {
-    try {
-      await ignoreRequirementApi(id);
-    } catch (err) {
-      console.warn('[requirements] API ignore failed', err);
-    }
+  if (!isApiEnabled()) {
+    showNotification('API 未启用，无法忽略需求', 'warning');
+    return;
   }
-  removeUnprocessedRequirement(id);
+
+  try {
+    await ignoreRequirementApi(id);
+  } catch (err) {
+    console.warn('[requirements] API ignore failed', err);
+    showNotification('需求忽略失败，请重试', 'error');
+    return;
+  }
+
   await loadRequirementsData();
   showNotification('需求已忽略', 'info');
 }
 
-function removeUnprocessedRequirement(id) {
-  let unprocessed = JSON.parse(localStorage.getItem(STORAGE_KEYS.unprocessed) || '[]');
-  unprocessed = unprocessed.filter((req) => req.id !== id);
-  localStorage.setItem(STORAGE_KEYS.unprocessed, JSON.stringify(unprocessed));
-}
-
-export function analyzeRequirementText(content) {
-  const keywords = ['需要', '希望', '建议', '改进', '新增', '添加', '接口', '功能', '模块', '集成'];
-  const hasKeyword = keywords.some((word) => content.includes(word));
-  if (hasKeyword && !requirementExists(content)) {
-    saveUnprocessedRequirement(content);
-    loadRequirementsData();
+export function analyzeRequirementText(_content) {
+  if (!isApiEnabled()) {
+    return;
   }
-}
-
-function requirementExists(content) {
-  const processed = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
-  const unprocessed = JSON.parse(localStorage.getItem(STORAGE_KEYS.unprocessed) || '[]');
-  return [...processed, ...unprocessed].some((req) => req.content === content);
 }
 
 export function viewRequirementCard(requirementId) {
   alert(`查看需求卡片详情: ${requirementId}`);
-}
-
-export function saveUnprocessedRequirement(content) {
-  const store = JSON.parse(localStorage.getItem(STORAGE_KEYS.unprocessed) || '[]');
-  store.push({
-    id: `UNPROCESSED-${Date.now()}`,
-    content,
-    timestamp: new Date().toISOString(),
-    customer: '张三',
-    customerId: 'CUST-001',
-  });
-  localStorage.setItem(STORAGE_KEYS.unprocessed, JSON.stringify(store));
-}
-
-export function saveProcessedRequirement(id, content, status) {
-  const store = JSON.parse(localStorage.getItem(STORAGE_KEYS.processed) || '[]');
-  store.push({
-    id,
-    content,
-    status,
-    timestamp: new Date().toISOString(),
-    customer: '张三',
-    customerId: 'CUST-001',
-    createdBy: '王工程师',
-  });
-  localStorage.setItem(STORAGE_KEYS.processed, JSON.stringify(store));
 }
 
 export function initRightPanelActions() {

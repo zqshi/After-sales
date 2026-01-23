@@ -15,7 +15,7 @@ export async function imRoutes(
    *   post:
    *     tags:
    *       - IM
-   *     summary: IM消息接入（模拟多渠道）
+   *     summary: IM消息接入（多渠道）
    *     description: |
    *       接收来自各渠道IM的消息，触发完整的Agent分析链路：
    *       1. 情绪识别（单条消息）
@@ -142,47 +142,79 @@ export async function imRoutes(
    *       500:
    *         description: 服务器内部错误
    */
-  fastify.post('/im/incoming-message', async (request, reply) => {
+  fastify.post('/im/incoming-message', {
+    config: { permissions: ['im.write'] },
+  }, async (request, reply) => {
     await controller.handleIncomingMessage(request, reply);
   });
 
   // 会话管理接口
-  fastify.get('/im/conversations', async (request, reply) => {
+  fastify.get('/im/conversations', {
+    config: { permissions: ['im.read'] },
+  }, async (request, reply) => {
     await controller.getConversations(request, reply);
   });
 
-  fastify.get('/im/conversations/:id/messages', async (request, reply) => {
+  fastify.get('/im/conversations/stats', {
+    config: { permissions: ['im.read'] },
+  }, async (request, reply) => {
+    await controller.getConversationStats(request, reply);
+  });
+
+  fastify.post('/im/wecom/mock/sync', {
+    config: { permissions: ['im.write'] },
+  }, async (request, reply) => {
+    await controller.syncWecomMockGroupChats(request, reply);
+  });
+
+  fastify.get('/im/conversations/:id/messages', {
+    config: { permissions: ['im.read'] },
+  }, async (request, reply) => {
     await controller.getConversationMessages(request, reply);
   });
 
-  fastify.post('/im/conversations/:id/messages', async (request, reply) => {
+  fastify.post('/im/conversations/:id/messages', {
+    config: { permissions: ['im.write'] },
+  }, async (request, reply) => {
     await controller.sendMessage(request, reply);
   });
 
-  fastify.patch('/im/conversations/:id/status', async (request, reply) => {
+  fastify.patch('/im/conversations/:id/status', {
+    config: { permissions: ['im.write'] },
+  }, async (request, reply) => {
     await controller.updateConversationStatus(request, reply);
   });
 
-  fastify.patch('/im/conversations/:id/mode', async (request, reply) => {
+  fastify.patch('/im/conversations/:id/mode', {
+    config: { permissions: ['im.write'] },
+  }, async (request, reply) => {
     await controller.setConversationMode(request, reply);
   });
 
   // 用户画像接口
-  fastify.get('/profiles/:customerId', async (request, reply) => {
+  fastify.get('/profiles/:customerId', {
+    config: { permissions: ['customers.read'] },
+  }, async (request, reply) => {
     await controller.getCustomerProfile(request, reply);
   });
 
-  fastify.get('/profiles/:customerId/interactions', async (request, reply) => {
+  fastify.get('/profiles/:customerId/interactions', {
+    config: { permissions: ['customers.read'] },
+  }, async (request, reply) => {
     await controller.getCustomerInteractions(request, reply);
   });
 
   // 质检接口
-  fastify.get('/quality/:conversationId', async (request, reply) => {
+  fastify.get('/quality/:conversationId', {
+    config: { permissions: ['tasks.read'] },
+  }, async (request, reply) => {
     await controller.getConversationQuality(request, reply);
   });
 
   // AI分析接口
-  fastify.get('/im/conversations/:id/ai-analysis', async (request, reply) => {
+  fastify.get('/im/conversations/:id/ai-analysis', {
+    config: { permissions: ['ai.use'] },
+  }, async (request, reply) => {
     await controller.getConversationAiAnalysis(request, reply);
   });
 
@@ -239,7 +271,9 @@ export async function imRoutes(
    *       500:
    *         description: 服务器内部错误
    */
-  fastify.get('/im/conversations/:id/sentiment', async (request, reply) => {
+  fastify.get('/im/conversations/:id/sentiment', {
+    config: { permissions: ['ai.use'] },
+  }, async (request, reply) => {
     await controller.getConversationSentiment(request, reply);
   });
 }

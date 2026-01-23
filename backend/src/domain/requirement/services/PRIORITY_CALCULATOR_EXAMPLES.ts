@@ -31,7 +31,7 @@ export async function calculateInitialPriority() {
     recentRequirementCount: 2, // 最近30天2个需求
     lastRequirementDays: 5, // 5天前有需求
 
-    // SLA维度
+    // 客户等级维度
     slaResponseTime: 15, // 15分钟内响应
     slaResolutionTime: 2, // 2小时内解决
     currentPendingRequirements: 8,
@@ -47,11 +47,11 @@ export async function calculateInitialPriority() {
   console.log(`  - 客户维度: ${result.breakdown.customerScore}`);
   console.log(`  - 内容维度: ${result.breakdown.contentScore}`);
   console.log(`  - 历史维度: ${result.breakdown.historyScore}`);
-  console.log(`  - SLA维度: ${result.breakdown.slaScore}`);
+  console.log(`  - 客户等级维度: ${result.breakdown.slaScore}`);
   console.log(`\n理由: ${result.reason}`);
 
   // 预期结果：urgent（得分约85+）
-  // 原因：VIP+高风险+bug类+情感强度高+紧急关键词+SLA严格
+  // 原因：VIP+高风险+bug类+情感强度高+紧急关键词+客户等级严格
 }
 
 /**
@@ -215,7 +215,7 @@ export class CreateRequirementWithDynamicPriority {
       lastRequirementDays: 10,
     };
 
-    // 4. 获取SLA信息
+    // 4. 获取客户等级信息
     const sla = {
       responseTime: 30,
       resolutionTime: 4,
@@ -286,7 +286,7 @@ export async function periodicReevaluation() {
   for (const req of pendingRequirements) {
     // 获取最新上下文（客户情况可能已变化）
     const latestContext = {
-      // ... 获取最新客户、SLA、历史数据
+      // ... 获取最新客户、客户等级、历史数据
       customerTier: 'regular' as const,
       customerRiskLevel: 'medium' as const,
       customerHealthScore: 60,

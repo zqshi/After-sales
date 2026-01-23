@@ -11,7 +11,7 @@ interface ConversationProps {
   channel: Channel;
   status: ConversationStatus;
   priority: MessagePriority;
-  slaStatus: SLAStatus;
+  slaStatus: 客户等级Status;
   slaDeadline?: Date;
   messages: Message[];           // ⚠️ 问题所在
   mode?: AgentMode;
@@ -76,7 +76,7 @@ interface ConversationProps {
   customerId: string;
   agentId?: string;
   status: ConversationStatus;
-  slaStatus: SLAStatus;
+  slaStatus: 客户等级Status;
 
   // 消息摘要（轻量级）
   messageSummary: MessageSummary;  // 最近5条消息 + 统计信息
@@ -268,7 +268,7 @@ interface ConversationProps {
   channel: Channel;
   status: ConversationStatus;
   priority: MessagePriority;
-  slaStatus: SLAStatus;
+  slaStatus: 客户等级Status;
   slaDeadline?: Date;
 
   // ✅ 新增：消息摘要（轻量级）

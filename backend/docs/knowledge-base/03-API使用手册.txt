@@ -1,0 +1,23 @@
+API使用手册
+
+认证
+所有API请求需要携带JWT Token:
+Authorization: Bearer YOUR_JWT_TOKEN
+
+会话管理
+创建会话: POST /api/conversations
+发送消息: POST /api/conversations/:id/messages
+
+任务管理
+创建任务: POST /api/tasks
+完成任务: PUT /api/tasks/:id/complete
+
+知识库
+搜索知识: POST /api/knowledge/search
+
+错误码
+400 请求参数错误
+401 未认证
+403 无权限
+404 资源不存在
+500 服务器错误

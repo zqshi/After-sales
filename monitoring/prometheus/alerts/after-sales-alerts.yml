@@ -154,8 +154,8 @@ groups:
           summary: "活跃对话数量过多"
           description: "当前有 {{ $value }} 个活跃对话"
 
-      # SLA违规率过高
-      - alert: HighSLAViolationRate
+      # 客户等级违规率过高
+      - alert: High客户等级ViolationRate
         expr: |
           rate(sla_violations_total[10m]) > 0.1
         for: 10m
@@ -163,8 +163,8 @@ groups:
           severity: critical
           component: conversation
         annotations:
-          summary: "SLA违规率过高"
-          description: "过去10分钟SLA违规率为 {{ $value }} 次/秒"
+          summary: "客户等级违规率过高"
+          description: "过去10分钟客户等级违规率为 {{ $value }} 次/秒"
 
       # 客户满意度下降
       - alert: LowCustomerSatisfaction

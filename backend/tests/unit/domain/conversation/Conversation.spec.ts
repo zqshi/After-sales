@@ -64,15 +64,15 @@ describe('Conversation Aggregate', () => {
     }).toThrow('无法向已关闭的对话发送消息');
   });
 
-  it('should emit SLA violation events when deadline passes', () => {
+  it('should emit 客户等级 violation events when deadline passes', () => {
     const pastDeadline = new Date(Date.now() - 60 * 60 * 1000);
-    conversation.setSLADeadline(pastDeadline);
+    conversation.setCustomerLevelDeadline(pastDeadline);
 
-    const status = conversation.checkSLAStatus();
+    const status = conversation.checkCustomerLevelStatus();
     expect(status).toBe('violated');
 
     const events = conversation.getUncommittedEvents();
-    expect(events.some((event) => event.eventType === 'SLAViolated')).toBe(true);
+    expect(events.some((event) => event.eventType === 'CustomerLevelViolated')).toBe(true);
   });
 
   it('should close and emit conversation closed event', () => {

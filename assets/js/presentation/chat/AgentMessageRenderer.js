@@ -194,11 +194,13 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
   }
 
   if (meta) {
-    const issueProductLabelRaw = getPurchasedProductLabel();
+    const metadataProduct = metadata.issueProduct || metadata.issue_product || metadata.product;
+    const metadataSeverity = metadata.faultLevel || metadata.fault_level || metadata.severity;
+    const issueProductLabelRaw = metadataProduct || getPurchasedProductLabel();
     let issueProductName = issueProductLabelRaw;
-    let issueSeverity = '';
+    let issueSeverity = metadataSeverity || '';
 
-    if (issueProductLabelRaw && issueProductLabelRaw !== '未标注') {
+    if (!issueSeverity && issueProductLabelRaw && issueProductLabelRaw !== '未标注') {
       const parts = issueProductLabelRaw.split(/[，,]\s*/).filter(Boolean);
       if (parts.length > 1) {
         const severityPart = parts.find((part) => /P[0-4]/i.test(part));

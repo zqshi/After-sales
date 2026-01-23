@@ -20,7 +20,7 @@ export interface ParticipantDTO {
   role: string;
 }
 
-export interface SLAInfoDTO {
+export interface CustomerLevelInfoDTO {
   status: string;
   responseTime: number;
   threshold: number;
@@ -34,7 +34,7 @@ export class ConversationResponseDTO {
   channel: string;
   participants: ParticipantDTO[];
   messages: MessageDTO[];
-  slaInfo: SLAInfoDTO;
+  slaInfo: CustomerLevelInfoDTO;
   createdAt: string;
   updatedAt: string;
   closedAt?: string;
@@ -91,7 +91,7 @@ export class ConversationResponseDTO {
       }))
       : [];
 
-    const slaInfo = conversation.getSLAInfo();
+    const slaInfo = conversation.getCustomerLevelInfo();
     dto.slaInfo = {
       status: slaInfo.status,
       responseTime: slaInfo.responseTime,

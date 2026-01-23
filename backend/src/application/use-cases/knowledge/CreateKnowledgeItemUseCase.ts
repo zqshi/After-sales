@@ -3,9 +3,13 @@ import { KnowledgeItem } from '@domain/knowledge/models/KnowledgeItem';
 import { KnowledgeCategory } from '@domain/knowledge/value-objects/KnowledgeCategory';
 import { CreateKnowledgeItemRequestDTO } from '../../dto/knowledge/CreateKnowledgeItemRequestDTO';
 import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
+import { EventBus } from '@infrastructure/events/EventBus';
 
 export class CreateKnowledgeItemUseCase {
-  constructor(private readonly knowledgeRepository: KnowledgeRepository) {}
+  constructor(
+    private readonly knowledgeRepository: KnowledgeRepository,
+    private readonly eventBus: EventBus,
+  ) {}
 
   async execute(
     request: CreateKnowledgeItemRequestDTO,
@@ -31,6 +35,8 @@ export class CreateKnowledgeItemUseCase {
     });
 
     await this.knowledgeRepository.save(item);
+    await this.eventBus.publishAll(item.getUncommittedEvents());
+    item.clearEvents();
     return KnowledgeItemResponseDTO.fromDomain(item);
   }
 }

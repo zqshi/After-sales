@@ -1,4 +1,6 @@
 import { qs, qsa, on } from '../core/dom.js';
+import { showNotification } from '../core/notifications.js';
+import { fetchKnowledge, fetchKnowledgeFull, isApiEnabled, searchKnowledge } from '../api.js';
 
 const semanticMap = {
   登录: ['认证', 'auth', 'login', '登录失败'],
@@ -11,58 +13,31 @@ const semanticMap = {
   考勤: ['补卡', '迟到', '旷工'],
 };
 
-const knowledgeInventory = [
-  {
-    id: 'kb-001',
-    title: '系统登录失败排查手册',
-    category: '系统运维',
-    summary: '覆盖认证失败、网关超时与 502 报错的排查路径。',
-    content: '适用场景：登录失败、认证异常、网关超时。\n1. 检查认证服务与网关健康状态。\n2. 确认近 24 小时是否有发布或配置变更。\n3. 校验账号状态与登录策略是否命中拦截。\n4. 复现失败请求并查看链路日志。',
-    tags: ['登录', '认证', '排查'],
-    keywords: ['登录', '认证', 'auth', 'login', '失败', '502', '网关', '超时'],
-    updatedAt: '2024-03-12',
-  },
-  {
-    id: 'kb-002',
-    title: '账号被锁定的登录恢复方案',
-    category: '账号安全',
-    summary: '说明账号锁定原因、解锁方式与风险提醒。',
-    content: '常见原因：密码错误多次、异常登录触发风控。\n处理方式：\n1. 通过管理端解锁账号。\n2. 引导用户重置密码。\n3. 检查异地登录告警。',
-    tags: ['登录', '账号', '风控'],
-    keywords: ['登录', '账号', '锁定', '解锁', '密码', '风控'],
-    updatedAt: '2024-03-10',
-  },
-  {
-    id: 'kb-003',
-    title: '双因子登录失败处理指南',
-    category: '安全策略',
-    summary: '解决短信/动态令牌无法通过验证的场景。',
-    content: '排查路径：\n1. 检查短信服务或令牌服务是否可用。\n2. 核对用户绑定手机号与令牌时间同步。\n3. 提供备用验证方式。',
-    tags: ['登录', '双因子', '安全'],
-    keywords: ['登录', '双因子', '短信', '令牌', '验证', '失败'],
-    updatedAt: '2024-03-09',
-  },
-  {
-    id: 'kb-004',
-    title: '企业微信登录异常解决方案',
-    category: '渠道登录',
-    summary: '涵盖授权失败、回调错误与组织架构同步问题。',
-    content: '处理步骤：\n1. 校验企业微信应用授权状态。\n2. 检查回调地址与密钥是否正确。\n3. 重新同步组织架构并重试登录。',
-    tags: ['登录', '企业微信', '授权'],
-    keywords: ['登录', '企业微信', '授权', '回调', '异常', '组织架构'],
-    updatedAt: '2024-03-06',
-  },
-  {
-    id: 'kb-005',
-    title: 'VPN 登录故障排查与替代方案',
-    category: '网络接入',
-    summary: '处理 VPN 连接失败导致的登录异常。',
-    content: '排查步骤：\n1. 确认 VPN 节点可用性。\n2. 校验客户端版本与证书有效期。\n3. 提供备用网络或临时白名单策略。',
-    tags: ['登录', 'VPN', '网络'],
-    keywords: ['登录', 'VPN', '网络', '连接失败', '证书'],
-    updatedAt: '2024-03-04',
-  },
-];
+let currentResults = [];
+let searchSequence = 0;
+
+function scoreItem(item, query, tokens) {
+  const indexText = [
+    item?.title,
+    item?.summary,
+    item?.category,
+    Array.isArray(item?.tags) ? item.tags.join(' ') : '',
+    item?.content || '',
+  ].join(' ').toLowerCase();
+
+  let matches = 0;
+  tokens.forEach((token) => {
+    if (indexText.includes(token)) {
+      matches += 1;
+    }
+  });
+
+  if (query && indexText.includes(query.toLowerCase())) {
+    matches += 0.6;
+  }
+
+  return Math.min(matches / Math.max(tokens.length, 1), 1);
+}
 
 export function initKnowledgeApplication() {
   const container = qs('#knowledge-application');
@@ -86,7 +61,6 @@ export function initKnowledgeApplication() {
   const detailTags = qs('#knowledge-app-detail-tags');
   const detailCopy = qs('#knowledge-app-detail-copy');
   const copyBtnDefaultText = detailCopy?.textContent?.trim() || '复制内容';
-  let currentResults = [];
   let selectedDetailItem = null;
   let copyResetTimer = null;
 
@@ -97,7 +71,7 @@ export function initKnowledgeApplication() {
   const renderResults = (items) => {
     list.innerHTML = items.map((item) => {
       const score = Math.round(item.score * 100);
-      const tags = item.tags.map((tag) => `
+      const tags = (item.tags || []).map((tag) => `
         <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[11px]">${tag}</span>
       `).join('');
       return `
@@ -243,31 +217,7 @@ export function initKnowledgeApplication() {
     return Array.from(expanded);
   };
 
-  const scoreItem = (item, query, tokens) => {
-    const indexText = [
-      item.title,
-      item.summary,
-      item.category,
-      item.tags.join(' '),
-      item.keywords.join(' '),
-    ].join(' ').toLowerCase();
-
-    let matches = 0;
-    tokens.forEach((token) => {
-      if (indexText.includes(token)) {
-        matches += 1;
-      }
-    });
-
-    if (query && indexText.includes(query.toLowerCase())) {
-      matches += 0.6;
-    }
-
-    const score = Math.min(matches / Math.max(tokens.length, 1), 1);
-    return score;
-  };
-
-  const updateResults = () => {
+  const updateResults = async () => {
     const query = input.value.trim();
     updateClearButton();
 
@@ -281,60 +231,119 @@ export function initKnowledgeApplication() {
       return;
     }
 
-    setSearchMode(true);
-    const tokens = tokenize(query);
-    const results = knowledgeInventory
-      .map((item) => ({
-        ...item,
-        score: scoreItem(item, query, tokens),
-      }))
-      .filter((item) => item.score >= 0.25)
-      .sort((a, b) => b.score - a.score);
-
-    currentResults = results;
-
-    if (results.length === 0) {
-      resultsWrap.classList.add('hidden');
-      emptyState.classList.remove('hidden');
-      hideDetailPanel();
-      list.innerHTML = '';
-      count.textContent = '找到 0 条相关内容';
+    if (!isApiEnabled()) {
+      showNotification('知识检索需要先配置 API', 'warning');
       return;
     }
 
-    container.classList.add('has-results');
-    resultsWrap.classList.remove('hidden');
+    setSearchMode(true);
+    resultsWrap.classList.add('hidden');
     emptyState.classList.add('hidden');
-    count.textContent = `找到 ${results.length} 条相关内容`;
-    renderResults(results);
     hideDetailPanel();
+    list.innerHTML = '';
+    count.textContent = '正在检索...';
+
+    const currentSequence = ++searchSequence;
+    const tokens = tokenize(query);
+    try {
+      const [keywordResults, listResults] = await Promise.all([
+        performKnowledgeSearch(query, 'keyword'),
+        fetchKnowledgeList(query),
+      ]);
+
+      const scopedDocIds = collectDocIds([keywordResults, listResults]);
+      const semanticResults = await performKnowledgeSearch(query, 'semantic', scopedDocIds);
+
+      if (currentSequence !== searchSequence) {
+        return;
+      }
+
+      let merged = [];
+      try {
+        merged = mergeKnowledgeResults(query, tokens, [
+          { items: keywordResults, boost: 0.45 },
+          { items: semanticResults, boost: 0.65 },
+          { items: listResults, boost: 0.35 },
+        ]);
+      } catch (error) {
+        console.error('[knowledge-app] merge results failed', error);
+        merged = [];
+      }
+
+      currentResults = merged;
+
+      if (merged.length === 0) {
+        resultsWrap.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        emptyState.innerHTML = `
+          <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <i class="fa fa-folder-open-o text-gray-400 text-2xl"></i>
+          </div>
+          <p class="text-sm text-gray-500">暂无可用知识内容</p>
+          <p class="text-xs text-gray-400 mt-1">尝试更换关键词，或联系管理员补充知识库</p>
+        `;
+        hideDetailPanel();
+        list.innerHTML = '';
+        count.textContent = '找到 0 条相关内容';
+        return;
+      }
+
+      container.classList.add('has-results');
+      resultsWrap.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+      count.textContent = `找到 ${merged.length} 条相关内容`;
+      renderResults(merged);
+      hideDetailPanel();
+    } catch (error) {
+      console.error('[knowledge-app] search failed', error);
+      resultsWrap.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      emptyState.innerHTML = `
+        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+          <i class="fa fa-exclamation-circle text-gray-400 text-2xl"></i>
+        </div>
+        <p class="text-sm text-gray-500">知识检索失败</p>
+        <p class="text-xs text-gray-400 mt-1">请稍后再试或联系管理员</p>
+      `;
+      hideDetailPanel();
+      list.innerHTML = '';
+      count.textContent = '找到 0 条相关内容';
+      showNotification('知识检索失败，请稍后再试', 'error');
+    }
   };
 
-  const selectResult = (id) => {
+  const selectResult = async (id) => {
     const item = currentResults.find((entry) => entry.id === id);
     if (!item || !detailPanel || !detailTitle || !detailCategory || !detailSummary || !detailContent || !detailTags || !detailUpdated) {
       return;
     }
-    selectedDetailItem = item;
+    const enrichedItem = await ensureKnowledgeDetail(item);
+    if (!enrichedItem) {
+      return;
+    }
+    const displayItem = enrichedItem || item;
+    selectedDetailItem = displayItem;
     qsa('.knowledge-app-card', list).forEach((card) => {
       card.classList.toggle('is-active', card.getAttribute('data-knowledge-id') === id);
     });
-    detailTitle.textContent = item.title;
-    detailCategory.textContent = item.category;
-    detailUpdated.textContent = `更新于 ${item.updatedAt}`;
-    detailSummary.textContent = item.summary;
-    detailContent.textContent = item.content || '暂无详情内容。';
-    detailTags.innerHTML = item.tags.map((tag) => `
+    detailTitle.textContent = displayItem.title;
+    detailCategory.textContent = displayItem.category || '-';
+    detailUpdated.textContent = displayItem.updatedAt ? `更新于 ${displayItem.updatedAt}` : '更新于 -';
+    detailSummary.textContent = displayItem.summary || '暂无摘要';
+    detailContent.textContent = displayItem.content || '暂无详情内容。';
+    detailTags.innerHTML = (displayItem.tags || []).map((tag) => `
       <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[11px]">${tag}</span>
     `).join('');
     detailPanel.classList.remove('hidden');
     if (resultsLayout) resultsLayout.classList.remove('is-compact');
   };
 
-  on(searchBtn, 'click', updateResults);
+  on(searchBtn, 'click', () => {
+    void updateResults();
+  });
   on(input, 'keydown', (event) => {
     if (event.key === 'Enter') {
-      updateResults();
+      void updateResults();
     }
   });
   on(input, 'input', updateClearButton);
@@ -343,7 +352,7 @@ export function initKnowledgeApplication() {
     on(clearBtn, 'click', () => {
       input.value = '';
       updateClearButton();
-      updateResults();
+      void updateResults();
       input.focus();
     });
   }
@@ -355,7 +364,7 @@ export function initKnowledgeApplication() {
         return;
       }
       input.value = keyword;
-      updateResults();
+      void updateResults();
       input.focus();
     });
   });
@@ -367,7 +376,7 @@ export function initKnowledgeApplication() {
     }
     const id = target.getAttribute('data-knowledge-detail');
     if (id) {
-      selectResult(id);
+      void selectResult(id);
     }
   });
 
@@ -376,4 +385,134 @@ export function initKnowledgeApplication() {
   }
 
   updateClearButton();
+}
+
+function extractKnowledgeList(response) {
+  const payload = response?.data ?? response;
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (Array.isArray(payload?.items)) {
+    return payload.items;
+  }
+  if (Array.isArray(payload?.data)) {
+    return payload.data;
+  }
+  return [];
+}
+
+function buildSummary(content = '') {
+  const trimmed = String(content || '').replace(/\s+/g, ' ').trim();
+  if (!trimmed) {
+    return '';
+  }
+  return trimmed.length > 80 ? `${trimmed.slice(0, 80)}...` : trimmed;
+}
+
+function formatUpdatedAt(value) {
+  if (!value) {
+    return '';
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleDateString('zh-CN');
+}
+
+function normalizeKnowledgeItem(item) {
+  const metadata = typeof item?.metadata === 'object' && item.metadata ? item.metadata : {};
+  return {
+    id: item.id,
+    title: item.title,
+    category: metadata.taxonomyPath || item.category || '未分类',
+    summary: metadata.summary || buildSummary(item.content),
+    content: item.content,
+    tags: Array.isArray(item.tags) ? item.tags : [],
+    updatedAt: formatUpdatedAt(item.updatedAt),
+  };
+}
+
+async function performKnowledgeSearch(query, mode, docIds) {
+  try {
+    const response = await searchKnowledge({
+      query,
+      mode,
+      filters: {
+        limit: 12,
+        topK: 12,
+        docIds: Array.isArray(docIds) && docIds.length ? docIds : undefined,
+      },
+    });
+    return extractKnowledgeList(response);
+  } catch (error) {
+    return [];
+  }
+}
+
+function collectDocIds(groups) {
+  const idSet = new Set();
+  groups.forEach((items) => {
+    (items || []).forEach((item) => {
+      if (item?.id) {
+        idSet.add(item.id);
+      }
+    });
+  });
+  return Array.from(idSet).slice(0, 50);
+}
+
+async function fetchKnowledgeList(query) {
+  try {
+    const response = await fetchKnowledge({ query, limit: 50, page: 1 });
+    return extractKnowledgeList(response);
+  } catch (error) {
+    return [];
+  }
+}
+
+function mergeKnowledgeResults(query, tokens, sources) {
+  const merged = new Map();
+  sources.forEach((source) => {
+    const items = Array.isArray(source.items) ? source.items : [];
+    items.forEach((item) => {
+      if (!item?.id) {
+        return;
+      }
+      const normalized = normalizeKnowledgeItem(item);
+      const baseScore = scoreItem(normalized, query, tokens);
+      const boostedScore = Math.min(1, source.boost + baseScore * (1 - source.boost));
+      const existing = merged.get(normalized.id);
+      if (!existing || boostedScore > existing.score) {
+        merged.set(normalized.id, {
+          ...normalized,
+          score: boostedScore,
+        });
+      }
+    });
+  });
+  return Array.from(merged.values())
+    .filter((item) => item.score >= 0.2)
+    .sort((a, b) => b.score - a.score);
+}
+
+async function ensureKnowledgeDetail(item) {
+  if (item.content) {
+    return item;
+  }
+  try {
+    const response = await fetchKnowledgeFull(item.id);
+    const payload = response?.data ?? response;
+    if (!payload) {
+      return item;
+    }
+    const normalized = normalizeKnowledgeItem(payload);
+    return {
+      ...item,
+      ...normalized,
+    };
+  } catch (error) {
+    showNotification('无法加载知识详情', 'error');
+    return item;
+  }
 }

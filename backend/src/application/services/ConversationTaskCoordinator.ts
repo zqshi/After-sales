@@ -25,7 +25,7 @@ import { ConversationClosedEvent } from '@domain/conversation/events/Conversatio
 import { config } from '@config/app.config';
 
 /**
- * 客户消息输入（模拟IM集成接收的消息）
+ * 客户消息输入（IM集成接收的消息）
  */
 export interface IncomingMessage {
   customerId: string;
@@ -125,6 +125,7 @@ export class ConversationTaskCoordinator {
         customerId: msg.customerId,
         channel: msg.channel,
         priority: 'normal',
+        metadata: this.extractConversationMetadata(msg.metadata),
         initialMessage: {
           senderId: msg.senderId,
           senderType: 'external',
@@ -142,6 +143,8 @@ export class ConversationTaskCoordinator {
         senderId: msg.senderId,
         senderType: 'external',
         content: msg.content,
+        metadata: msg.metadata,
+        conversationMetadata: this.extractConversationMetadata(msg.metadata),
       });
     }
 
@@ -579,6 +582,25 @@ export class ConversationTaskCoordinator {
 
     // TODO Phase 2: 或通过EventBus发布事件
     // await this.eventBus.publish(new AgentReviewRequestedEvent({...}));
+  }
+
+  private extractConversationMetadata(
+    metadata?: Record<string, unknown>,
+  ): Record<string, unknown> | undefined {
+    if (!metadata) {
+      return undefined;
+    }
+
+    const groupMetadataKeys = ['chatId', 'groupName', 'groupMembers', 'groupMemberMap', 'status'];
+    const extracted: Record<string, unknown> = {};
+
+    for (const key of groupMetadataKeys) {
+      if (metadata[key] !== undefined) {
+        extracted[key] = metadata[key];
+      }
+    }
+
+    return Object.keys(extracted).length > 0 ? extracted : undefined;
   }
 
   /**

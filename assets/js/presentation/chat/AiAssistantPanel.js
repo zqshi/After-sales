@@ -185,9 +185,9 @@ export class AiAssistantPanel {
    * @param {Object} suggestion - 建议数据 {suggestedReply, confidence, needsHumanReview}
    */
   updateReplySuggestion(suggestion) {
-    if (!suggestion || !this.replySection) return;
+    if (!this.replySection) return;
 
-    const { suggestedReply, confidence, needsHumanReview } = suggestion;
+    const { suggestedReply, confidence, needsHumanReview } = suggestion || {};
     const normalizedReply = (suggestedReply || '')
       .replace(/\r\n/g, '\n')
       .split('\n')
@@ -196,24 +196,32 @@ export class AiAssistantPanel {
       .join('\n');
 
     if (this.elements.replyList) {
+      if (!normalizedReply) {
+        this.elements.replyList.innerHTML =
+          `<div class="ai-panel-card text-xs text-gray-600 flex flex-col items-center justify-center gap-2 py-6">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 4h12a1 1 0 0 1 1 1v12a4 4 0 0 1-4 4H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke="#cbd5e1" stroke-width="1.5"/>
+              <path d="M8 9h8M8 12h5M8 15h6" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <div>暂无数据</div>
+          </div>`;
+        this.replySection.classList.remove('hidden');
+        this.show();
+        this.syncSuggestionGrid();
+        return;
+      }
       const reviewBadge = needsHumanReview
         ? '<span class="reply-review-badge">需人工审核</span>'
         : '';
 
       this.elements.replyList.innerHTML = `
-        <div class="ai-panel-card ai-panel-card--compact bg-slate-50 border border-slate-200">
-          <div class="flex items-center justify-between gap-3">
-            <p class="text-xs text-gray-600">信息获取不清晰，需要做问题澄清</p>
-            <button class="ai-panel-chip" data-action="clarify">问题澄清</button>
-          </div>
-        </div>
         <div class="ai-panel-card">
           <div>
             <div class="text-xs text-gray-400 mb-1">AI建议 · 置信度 ${Math.round(confidence * 100)}%</div>
             ${reviewBadge}
             <p class="text-sm text-gray-700 mt-1">${this.escapeHtml(normalizedReply)}</p>
             <div class="mt-3 flex justify-end">
-              <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="${this.escapeHtml(normalizedReply)}">采纳</button>
+              <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-permission="ai.reply.adopt" data-suggestion="${this.escapeHtml(normalizedReply)}">采纳</button>
             </div>
           </div>
         </div>
@@ -301,59 +309,6 @@ export class AiAssistantPanel {
 
     this.solutionSection.classList.remove('hidden');
     this.show();
-  }
-
-  /**
-   * 根据问题上下文自动生成解决步骤（纯操作步骤，不包含参考资料）
-   * @param {Object} issueContext - 问题上下文
-   * @returns {Array} 步骤列表
-   */
-  generateSolutionSteps(issueContext = {}) {
-    const steps = [];
-
-    // 步骤1：确认问题
-    steps.push({
-      step: '确认问题详情',
-      description: `与客户确认${issueContext.description || '问题'}的具体表现、发生时间和影响范围`,
-      status: 'pending'
-    });
-
-    // 步骤2：查阅资料
-    steps.push({
-      step: '查阅参考资料',
-      description: '参考知识库文档和历史工单，了解标准处理流程和有效解决方案',
-      status: 'pending'
-    });
-
-    // 步骤3：执行排查
-    steps.push({
-      step: '执行问题排查',
-      description: '根据标准流程进行系统检查，定位问题根因',
-      status: 'pending'
-    });
-
-    // 步骤4：实施解决方案
-    steps.push({
-      step: '实施解决方案',
-      description: '根据排查结果，执行相应的修复或配置操作',
-      status: 'pending'
-    });
-
-    // 步骤5：验证结果
-    steps.push({
-      step: '验证修复效果',
-      description: '与客户确认问题是否已解决，系统功能是否恢复正常',
-      status: 'pending'
-    });
-
-    // 步骤6：记录总结
-    steps.push({
-      step: '记录问题总结',
-      description: '更新工单记录，总结问题原因和解决方案，便于后续参考',
-      status: 'pending'
-    });
-
-    return steps;
   }
 
   /**

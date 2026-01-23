@@ -64,7 +64,7 @@ describe('Task use cases (integration)', () => {
 
   it('assigns, updates status, and completes a task', async () => {
     const created = await createUseCase.execute({
-      title: 'Fix SLA alert',
+      title: 'Fix 客户等级 alert',
       description: 'Investigate overdue queue',
     });
 

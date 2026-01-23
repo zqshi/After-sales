@@ -7,31 +7,45 @@ export async function customerRoutes(
   profileController: CustomerProfileController,
   actionController: CustomerActionController,
 ): Promise<void> {
-  fastify.get('/api/customers/:id', async (request, reply) => {
+  fastify.get('/api/customers/:id', {
+    config: { permissions: ['customers.read'] },
+  }, async (request, reply) => {
     await profileController.getProfile(request, reply);
   });
 
-  fastify.post('/api/customers/:id/refresh', async (request, reply) => {
+  fastify.post('/api/customers/:id/refresh', {
+    config: { permissions: ['customers.write'] },
+  }, async (request, reply) => {
     await profileController.refreshProfile(request, reply);
   });
 
-  fastify.get('/api/customers/:id/interactions', async (request, reply) => {
+  fastify.get('/api/customers/:id/interactions', {
+    config: { permissions: ['customers.read'] },
+  }, async (request, reply) => {
     await profileController.getInteractions(request, reply);
   });
 
-  fastify.post('/api/customers/:id/service-records', async (request, reply) => {
+  fastify.post('/api/customers/:id/service-records', {
+    config: { permissions: ['customers.write'] },
+  }, async (request, reply) => {
     await actionController.addServiceRecord(request, reply);
   });
 
-  fastify.patch('/api/customers/:id/commitments/:commitmentId', async (request, reply) => {
+  fastify.patch('/api/customers/:id/commitments/:commitmentId', {
+    config: { permissions: ['customers.write'] },
+  }, async (request, reply) => {
     await actionController.updateCommitment(request, reply);
   });
 
-  fastify.post('/api/customers/:id/interactions', async (request, reply) => {
+  fastify.post('/api/customers/:id/interactions', {
+    config: { permissions: ['customers.write'] },
+  }, async (request, reply) => {
     await actionController.addInteraction(request, reply);
   });
 
-  fastify.post('/api/customers/:id/mark-vip', async (request, reply) => {
+  fastify.post('/api/customers/:id/mark-vip', {
+    config: { permissions: ['customers.write'] },
+  }, async (request, reply) => {
     await actionController.markAsVIP(request, reply);
   });
 }

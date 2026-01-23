@@ -6,6 +6,8 @@
 
 import fastify, { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
+import jwt from '@fastify/jwt';
+import helmet from '@fastify/helmet';
 import { ConversationController } from './presentation/http/controllers/ConversationController';
 import { conversationRoutes } from './presentation/http/routes/conversationRoutes';
 import { ImController } from './presentation/http/controllers/ImController';
@@ -37,6 +39,7 @@ import { GetRequirementUseCase } from './application/use-cases/requirement/GetRe
 import { ListRequirementsUseCase } from './application/use-cases/requirement/ListRequirementsUseCase';
 import { UpdateRequirementStatusUseCase } from './application/use-cases/requirement/UpdateRequirementStatusUseCase';
 import { DeleteRequirementUseCase } from './application/use-cases/requirement/DeleteRequirementUseCase';
+import { GetRequirementStatisticsUseCase } from './application/use-cases/requirement/GetRequirementStatisticsUseCase';
 import { RequirementRepository } from './infrastructure/repositories/RequirementRepository';
 import { TaskController } from './presentation/http/controllers/TaskController';
 import { taskRoutes } from './presentation/http/routes/taskRoutes';
@@ -62,6 +65,10 @@ import { GetKnowledgeItemUseCase } from './application/use-cases/knowledge/GetKn
 import { ListKnowledgeItemsUseCase } from './application/use-cases/knowledge/ListKnowledgeItemsUseCase';
 import { UpdateKnowledgeItemUseCase } from './application/use-cases/knowledge/UpdateKnowledgeItemUseCase';
 import { DeleteKnowledgeItemUseCase } from './application/use-cases/knowledge/DeleteKnowledgeItemUseCase';
+import { SyncKnowledgeItemUseCase } from './application/use-cases/knowledge/SyncKnowledgeItemUseCase';
+import { RetryKnowledgeUploadUseCase } from './application/use-cases/knowledge/RetryKnowledgeUploadUseCase';
+import { FaqMiningService } from './application/services/FaqMiningService';
+import { KnowledgeAiService } from './application/services/KnowledgeAiService';
 import { AiService } from './application/services/AiService';
 import { AnalyzeConversationUseCase } from './application/use-cases/ai/AnalyzeConversationUseCase';
 import { ApplySolutionUseCase } from './application/use-cases/ai/ApplySolutionUseCase';
@@ -73,12 +80,57 @@ import { RequirementCreatedEventHandler } from './application/event-handlers/Req
 import { ConversationTaskCoordinator } from './application/services/ConversationTaskCoordinator';
 import { metricsMiddleware, metricsResponseHook } from './presentation/http/middleware/metricsMiddleware';
 import metricsRoutes from './presentation/http/routes/metricsRoutes';
+import { authRoutes } from './presentation/http/routes/authRoutes';
+import { AuthController } from './presentation/http/controllers/AuthController';
+import { LoginUseCase } from './application/use-cases/auth/LoginUseCase';
+import { RegisterUseCase } from './application/use-cases/auth/RegisterUseCase';
+import { GetCurrentUserUseCase } from './application/use-cases/auth/GetCurrentUserUseCase';
+import { UserRepository } from './infrastructure/repositories/UserRepository';
+import { RoleRepository } from './infrastructure/repositories/RoleRepository';
+import { authMiddleware } from './presentation/http/middleware/authMiddleware';
+import { config } from './config/app.config';
+import { AuditEventRepository } from './infrastructure/repositories/AuditEventRepository';
+import { CreateAuditEventUseCase } from './application/use-cases/audit/CreateAuditEventUseCase';
+import { AuditController } from './presentation/http/controllers/AuditController';
+import { auditRoutes } from './presentation/http/routes/auditRoutes';
+import { SessionController } from './presentation/http/controllers/SessionController';
+import { sessionRoutes } from './presentation/http/routes/sessionRoutes';
+import { rbacMiddleware } from './presentation/http/middleware/rbacMiddleware';
+import { GetReportSummaryUseCase } from './application/use-cases/report/GetReportSummaryUseCase';
+import { MonitoringAlertRepository } from './infrastructure/repositories/MonitoringAlertRepository';
+import { CreateMonitoringAlertUseCase } from './application/use-cases/monitoring/CreateMonitoringAlertUseCase';
+import { ListMonitoringAlertsUseCase } from './application/use-cases/monitoring/ListMonitoringAlertsUseCase';
+import { ResolveMonitoringAlertUseCase } from './application/use-cases/monitoring/ResolveMonitoringAlertUseCase';
+import { MonitoringController } from './presentation/http/controllers/MonitoringController';
+import { monitoringRoutes } from './presentation/http/routes/monitoringRoutes';
+import { PermissionController } from './presentation/http/controllers/PermissionController';
+import { permissionRoutes } from './presentation/http/routes/permissionRoutes';
+import { ListRolesUseCase } from './application/use-cases/permissions/ListRolesUseCase';
+import { CreateRoleUseCase } from './application/use-cases/permissions/CreateRoleUseCase';
+import { UpdateRoleUseCase } from './application/use-cases/permissions/UpdateRoleUseCase';
+import { DeleteRoleUseCase } from './application/use-cases/permissions/DeleteRoleUseCase';
+import { ListMembersUseCase } from './application/use-cases/permissions/ListMembersUseCase';
+import { CreateMemberUseCase } from './application/use-cases/permissions/CreateMemberUseCase';
+import { UpdateMemberUseCase } from './application/use-cases/permissions/UpdateMemberUseCase';
+import { DeleteMemberUseCase } from './application/use-cases/permissions/DeleteMemberUseCase';
+import { RolePermissionService } from './application/services/RolePermissionService';
 
 export async function createApp(
   dataSource: DataSource,
 ): Promise<FastifyInstance> {
   const app = fastify({
     logger: process.env.NODE_ENV !== 'test',
+  });
+
+  if (process.env.NODE_ENV === 'production') {
+    await app.register(helmet);
+  }
+
+  await app.register(jwt, {
+    secret: config.jwt.secret,
+    sign: {
+      expiresIn: config.jwt.expiresIn,
+    },
   });
 
   // 注册CORS（如果需要）
@@ -106,9 +158,17 @@ export async function createApp(
   const requirementRepository = new RequirementRepository(dataSource);
   const taskRepository = new TaskRepository(dataSource);
   const knowledgeRepository = new KnowledgeRepository(dataSource);
+  const userRepository = new UserRepository(dataSource);
+  const roleRepository = new RoleRepository(dataSource);
+  const auditEventRepository = new AuditEventRepository(dataSource);
+  const monitoringAlertRepository = new MonitoringAlertRepository(dataSource);
   const eventBus = new EventBus();
   const taxkbAdapter = new TaxKBAdapter();
   const taxkbKnowledgeRepository = new TaxKBKnowledgeRepository(taxkbAdapter);
+
+  const rolePermissionService = new RolePermissionService(roleRepository);
+  await rolePermissionService.refresh();
+  app.decorate('rolePermissionService', rolePermissionService);
 
   const createConversationUseCase = new CreateConversationUseCase(
     conversationRepository,
@@ -175,6 +235,9 @@ export async function createApp(
   const deleteRequirementUseCase = new DeleteRequirementUseCase(
     requirementRepository,
   );
+  const getRequirementStatisticsUseCase = new GetRequirementStatisticsUseCase(
+    requirementRepository,
+  );
   const createTaskUseCase = new CreateTaskUseCase(taskRepository);
   const getTaskUseCase = new GetTaskUseCase(taskRepository);
   const listTasksUseCase = new ListTasksUseCase(taskRepository);
@@ -183,21 +246,48 @@ export async function createApp(
   const completeTaskUseCase = new CompleteTaskUseCase(taskRepository, eventBus);
   const createKnowledgeItemUseCase = new CreateKnowledgeItemUseCase(
     knowledgeRepository,
+    eventBus,
   );
   const getKnowledgeItemUseCase = new GetKnowledgeItemUseCase(
     knowledgeRepository,
+    taxkbKnowledgeRepository,
+    taxkbAdapter,
   );
   const listKnowledgeItemsUseCase = new ListKnowledgeItemsUseCase(
     knowledgeRepository,
   );
   const updateKnowledgeItemUseCase = new UpdateKnowledgeItemUseCase(
     knowledgeRepository,
+    eventBus,
   );
   const deleteKnowledgeItemUseCase = new DeleteKnowledgeItemUseCase(
     knowledgeRepository,
+    eventBus,
+  );
+  const knowledgeAiService = new KnowledgeAiService();
+  const faqMiningService = new FaqMiningService(
+    knowledgeRepository,
+    eventBus,
+    knowledgeAiService,
+  );
+  const syncKnowledgeItemUseCase = new SyncKnowledgeItemUseCase(
+    knowledgeRepository,
+    taxkbKnowledgeRepository,
+    taxkbAdapter,
+    eventBus,
+    faqMiningService,
+    knowledgeAiService,
+  );
+  const retryKnowledgeUploadUseCase = new RetryKnowledgeUploadUseCase(
+    knowledgeRepository,
+    taxkbKnowledgeRepository,
+    taxkbAdapter,
+    eventBus,
   );
   const searchKnowledgeUseCase = new SearchKnowledgeUseCase(
     taxkbKnowledgeRepository,
+    knowledgeRepository,
+    taxkbAdapter,
   );
   const uploadDocumentUseCase = new UploadDocumentUseCase(
     taxkbAdapter,
@@ -231,6 +321,7 @@ export async function createApp(
     listRequirementsUseCase,
     updateRequirementStatusUseCase,
     deleteRequirementUseCase,
+    getRequirementStatisticsUseCase,
   );
   const taskController = new TaskController(
     createTaskUseCase,
@@ -248,6 +339,8 @@ export async function createApp(
     deleteKnowledgeItemUseCase,
     searchKnowledgeUseCase,
     uploadDocumentUseCase,
+    syncKnowledgeItemUseCase,
+    retryKnowledgeUploadUseCase,
     taxkbAdapter,
   );
   const knowledgeRecommender = new KnowledgeRecommender();
@@ -255,6 +348,47 @@ export async function createApp(
   const analyzeConversationUseCase = new AnalyzeConversationUseCase(aiService);
   const applySolutionUseCase = new ApplySolutionUseCase(aiService);
   const aiController = new AiController(analyzeConversationUseCase, applySolutionUseCase);
+  const loginUseCase = new LoginUseCase(userRepository);
+  const registerUseCase = new RegisterUseCase(userRepository);
+  const getCurrentUserUseCase = new GetCurrentUserUseCase(userRepository);
+  const authController = new AuthController(
+    loginUseCase,
+    registerUseCase,
+    getCurrentUserUseCase,
+  );
+  const createAuditEventUseCase = new CreateAuditEventUseCase(auditEventRepository);
+  const getReportSummaryUseCase = new GetReportSummaryUseCase(dataSource);
+  const auditController = new AuditController(
+    createAuditEventUseCase,
+    getReportSummaryUseCase,
+  );
+  const sessionController = new SessionController(roleRepository);
+  const listRolesUseCase = new ListRolesUseCase(roleRepository);
+  const createRoleUseCase = new CreateRoleUseCase(roleRepository);
+  const updateRoleUseCase = new UpdateRoleUseCase(roleRepository);
+  const deleteRoleUseCase = new DeleteRoleUseCase(roleRepository, userRepository);
+  const listMembersUseCase = new ListMembersUseCase(userRepository);
+  const createMemberUseCase = new CreateMemberUseCase(userRepository, roleRepository);
+  const updateMemberUseCase = new UpdateMemberUseCase(userRepository, roleRepository);
+  const deleteMemberUseCase = new DeleteMemberUseCase(userRepository);
+  const permissionController = new PermissionController(
+    listRolesUseCase,
+    createRoleUseCase,
+    updateRoleUseCase,
+    deleteRoleUseCase,
+    listMembersUseCase,
+    createMemberUseCase,
+    updateMemberUseCase,
+    deleteMemberUseCase,
+  );
+  const createMonitoringAlertUseCase = new CreateMonitoringAlertUseCase(monitoringAlertRepository);
+  const listMonitoringAlertsUseCase = new ListMonitoringAlertsUseCase(monitoringAlertRepository);
+  const resolveMonitoringAlertUseCase = new ResolveMonitoringAlertUseCase(monitoringAlertRepository);
+  const monitoringController = new MonitoringController(
+    createMonitoringAlertUseCase,
+    listMonitoringAlertsUseCase,
+    resolveMonitoringAlertUseCase,
+  );
 
   //创建ConversationTaskCoordinator应用层协调服务
   // 用于Saga协调：客户消息→Conversation→Requirement→Task→完成→关闭
@@ -279,6 +413,8 @@ export async function createApp(
     searchKnowledgeUseCase,
     taskRepository,
     conversationRepository,
+    customerProfileRepository,
+    sendMessageUseCase,
   );
 
   // 创建并注册事件处理器
@@ -293,6 +429,7 @@ export async function createApp(
   );
   const requirementCreatedEventHandler = new RequirementCreatedEventHandler(
     createTaskUseCase,
+    requirementRepository,
   );
 
   // 订阅事件
@@ -306,6 +443,38 @@ export async function createApp(
 
   // 注册路由 - 所有业务路由添加 /api/v1 前缀
   await app.register(async (apiApp) => {
+    apiApp.addHook('preHandler', authMiddleware);
+    apiApp.addHook('preHandler', rbacMiddleware);
+    apiApp.addHook('onResponse', async (request, reply) => {
+      const config = request.routeOptions.config as { auth?: boolean; audit?: boolean } | undefined;
+      if (config?.auth === false || config?.audit === false) {
+        return;
+      }
+      if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+        return;
+      }
+      if (request.routerPath?.includes('/audit/events')) {
+        return;
+      }
+
+      const user = request.user as { sub?: string } | undefined;
+      await createAuditEventUseCase.execute({
+        action: request.method,
+        resource: request.routerPath || request.url,
+        metadata: {
+          statusCode: reply.statusCode,
+        },
+      }, {
+        userId: user?.sub ?? null,
+        ip: request.ip,
+        userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : null,
+      });
+    });
+    await authRoutes(apiApp, authController);
+    await sessionRoutes(apiApp, sessionController);
+    await permissionRoutes(apiApp, permissionController);
+    await auditRoutes(apiApp, auditController);
+    await monitoringRoutes(apiApp, monitoringController);
     await conversationRoutes(apiApp, conversationController);
     await customerRoutes(
       apiApp,

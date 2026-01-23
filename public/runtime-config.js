@@ -1,7 +1,6 @@
-// Optional runtime overrides for Netlify or other static hosting.
-// Example:
-// window.RUNTIME_CONFIG = {
-//   apiBaseUrl: "https://your-backend.example.com/api/v1",
-//   agentScopeUrl: "https://your-agentscope.example.com",
-//   agentScopeWebSocketUrl: "wss://your-agentscope.example.com"
-// };
+// Runtime overrides for local verification.
+window.RUNTIME_CONFIG = {
+  apiBaseUrl: "http://localhost:8080/api/v1",
+  agentScopeUrl: "http://localhost:5000",
+  agentScopeWebSocketUrl: ""
+};

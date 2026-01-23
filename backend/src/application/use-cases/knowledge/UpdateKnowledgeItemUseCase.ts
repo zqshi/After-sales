@@ -1,6 +1,7 @@
 import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
 import { KnowledgeCategory } from '@domain/knowledge/value-objects/KnowledgeCategory';
+import { EventBus } from '@infrastructure/events/EventBus';
 
 export interface UpdateKnowledgeItemRequest {
   knowledgeId: string;
@@ -12,7 +13,10 @@ export interface UpdateKnowledgeItemRequest {
 }
 
 export class UpdateKnowledgeItemUseCase {
-  constructor(private readonly knowledgeRepository: KnowledgeRepository) {}
+  constructor(
+    private readonly knowledgeRepository: KnowledgeRepository,
+    private readonly eventBus: EventBus,
+  ) {}
 
   async execute(request: UpdateKnowledgeItemRequest): Promise<KnowledgeItemResponseDTO> {
     if (!request.knowledgeId) {
@@ -35,6 +39,8 @@ export class UpdateKnowledgeItemUseCase {
     });
 
     await this.knowledgeRepository.save(item);
+    await this.eventBus.publishAll(item.getUncommittedEvents());
+    item.clearEvents();
     return KnowledgeItemResponseDTO.fromDomain(item);
   }
 }

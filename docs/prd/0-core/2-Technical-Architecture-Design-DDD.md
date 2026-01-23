@@ -161,7 +161,7 @@ TriggerQualityCheck → GenerateScores → SaveQualityReport
 ```
 策略1: VIP客户 → 优先高质量客服
 策略2: 高风险客户 → 优先熟悉度
-策略3: 紧急SLA → 优先低负载
+策略3: 紧急客户等级 → 优先低负载
 策略4: KA客户 → 综合评分
 策略5: 常规情况 → 综合评分
 ```

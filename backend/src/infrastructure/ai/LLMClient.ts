@@ -54,6 +54,13 @@ export class LLMClient {
     return config.ai.enabled && !!this.baseUrl && !!this.apiKey;
   }
 
+  async generate(messages: LLMMessage[]): Promise<string> {
+    if (!this.isEnabled()) {
+      throw new Error('LLM服务未启用或配置不完整');
+    }
+    return this.callLLM(messages);
+  }
+
   /**
    * 情绪识别分析（使用大模型）
    */

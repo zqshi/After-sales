@@ -54,7 +54,7 @@ export class ProfileRefreshedEventHandler {
       title: '职位',
       focus: '关注点',
       contacts: '联系方式',
-      sla: 'SLA信息',
+      sla: '客户等级信息',
       products: '产品列表',
       metrics: '业务指标',
       insights: '洞察信息',

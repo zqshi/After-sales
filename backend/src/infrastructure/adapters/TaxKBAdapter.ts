@@ -75,17 +75,22 @@ export class TaxKBAdapter {
     }
   }
 
+  isEnabled(): boolean {
+    return taxkbConfig.enabled;
+  }
+
   async uploadDocument(
     file: Buffer,
     metadata?: {
       title?: string;
       category?: { company_entity?: string; business_domain?: string };
+      filename?: string;
     },
   ): Promise<TaxKBDocument> {
     const arrayBuffer = new Uint8Array(file).buffer;
     const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' });
     const formData = new FormData();
-    formData.append('file', blob);
+    formData.append('file', blob, metadata?.filename || metadata?.title || 'document');
 
     if (metadata) {
       formData.append('metadata', JSON.stringify(metadata));
@@ -196,56 +201,84 @@ export class TaxKBAdapter {
     }
 
     const url = `${this.baseUrl}${endpoint}`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    const maxAttempts = Math.max(1, taxkbConfig.retry.maxAttempts);
+    const retryableStatus = new Set([408, 429, 500, 502, 503, 504]);
 
-    try {
-      const isJsonBody = typeof options?.body === 'string';
-      const isFormData = options?.body instanceof FormData;
-      const headers = new Headers(options?.headers ?? {});
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-      headers.set('X-API-Key', this.apiKey);
-      if (!headers.has('Accept')) {
-        headers.set('Accept', 'application/json');
-      }
+      try {
+        const isJsonBody = typeof options?.body === 'string';
+        const isFormData = options?.body instanceof FormData;
+        const headers = new Headers(options?.headers ?? {});
 
-      if (isFormData) {
-        headers.delete('Content-Type');
-      } else if (isJsonBody && !headers.has('Content-Type')) {
-        headers.set('Content-Type', 'application/json');
-      }
+        headers.set('X-API-Key', this.apiKey);
+        if (!headers.has('Accept')) {
+          headers.set('Accept', 'application/json');
+        }
 
-      const response = await fetch(url, {
-        ...options,
-        headers,
-        signal: controller.signal,
-      });
+        if (isFormData) {
+          headers.delete('Content-Type');
+        } else if (isJsonBody && !headers.has('Content-Type')) {
+          headers.set('Content-Type', 'application/json');
+        }
 
-      if (!response.ok) {
-        const errorPayload = await this.parseError(response);
+        const response = await fetch(url, {
+          ...options,
+          headers,
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const errorPayload = await this.parseError(response);
+          const error = new TaxKBError(
+            errorPayload.message || 'TaxKB API request failed',
+            response.status,
+            errorPayload,
+          );
+          if (retryableStatus.has(response.status) && attempt < maxAttempts - 1) {
+            await this.sleep(taxkbConfig.retry.backoff * Math.pow(2, attempt));
+            continue;
+          }
+          throw error;
+        }
+
+        if (response.status === 204) {
+          return undefined as unknown as T;
+        }
+
+        return (await response.json()) as T;
+      } catch (error) {
+        if (error instanceof TaxKBError) {
+          if (retryableStatus.has(error.statusCode) && attempt < maxAttempts - 1) {
+            await this.sleep(taxkbConfig.retry.backoff * Math.pow(2, attempt));
+            continue;
+          }
+          throw error;
+        }
+        if ((error as Error).name === 'AbortError') {
+          if (attempt < maxAttempts - 1) {
+            await this.sleep(taxkbConfig.retry.backoff * Math.pow(2, attempt));
+            continue;
+          }
+          throw new TaxKBError('Request timeout', 408);
+        }
+        if (attempt < maxAttempts - 1) {
+          await this.sleep(taxkbConfig.retry.backoff * Math.pow(2, attempt));
+          continue;
+        }
         throw new TaxKBError(
-          errorPayload.message || 'TaxKB API request failed',
-          response.status,
-          errorPayload,
+          'TaxKB API request failed',
+          503,
+          { message: (error as Error)?.message || 'TaxKB network error' },
         );
+      } finally {
+        clearTimeout(timeoutId);
       }
-
-      if (response.status === 204) {
-        return undefined as unknown as T;
-      }
-
-      return (await response.json()) as T;
-    } catch (error) {
-      if (error instanceof TaxKBError) {
-        throw error;
-      }
-      if ((error as Error).name === 'AbortError') {
-        throw new TaxKBError('Request timeout', 408);
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
     }
+
+    throw new TaxKBError('TaxKB API request failed', 500);
   }
 
   private async parseError(response: Response): Promise<any> {
@@ -255,5 +288,9 @@ export class TaxKBAdapter {
       const text = await response.text();
       return { message: text || 'Unknown error' };
     }
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

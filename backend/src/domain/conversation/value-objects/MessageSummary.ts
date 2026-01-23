@@ -200,7 +200,7 @@ export class MessageSummary extends ValueObject<MessageSummaryProps> {
    * @param hours - 小时数阈值（默认4小时）
    * @returns 是否长时间无响应
    *
-   * 用途：SLA监控、告警
+   * 用途：客户等级监控、告警
    */
   isIdleForHours(hours: number = 4): boolean {
     const now = new Date();

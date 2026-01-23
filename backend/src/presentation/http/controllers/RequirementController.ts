@@ -4,6 +4,7 @@ import { GetRequirementUseCase } from '../../../application/use-cases/requiremen
 import { ListRequirementsUseCase } from '../../../application/use-cases/requirement/ListRequirementsUseCase';
 import { UpdateRequirementStatusUseCase } from '../../../application/use-cases/requirement/UpdateRequirementStatusUseCase';
 import { DeleteRequirementUseCase } from '../../../application/use-cases/requirement/DeleteRequirementUseCase';
+import { GetRequirementStatisticsUseCase } from '../../../application/use-cases/requirement/GetRequirementStatisticsUseCase';
 import { CreateRequirementRequestDTO } from '../../../application/dto/requirement/CreateRequirementRequestDTO';
 
 export class RequirementController {
@@ -13,6 +14,7 @@ export class RequirementController {
     private readonly listRequirementsUseCase: ListRequirementsUseCase,
     private readonly updateRequirementStatusUseCase: UpdateRequirementStatusUseCase,
     private readonly deleteRequirementUseCase: DeleteRequirementUseCase,
+    private readonly getRequirementStatisticsUseCase: GetRequirementStatisticsUseCase,
   ) {}
 
   async createRequirement(
@@ -86,6 +88,34 @@ export class RequirementController {
         requirementId: id,
         status,
       });
+      reply.code(200).send({ success: true, data: result });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  async ignoreRequirement(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const result = await this.updateRequirementStatusUseCase.execute({
+        requirementId: id,
+        status: 'ignored',
+      });
+      reply.code(200).send({ success: true, data: result });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  async getStatistics(
+    _request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const result = await this.getRequirementStatisticsUseCase.execute();
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);

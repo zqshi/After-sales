@@ -14,7 +14,7 @@ import { GetConversationUseCase } from '../../../application/use-cases/GetConver
 import {
   ConversationListQueryDTO,
   ConversationListStatus,
-  ConversationSLAStatus,
+  ConversationCustomerLevelStatus,
 } from '../../../application/dto/ConversationListQueryDTO';
 import { CreateConversationRequestDTO } from '../../../application/dto/CreateConversationRequestDTO';
 
@@ -72,7 +72,7 @@ export class ConversationController {
         agentId: query.agentId,
         customerId: query.customerId,
         channel: query.channel,
-        slaStatus: query.slaStatus as ConversationSLAStatus,
+        slaStatus: query.slaStatus as ConversationCustomerLevelStatus,
         page: this.parseNumberParam(query.page),
         limit: this.parseNumberParam(query.limit),
       };

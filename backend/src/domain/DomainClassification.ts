@@ -72,7 +72,7 @@ export const ConversationDomain: DomainDescription = {
   strategicValue: `
     智能售后工作台的核心竞争力所在：
     1. AI辅助对话：自动推荐回复、知识库引用、情感分析
-    2. 智能分配策略：基于客户画像、客服能力、SLA的多维度分配
+    2. 智能分配策略：基于客户画像、客服能力、客户等级的多维度分配
     3. 实时协作：多客服协同、对话转接、会话升级
     4. 对话质检：自动质检、满意度预测
 
@@ -88,7 +88,7 @@ export const ConversationDomain: DomainDescription = {
   technologyStrategy: `
     - 自研核心领域模型（Conversation聚合根）
     - 集成顶级AI服务（GPT-4、Claude等）
-    - 高可用架构（99.9%+ SLA）
+    - 高可用架构（99.9%+ 客户等级）
     - 持续优化分配算法
   `,
 };

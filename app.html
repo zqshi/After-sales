@@ -88,10 +88,19 @@
     // 全局配置对象 - 用于配置API地址和用户信息
     const runtimeConfig = window.RUNTIME_CONFIG || {};
     const defaultOrigin = window.location.origin;
+    const storedToken = localStorage.getItem('authToken');
+    let storedUser = null;
+    try {
+      storedUser = localStorage.getItem('authUser');
+      storedUser = storedUser ? JSON.parse(storedUser) : null;
+    } catch (_error) {
+      storedUser = null;
+    }
     window.config = {
       apiBaseUrl: runtimeConfig.apiBaseUrl || `${defaultOrigin}/api/v1`,  // 后端API基础地址
-      authToken: null,  // 认证令牌（登录后设置）
-      userId: 'agent-001',  // 当前用户ID（示例）
+      authToken: storedToken || null,  // 认证令牌（登录后设置）
+      userId: storedUser?.id || null,  // 当前用户ID（登录后设置）
+      userRole: storedUser?.role || null, // 当前用户角色
       analysisContext: '',  // AI分析上下文
       agentScopeUrl: runtimeConfig.agentScopeUrl || defaultOrigin, // AgentScope 服务地址
       agentScopeWebSocketUrl: runtimeConfig.agentScopeWebSocketUrl || '' // WebSocket暂未实现，留空禁用
@@ -109,9 +118,9 @@
     <!-- 用户信息区域 -->
     <div class="relative">
       <button id="user-menu-button" class="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-3 py-1.5 transition-colors">
-        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">王</div>
+        <div id="user-display-initial" class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">?</div>
         <div class="text-left">
-          <div class="text-sm font-medium text-gray-900">王工程师</div>
+          <div id="user-display-name" class="text-sm font-medium text-gray-900">未登录</div>
           <div class="text-xs text-green-500 flex items-center">
             <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
             在线
@@ -186,12 +195,12 @@
               <button id="filter-status-all" class="px-3 py-1 bg-primary text-white rounded-full text-sm flex items-center" data-status="all">
                 <span>全部</span>
                 <span
-                  class="ml-1 bg-white text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="all">8</span>
+                  class="ml-1 bg-white text-primary rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="all">--</span>
               </button>
               <button id="filter-status-pending" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm flex items-center" data-status="pending">
                 <span>待处理</span>
                 <span
-                  class="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="pending">3</span>
+                  class="ml-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs" data-count="pending">--</span>
               </button>
               <button id="filter-status-active" class="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm" data-status="active">进行中</button>
             </div>
@@ -203,6 +212,7 @@
                   class="appearance-none bg-white border border-gray-300 rounded-lg text-sm px-3 py-1.5 pr-8 focus:outline-none focus:ring-1 focus:ring-primary">
                   <option value="">渠道</option>
                   <option value="feishu">飞书</option>
+                  <option value="wecom">企微</option>
                   <option value="qq">企业QQ</option>
                   <option value="wechat">微信</option>
                 </select>
@@ -257,32 +267,7 @@
               </div>
             </div>
             <div id="sidebar-tasks-list" class="mt-3 space-y-2">
-              <div class="task-list-item" data-task-id="task-001">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-semibold text-gray-800">云服务器连接公告</span>
-                    <span
-                      class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">高</span>
-                  </div>
-                  <p class="text-xs text-gray-600">生成公告并回访受影响用户</p>
-                </div>
-                <div class="flex items-center gap-2">
-                <button class="task-delete-btn text-xs text-red-600 hover:text-red-700" data-permission="tasks.delete">删除</button>
-                </div>
-              </div>
-              <div class="task-list-item" data-task-id="task-002">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-semibold text-gray-800">账单核验指引</span>
-                    <span
-                      class="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">中</span>
-                  </div>
-                  <p class="text-xs text-gray-600">推送账单核验指南并收集反馈</p>
-                </div>
-                <div class="flex items-center gap-2">
-                <button class="task-delete-btn text-xs text-red-600 hover:text-red-700" data-permission="tasks.delete">删除</button>
-                </div>
-              </div>
+              <div class="text-xs text-gray-400">暂无任务</div>
             </div>
           </div>
         </div>
@@ -297,8 +282,8 @@
           <div class="flex-1 min-w-0 flex flex-col gap-2">
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-2 min-w-0">
-                <h2 id="chat-header-title" class="text-base font-semibold truncate">小米保障群</h2>
-                <span id="chat-header-sla" class="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">VIP</span>
+                <h2 id="chat-header-title" class="text-base font-semibold truncate">暂无会话</h2>
+                <span id="chat-header-sla" class="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">客户等级未知</span>
                 <span id="agent-status-pill" class="agent-status-pill agent-status-offline">Agent 未连接</span>
               </div>
               <div class="flex shrink-0">
@@ -310,8 +295,7 @@
             </div>
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div id="chat-header-summary" class="min-w-0 text-sm text-gray-500 truncate">
-                <span>智能摘要：</span>
-                <span>客户反馈云服务器无法连接，影响业务运营，需要紧急处理。</span>
+                请选择左侧会话开始处理
               </div>
               <div id="chat-mode-control" class="chat-mode-control flex items-center gap-2 flex-wrap shrink-0">
                 <button data-chat-mode="agent_auto" class="chat-mode-pill active" data-permission="chat.mode.auto">Agent自动</button>
@@ -328,210 +312,7 @@
         </div>
 
         <!-- 消息区域 -->
-        <div class="chat-messages flex-1 overflow-y-auto p-4 space-y-4" id="chat-messages">
-          <!-- 只读聚合提示 -->
-          <div class="flex justify-center">
-            <span
-              class="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">当前为只读聚合模式：仅展示各渠道消息与内部建议，无法直接回发到外部IM</span>
-          </div>
-
-          <!-- 时间分隔线 -->
-          <div class="flex justify-center">
-            <span class="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">今天 10:30</span>
-          </div>
-
-          <!-- 客户消息 -->
-          <div class="message customer-message flex" data-history-label="云服务器连通性异常">
-            <div
-              class="avatar w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-              张
-            </div>
-
-            <div class="ml-2 max-w-[70%]">
-              <div class="message-bubble bg-blue-100 p-3 message-bubble-customer">
-                <p>我的服务器无法连接，目前有影响业务，赶快看下。</p>
-              </div>
-
-              <div class="message-meta flex justify-between items-center mt-1">
-                <span class="text-xs text-gray-500">10:30</span>
-                <span class="emotion-urgent text-xs px-2 py-0.5 rounded-full">⚠️ 急切</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 工程师消息 -->
-          <div class="message engineer-message flex justify-end">
-            <div class="mr-2 max-w-[70%]">
-              <div class="message-bubble bg-primary text-white p-3 message-bubble-engineer">
-                <p>您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。</p>
-              </div>
-
-              <div class="message-meta flex justify-end mt-1">
-                <span class="text-xs text-gray-500">10:32</span>
-              </div>
-            </div>
-
-            <div
-              class="avatar w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
-              王
-            </div>
-          </div>
-
-          <!-- 客户消息 -->
-          <div class="message customer-message flex">
-            <div
-              class="avatar w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-              张
-            </div>
-
-            <div class="ml-2 max-w-[70%]">
-              <div class="message-bubble bg-blue-100 p-3 message-bubble-customer">
-                <p>服务器实例为test123，ip是192.168.10.2。</p>
-              </div>
-
-              <div class="message-meta flex justify-between items-center mt-1">
-                <span class="text-xs text-gray-500">10:35</span>
-                <span class="emotion-neutral text-xs px-2 py-0.5 rounded-full">🙂 稍缓</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 工程师消息 -->
-          <div class="message engineer-message flex justify-end">
-            <div class="mr-2 max-w-[70%]">
-              <div class="message-bubble bg-primary text-white p-3 message-bubble-engineer">
-                <p>收到，我们高优排查该问题，有进展第一时间同步。</p>
-              </div>
-
-              <div class="message-meta flex justify-end mt-1">
-                <span class="text-xs text-gray-500">10:35</span>
-              </div>
-            </div>
-
-            <div
-              class="avatar w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
-              王
-            </div>
-          </div>
-
-          <!-- 客户消息 -->
-          <div class="message customer-message flex">
-            <div
-              class="avatar w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-              张
-            </div>
-
-            <div class="ml-2 max-w-[70%]">
-              <div class="message-bubble bg-blue-100 p-3 message-bubble-customer">
-                <p>麻烦尽快同步排查进展，业务现在受影响。</p>
-              </div>
-
-              <div class="message-meta flex justify-between items-center mt-1">
-                <span class="text-xs text-gray-500">10:36</span>
-                <span class="emotion-negative text-xs px-2 py-0.5 rounded-full">⚠️ 急切</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- AI辅助信息 -->
-          <div class="ai-assistant p-4">
-            <div class="problem-identification mb-3 p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-              <strong>待解决问题：</strong>云服务器无法连接，业务受影响（P2）
-            </div>
-
-            <div class="reply-suggestions mb-3">
-              <h4 class="text-sm font-medium text-gray-700 mb-2">AI回复建议（内部参考，不会自动发送）：</h4>
-              <div class="suggestion-card" data-id="sug-001">
-                <div class="flex items-start">
-                  <div
-                    class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                    <i class="fa fa-book"></i>
-                  </div>
-
-                  <div class="ml-2 flex-1">
-                    <p class="text-xs text-gray-500">参考知识库：<a href="#"
-                        class="text-primary hover:underline">云服务器无法连接排查手册</a></p>
-                    <p class="text-sm mt-1">
-                      您好，请提供具体的服务器实例ID或IP，我们高优排查该问题。</p>
-                  </div>
-                </div>
-
-                <div class="flex justify-end mt-2">
-                  <button class="adopt-btn text-xs px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark" data-permission="ai.reply.adopt"
-                    onclick="adoptSuggestion('sug-001')">填入草稿（内部）</button>
-                </div>
-              </div>
-
-              <div class="suggestion-card" data-id="sug-002">
-                <div class="flex items-start">
-                  <div
-                    class="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                    <i class="fa fa-history"></i>
-                  </div>
-
-                  <div class="ml-2 flex-1">
-                    <p class="text-xs text-gray-500">参考历史案例：<a href="#"
-                        class="text-primary hover:underline">07-15云服务器连通性问题解决方案</a></p>
-                    <p class="text-sm mt-1">
-                      收到，我们高优排查该问题，有进展第一时间同步。</p>
-                  </div>
-                </div>
-
-                <div class="flex justify-end mt-2">
-                  <button class="adopt-btn text-xs px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark" data-permission="ai.reply.adopt"
-                    onclick="adoptSuggestion('sug-002')">填入草稿（内部）</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="solution-steps">
-              <details class="text-sm">
-                <summary class="font-medium cursor-pointer">解决步骤</summary>
-                <div class="mt-2 space-y-3">
-                  <div class="bg-white border border-gray-200 rounded-lg p-3">
-                    <h5 class="text-sm font-medium">标准处理流程</h5>
-                    <ol class="list-decimal pl-5 mt-1 space-y-1 text-sm">
-                      <li>确认实例状态与网络连通性</li>
-                      <li>检查安全组/路由/网关配置</li>
-                      <li>排查宿主机与网络设备告警</li>
-                      <li>执行修复或切换线路</li>
-                      <li>验证业务访问恢复情况</li>
-                    </ol>
-                  </div>
-
-                  <div class="bg-white border border-gray-200 rounded-lg p-3">
-                    <h5 class="text-sm font-medium">历史相似问题解决方案</h5>
-                    <div class="mt-2 space-y-2">
-                      <div class="flex items-start">
-                        <div
-                          class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs">
-                          <i class="fa fa-link"></i>
-                        </div>
-
-                        <div class="ml-2">
-                          <p class="text-xs"><a href="#" class="text-primary hover:underline">认证服务故障应急处理流程</a></p>
-                          <p class="text-xs text-gray-600 mt-0.5">上次使用：2023-06-10，解决时间：12分钟</p>
-                        </div>
-                      </div>
-
-                      <div class="flex items-start">
-                        <div
-                          class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs">
-                          <i class="fa fa-link"></i>
-                        </div>
-
-                        <div class="ml-2">
-                          <p class="text-xs"><a href="#" class="text-primary hover:underline">多用户同时登录失败问题排查</a></p>
-                          <p class="text-xs text-gray-600 mt-0.5">上次使用：2023-05-22，解决时间：18分钟</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </details>
-            </div>
-          </div>
-        </div>
+        <div class="chat-messages flex-1 overflow-y-auto p-4 space-y-4" id="chat-messages"></div>
 
         <!-- 输入区域 -->
         <div class="chat-input p-4 border-t border-gray-200">
@@ -555,9 +336,9 @@
             <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openClarifyPanel()" data-permission="actions.clarify">问题澄清</button>
             <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openRequirementPanel()" data-permission="actions.requirement.detect">需求检测</button>
             <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAiSolutionPanel()" data-permission="actions.ai.solution">AI解决方案</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAssistCheckMock()" data-permission="actions.assist.check">辅助排查</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openTicketMock()" data-permission="actions.ticket.create">创建工单</button>
-            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openFaultReportMock()" data-permission="actions.fault.report">生成故障报告</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAssistCheck()" data-permission="actions.assist.check">辅助排查</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openTicket()" data-permission="actions.ticket.create">创建工单</button>
+            <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openFaultReport()" data-permission="actions.fault.report">生成故障报告</button>
           </div>
 
           <!-- 输入框 -->
@@ -973,78 +754,78 @@
         <div class="flex-1 overflow-y-auto p-4 space-y-5 bg-bg-light">
           <div class="grid gap-3 md:grid-cols-2">
             <div class="panel-card">
-              <div class="text-sm font-semibold text-gray-800">领导班子 · 效率报表</div>
+              <div class="text-sm font-semibold text-gray-800">服务量概览</div>
               <div class="mt-3 grid grid-cols-3 gap-2 text-sm text-gray-800">
                 <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">今日对话</div>
-                  <div class="text-base font-semibold text-primary">156 次</div>
+                  <div class="text-[11px] text-gray-500">会话总量</div>
+                  <div class="text-base font-semibold text-primary" data-report-field="totalConversations">--</div>
                 </div>
                 <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">平均响应</div>
-                  <div class="text-base font-semibold text-emerald-600">1.8 分钟</div>
+                  <div class="text-[11px] text-gray-500">活跃会话</div>
+                  <div class="text-base font-semibold text-emerald-600" data-report-field="activeConversations">--</div>
                 </div>
+                <div class="stat-tile">
+                  <div class="text-[11px] text-gray-500">工单创建量</div>
+                  <div class="text-base font-semibold text-amber-600" data-report-field="ticketsCreated">--</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-card">
+              <div class="text-sm font-semibold text-gray-800">响应效率</div>
+              <div class="mt-3 grid grid-cols-3 gap-2 text-sm text-gray-800">
+                <div class="stat-tile">
+                  <div class="text-[11px] text-gray-500">平均首响</div>
+                  <div class="text-base font-semibold text-primary" data-report-field="avgFirstResponse">--</div>
+                </div>
+                <div class="stat-tile">
+                  <div class="text-[11px] text-gray-500">5分钟达标率</div>
+                  <div class="text-base font-semibold text-emerald-600" data-report-field="firstResponseSlaRate">--</div>
+                </div>
+                <div class="stat-tile">
+                  <div class="text-[11px] text-gray-500">30分钟同步率</div>
+                  <div class="text-base font-semibold text-amber-600" data-report-field="updateSyncRate">--</div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-card">
+              <div class="text-sm font-semibold text-gray-800">处理质量</div>
+              <div class="mt-3 grid grid-cols-3 gap-2 text-sm text-gray-800">
                 <div class="stat-tile">
                   <div class="text-[11px] text-gray-500">解决率</div>
-                  <div class="text-base font-semibold text-amber-600">85%</div>
+                  <div class="text-base font-semibold text-primary" data-report-field="resolutionRate">--</div>
+                </div>
+                <div class="stat-tile">
+                  <div class="text-[11px] text-gray-500">满意度</div>
+                  <div class="text-base font-semibold text-emerald-600" data-report-field="satisfactionScore">--</div>
+                </div>
+                <div class="stat-tile">
+                  <div class="text-[11px] text-gray-500">违规事件数</div>
+                  <div class="text-base font-semibold text-amber-600" data-report-field="violationCount">--</div>
                 </div>
               </div>
             </div>
             <div class="panel-card">
-              <div class="text-sm font-semibold text-gray-800">响应时效统计</div>
+              <div class="text-sm font-semibold text-gray-800">工单效率</div>
               <div class="mt-3 grid grid-cols-3 gap-2 text-sm text-gray-800">
                 <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">平均响应</div>
-                  <div class="text-base font-semibold text-primary">1.8 分钟</div>
+                  <div class="text-[11px] text-gray-500">工单完成量</div>
+                  <div class="text-base font-semibold text-primary" data-report-field="ticketsResolved">--</div>
                 </div>
                 <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">最快响应</div>
-                  <div class="text-base font-semibold text-emerald-600">30 秒</div>
+                  <div class="text-[11px] text-gray-500">平均处理时长</div>
+                  <div class="text-base font-semibold text-emerald-600" data-report-field="avgTicketHandleTime">--</div>
                 </div>
                 <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">最慢响应</div>
-                  <div class="text-base font-semibold text-amber-600">5 分钟</div>
-                </div>
-              </div>
-            </div>
-            <div class="panel-card">
-              <div class="text-sm font-semibold text-gray-800">客户满意度指标</div>
-              <div class="mt-3 grid grid-cols-3 gap-2 text-sm text-gray-800">
-                <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">平均满意度</div>
-                  <div class="text-base font-semibold text-primary">4.5/5.0</div>
-                </div>
-                <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">5星占比</div>
-                  <div class="text-base font-semibold text-emerald-600">75%</div>
-                </div>
-                <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">差评数</div>
-                  <div class="text-base font-semibold text-amber-600">3 次</div>
-                </div>
-              </div>
-            </div>
-            <div class="panel-card">
-              <div class="text-sm font-semibold text-gray-800">开单情况统计</div>
-              <div class="mt-3 grid grid-cols-3 gap-2 text-sm text-gray-800">
-                <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">完成订单</div>
-                  <div class="text-base font-semibold text-primary">120 单</div>
-                </div>
-                <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">完成率</div>
-                  <div class="text-base font-semibold text-emerald-600">85%</div>
-                </div>
-                <div class="stat-tile">
-                  <div class="text-[11px] text-gray-500">待处理</div>
-                  <div class="text-base font-semibold text-amber-600">18 单</div>
+                  <div class="text-[11px] text-gray-500">15分钟升级率</div>
+                  <div class="text-base font-semibold text-amber-600" data-report-field="escalationComplianceRate">--</div>
                 </div>
               </div>
             </div>
           </div>
           <div class="panel-card">
             <div class="flex items-center justify-between">
-              <div class="text-sm font-semibold text-gray-800">近7天趋势</div>
-              <div class="text-xs text-gray-500">响应时效与满意度</div>
+              <div class="text-sm font-semibold text-gray-800">会话量与首响时长趋势</div>
+              <div class="text-xs text-gray-500">统计区间内按天汇总</div>
             </div>
             <div class="mt-3 h-64">
               <canvas id="reportsChart"></canvas>
@@ -1083,7 +864,7 @@
             <div class="panel-card" id="permissions-member-panel">
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold text-gray-800">成员列表</h3>
-                <button id="permissions-add-member" class="text-xs text-primary hover:text-primary-dark">新增成员</button>
+                <button id="permissions-add-member" class="text-xs text-primary hover:text-primary-dark" data-permission="permissions.members.manage">新增成员</button>
               </div>
               <div class="relative mb-3">
                 <input id="permissions-member-search" type="text" placeholder="搜索成员/角色/组织..."
@@ -1106,7 +887,7 @@
             <div class="panel-card" id="permissions-role-panel">
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold text-gray-800">角色列表</h3>
-                <button id="permissions-add-role" class="text-xs text-primary hover:text-primary-dark">新增角色</button>
+                <button id="permissions-add-role" class="text-xs text-primary hover:text-primary-dark" data-permission="permissions.roles.manage">新增角色</button>
               </div>
               <div class="space-y-2 text-xs" id="permissions-role-list"></div>
             </div>
@@ -1115,8 +896,8 @@
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold text-gray-800">角色权限配置</h3>
                 <div class="flex items-center gap-2">
-                  <button id="permissions-reset" class="text-xs text-gray-500 hover:text-gray-700">重置</button>
-                  <button id="permissions-save-role" class="text-xs text-primary hover:text-primary-dark">保存变更</button>
+                  <button id="permissions-reset" class="text-xs text-gray-500 hover:text-gray-700" data-permission="permissions.roles.manage">重置</button>
+                  <button id="permissions-save-role" class="text-xs text-primary hover:text-primary-dark" data-permission="permissions.roles.manage">保存变更</button>
                 </div>
               </div>
               <div class="mb-3">
@@ -1214,78 +995,7 @@
                     <div>
                       <div class="flex items-center justify-between"></div>
                       <div class="mt-3 space-y-3">
-                        <div class="customer-row flex items-center justify-between text-sm">
-                          <div class="flex items-start gap-3">
-                            <div
-                              class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold">
-                              张</div>
-                            <div>
-                              <div class="flex items-center gap-2">
-                                <span class="font-medium text-gray-800">小米保障群 · conv-001</span>
-                                <span
-                                  class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">高紧急</span>
-                              </div>
-                              <p class="text-xs text-gray-600 mt-1">云服务器连接异常影响业务，需补充实例ID/IP并按 P2 优先级推进。</p>
-                            </div>
-                          </div>
-                          <div class="flex items-center gap-3">
-                            <div class="text-xs text-gray-500">质检 92 分 · 待公告</div>
-                            <div class="flex items-center gap-2">
-                              <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                                data-open-qc data-conv-id="conv-001" data-permission="quality.conversation.open">对话质检</button>
-                              <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                                onclick="openAnalysisPanelClassic()" data-permission="customer.detail.open">客户详情</button>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="customer-row flex items-center justify-between text-sm">
-                          <div class="flex items-start gap-3">
-                            <div
-                              class="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold">
-                              李</div>
-                            <div>
-                              <div class="flex items-center gap-2">
-                                <span class="font-medium text-gray-800">恒星数据 · conv-002</span>
-                                <span
-                                  class="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">处理中</span>
-                              </div>
-                              <p class="text-xs text-gray-600 mt-1">账单核验问题待确认，已派发账单指引，等待客户反馈。</p>
-                            </div>
-                          </div>
-                          <div class="flex items-center gap-3">
-                            <div class="text-xs text-gray-500">质检 86 分 · 账单核验</div>
-                            <div class="flex items-center gap-2">
-                              <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                                data-open-qc data-conv-id="conv-002" data-permission="quality.conversation.open">对话质检</button>
-                              <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                                onclick="openAnalysisPanelClassic()" data-permission="customer.detail.open">客户详情</button>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="customer-row flex items-center justify-between text-sm">
-                          <div class="flex items-start gap-3">
-                            <div
-                              class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold">
-                              王</div>
-                            <div>
-                              <div class="flex items-center gap-2">
-                                <span class="font-medium text-gray-800">万象互动 · conv-003</span>
-                                <span
-                                  class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">已解决</span>
-                              </div>
-                              <p class="text-xs text-gray-600 mt-1">功能体验反馈已处理，待回访确认满意度并收集改进建议。</p>
-                            </div>
-                          </div>
-                          <div class="flex items-center gap-3">
-                            <div class="text-xs text-gray-500">质检 90 分 · 待回访</div>
-                            <div class="flex items-center gap-2">
-                              <button class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                                data-open-qc data-conv-id="conv-003" data-permission="quality.conversation.open">对话质检</button>
-                              <button class="text-xs px-2 py-1 bg-primary text-white rounded hover:bg-primary-dark"
-                                onclick="openAnalysisPanelClassic()" data-permission="customer.detail.open">客户详情</button>
-                            </div>
-                          </div>
-                        </div>
+                        <div class="text-xs text-gray-400">暂无质检会话</div>
                       </div>
                     </div>
 
@@ -1327,7 +1037,7 @@
                     <div class="flex flex-wrap gap-2">
                       <button data-permission="tasks.command.announcement"
                         class="px-3 py-1.5 text-xs rounded-full bg-white border border-gray-200 hover:border-primary hover:text-primary task-agent-chip"
-                        data-command="对conv-001生成公告，给受影响客户群发">公告生成</button>
+                        data-command="生成公告并群发受影响客户">公告生成</button>
                       <button data-permission="tasks.command.daily"
                         class="px-3 py-1.5 text-xs rounded-full bg-white border border-gray-200 hover:border-primary hover:text-primary task-agent-chip"
                         data-command="请每日 9:00 巡检认证服务并生成质检任务">每日巡检</button>
@@ -1358,13 +1068,13 @@
       <div class="analysis-header flex items-start justify-between gap-4 border-b border-gray-200 p-4">
         <div>
           <div class="flex flex-wrap items-center gap-2">
-              <h3 class="text-lg font-semibold" id="analysis-case-title">小米保障群 · 云服务器无法连接</h3>
-            <span class="analysis-chip chip-urgent" id="analysis-urgency-chip">高紧急</span>
-            <span class="analysis-chip chip-sla" id="analysis-sla-chip">VIP</span>
-            <span class="analysis-chip chip-impact" id="analysis-impact-chip">业务受阻</span>
+              <h3 class="text-lg font-semibold" id="analysis-case-title">待选择会话 · --</h3>
+            <span class="analysis-chip chip-ghost" id="analysis-urgency-chip">暂无数据</span>
+            <span class="analysis-chip chip-ghost" id="analysis-sla-chip">暂无数据</span>
+            <span class="analysis-chip chip-ghost" id="analysis-impact-chip">暂无数据</span>
           </div>
           <p class="text-sm text-gray-600 mt-2 w-full" id="analysis-case-summary">
-            智能摘要：云服务器连接异常影响业务，已请求补充实例ID/IP并按 P2 优先级推进。</p>
+            智能摘要：暂无</p>
         </div>
         <div class="flex flex-shrink-0 items-center gap-2">
           <button
@@ -1390,10 +1100,10 @@
                 <div class="panel-card">
                   <div class="flex items-start justify-between gap-3">
                     <div class="flex items-start gap-3">
-                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-primary font-semibold">张</div>
+                      <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-primary font-semibold">?</div>
                       <div>
-                        <div class="text-base font-semibold" id="customer-name">张三</div>
-                        <div class="text-sm text-gray-600" id="customer-title">ABC科技有限公司 | 技术总监</div>
+                        <div class="text-base font-semibold" id="customer-name">客户</div>
+                        <div class="text-sm text-gray-600" id="customer-title">-</div>
                         <div class="mt-2 flex flex-wrap gap-2 text-xs" id="customer-tags"></div>
                       </div>
                     </div>
@@ -1406,13 +1116,13 @@
                   </div>
                   <div class="mt-3 grid sm:grid-cols-3 gap-3 text-sm">
                     <div class="flex items-center gap-2">
-                      <i class="fa fa-phone text-gray-500 w-4"></i><span id="customer-phone">138****5678</span>
+                      <i class="fa fa-phone text-gray-500 w-4"></i><span id="customer-phone">-</span>
                     </div>
                     <div class="flex items-center gap-2">
-                      <i class="fa fa-envelope text-gray-500 w-4"></i><span id="customer-email">zhang@abc-tech.com</span>
+                      <i class="fa fa-envelope text-gray-500 w-4"></i><span id="customer-email">-</span>
                     </div>
                     <div class="flex items-center gap-2">
-                      <i class="fa fa-wechat text-gray-500 w-4"></i><span id="customer-wechat">ZhangSan_WX</span>
+                      <i class="fa fa-wechat text-gray-500 w-4"></i><span id="customer-wechat">-</span>
                     </div>
                   </div>
                   <div class="mt-4 flex items-center justify-between text-xs text-gray-500">
@@ -1422,23 +1132,23 @@
                   <div class="grid grid-cols-2 gap-2 mt-4 text-sm">
                     <div class="stat-tile">
                       <p class="text-[11px] text-gray-500">年度合同金额</p>
-                      <p class="text-base font-semibold text-primary" id="customer-contract-amount">¥128,000</p>
+                      <p class="text-base font-semibold text-primary" id="customer-contract-amount">-</p>
                     </div>
                     <div class="stat-tile">
                       <p class="text-[11px] text-gray-500">客户满意度</p>
-                      <p class="text-base font-semibold text-green-600" id="customer-satisfaction">4.5/5.0</p>
+                      <p class="text-base font-semibold text-green-600" id="customer-satisfaction">-</p>
                     </div>
                     <div class="stat-tile">
                       <p class="text-[11px] text-gray-500">合作时长</p>
-                      <p class="text-base font-semibold text-purple-600" id="customer-duration">2年3个月</p>
+                      <p class="text-base font-semibold text-purple-600" id="customer-duration">-</p>
                     </div>
                     <div class="stat-tile">
                       <p class="text-[11px] text-gray-500">客户等级/到期</p>
                       <p class="text-sm font-semibold flex items-center gap-2">
-                        <span id="customer-sla">VIP</span>
-                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-green-100 text-green-800" id="customer-sla-status">有效</span>
+                        <span id="customer-sla">-</span>
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-green-100 text-green-800" id="customer-sla-status">-</span>
                       </p>
-                      <p class="text-[11px] text-gray-500 mt-1">到期：<span id="customer-expire">2023-12-31</span></p>
+                      <p class="text-[11px] text-gray-500 mt-1">到期：<span id="customer-expire">-</span></p>
                     </div>
                   </div>
                   <div class="mt-3 text-sm">
@@ -1453,14 +1163,14 @@
                       <h4 class="text-sm font-medium text-gray-700">群公告</h4>
                       <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">最新</span>
                     </div>
-                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">云服务器连接异常，已启动高优排查。请提供实例ID/IP以便加速定位。</p>
+                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">暂无自动生成的行动建议。</p>
                   </div>
                   <div class="panel-card">
                     <div class="flex items-center justify-between">
                       <h4 class="text-sm font-medium text-gray-700">群备注</h4>
                       <span class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">内部</span>
                     </div>
-                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">客户为云服务器核心业务群聊，需同步排查进展并保持每 10 分钟更新节奏。</p>
+                    <p class="mt-2 text-xs text-gray-600 leading-relaxed">暂无策略提醒。</p>
                   </div>
                 </div>
 
@@ -1469,11 +1179,9 @@
                     <h4 class="text-sm font-medium text-gray-700">当前客情摘要</h4>
                     <button class="text-xs text-primary hover:underline" onclick="document.querySelector('[data-tab=&quot;history&quot;][data-tab-group=&quot;analysis&quot;]').click()" data-permission="customer.history.view">查看历史对话</button>
                   </div>
-                  <p class="mt-2 text-sm text-gray-700 leading-relaxed">客户反馈云服务器无法连接，业务受影响；当前情绪急切，需要快速给出排查进展。</p>
+                  <p class="mt-2 text-sm text-gray-700 leading-relaxed">暂无对话摘要。</p>
                   <div class="mt-3 flex flex-wrap gap-2 text-[11px]">
-                    <span class="px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-100">客情状态：紧急</span>
-                    <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">情绪：急切</span>
-                    <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">建议：15分钟内同步进展</span>
+                    <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">暂无数据</span>
                   </div>
                 </div>
               </div>
@@ -1623,13 +1331,12 @@
 
       <div id="ai-assistant-drawer" class="ai-assistant-drawer hidden flex flex-col h-full">
         <div class="ai-assistant-header flex items-start justify-between gap-4 border-b border-gray-200 p-4">
-          <div>
-            <div class="text-xs text-gray-500 uppercase tracking-wide mb-1">AI辅助面板</div>
+          <div id="ai-assistant-meta">
             <div class="flex flex-wrap items-center gap-2">
-              <h3 id="ai-assistant-title" class="text-lg font-semibold text-gray-900">智能建议中心</h3>
-              <span id="ai-assistant-badge" class="analysis-chip chip-info">待选择</span>
+              <h3 id="ai-assistant-title" class="text-lg font-semibold text-gray-900"></h3>
+              <span id="ai-assistant-badge" class="analysis-chip chip-info"></span>
             </div>
-            <p id="ai-assistant-desc" class="text-sm text-gray-600 mt-2 w-full">点击下方快捷功能展示回复话术或解决步骤。</p>
+            <p id="ai-assistant-desc" class="text-sm text-gray-600 mt-2 w-full"></p>
           </div>
           <div class="flex flex-shrink-0 items-center gap-2">
             <button class="px-3 py-2 text-xs bg-primary text-white rounded-full hover:bg-primary-dark flex items-center gap-2" onclick="toggleRightSidebar(false)">
@@ -1648,39 +1355,13 @@
                   </h4>
                   <span class="text-[11px] text-gray-500">根据当前会话自动生成</span>
                 </div>
-                <div class="ai-panel-card ai-panel-card--compact bg-slate-50 border border-slate-200">
-                  <div class="flex items-center justify-between gap-3">
-                    <p class="text-xs text-gray-600">信息获取不清晰，需要做问题澄清</p>
-                    <button class="ai-panel-chip" data-action="clarify" data-permission="actions.clarify">问题澄清</button>
-                  </div>
-                </div>
                 <div id="ai-reply-list" class="space-y-3">
-                  <div class="ai-panel-card">
-                    <div>
-                      <div class="text-xs text-gray-400 mb-1">方案 A · 稳定情绪</div>
-                      <p class="text-sm text-gray-700">非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。</p>
-                      <div class="mt-3 flex justify-end">
-                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="非常抱歉给您带来不便。我们已确认认证服务异常，技术团队正在紧急修复，预计 15 分钟内恢复。期间请保持账号不变，我们会同步最新进展。" data-permission="ai.reply.adopt">采纳</button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="ai-panel-card">
-                    <div>
-                      <div class="text-xs text-gray-400 mb-1">方案 B · 明确排查</div>
-                      <p class="text-sm text-gray-700">我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。</p>
-                      <div class="mt-3 flex justify-end">
-                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们正在排查登录失败原因，当前优先检查认证与网关服务状态。请问是否有新增账号或密码重置操作？如有相关截图也欢迎补充。" data-permission="ai.reply.adopt">采纳</button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="ai-panel-card">
-                    <div>
-                      <div class="text-xs text-gray-400 mb-1">方案 C · 安抚 + 补偿口径</div>
-                      <p class="text-sm text-gray-700">我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。</p>
-                      <div class="mt-3 flex justify-end">
-                        <button class="ai-reply-adopt text-xs px-3 py-1 bg-primary text-white rounded-full hover:bg-primary-dark" data-suggestion="我们已启动应急响应并安排专人跟进，预计很快恢复。为避免影响您业务，我们将优先处理该问题，并在恢复后提供补偿方案建议。" data-permission="ai.reply.adopt">采纳</button>
-                      </div>
-                    </div>
+                  <div class="ai-panel-card text-xs text-gray-600 flex flex-col items-center justify-center gap-2 py-6">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M6 4h12a1 1 0 0 1 1 1v12a4 4 0 0 1-4 4H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke="#cbd5e1" stroke-width="1.5"/>
+                      <path d="M8 9h8M8 12h5M8 15h6" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <div>暂无数据</div>
                   </div>
                 </div>
               </div>
@@ -1692,13 +1373,27 @@
                   </h4>
                   <span class="text-[11px] text-gray-500">仅提供建议</span>
                 </div>
-                <div class="ai-panel-card ai-panel-card--compact">
-                  <ol id="ai-solution-steps" class="list-decimal pl-5 space-y-2 text-sm text-gray-700">
-                  </ol>
-                </div>
+                <ol id="ai-solution-steps" class="mt-2 list-decimal list-inside pl-0 space-y-2 text-sm text-gray-700">
+                  <li class="list-none">
+                    <div class="ai-panel-card text-xs text-gray-600 flex flex-col items-center justify-center gap-2 py-6">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M6 4h12a1 1 0 0 1 1 1v12a4 4 0 0 1-4 4H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <path d="M8 9h8M8 12h5M8 15h6" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round"/>
+                      </svg>
+                      <div>暂无数据</div>
+                    </div>
+                  </li>
+                </ol>
                 <div>
                   <h5 class="text-xs font-semibold text-gray-500 uppercase tracking-wide">参考资料</h5>
                   <div id="ai-solution-references" class="mt-2 space-y-2">
+                    <div class="ai-panel-card text-xs text-gray-600 flex flex-col items-center justify-center gap-2 py-6">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M6 4h12a1 1 0 0 1 1 1v12a4 4 0 0 1-4 4H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <path d="M8 9h8M8 12h5M8 15h6" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round"/>
+                      </svg>
+                      <div>暂无数据</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1751,19 +1446,19 @@
                 <div class="grid grid-cols-2 gap-2 text-sm">
                   <div class="stat-tile">
                     <div class="text-[11px] text-gray-500">需求总量</div>
-                    <div class="text-base font-semibold text-primary" id="req-total-count">0</div>
+                    <div class="text-base font-semibold text-primary" id="req-total-count">暂无数据</div>
                   </div>
                   <div class="stat-tile">
                     <div class="text-[11px] text-gray-500">待处理</div>
-                    <div class="text-base font-semibold text-amber-600" id="req-pending-count">0</div>
+                    <div class="text-base font-semibold text-amber-600" id="req-pending-count">暂无数据</div>
                   </div>
                   <div class="stat-tile">
                     <div class="text-[11px] text-gray-500">已完成</div>
-                    <div class="text-base font-semibold text-emerald-600" id="req-done-count">0</div>
+                    <div class="text-base font-semibold text-emerald-600" id="req-done-count">暂无数据</div>
                   </div>
                   <div class="stat-tile">
                     <div class="text-[11px] text-gray-500">未创建卡片</div>
-                    <div class="text-base font-semibold text-red-600" id="req-uncreated-count">0</div>
+                    <div class="text-base font-semibold text-red-600" id="req-uncreated-count">暂无数据</div>
                   </div>
                 </div>
                 <div class="grid gap-3">
@@ -1826,6 +1521,9 @@
         </div>
         <div class="p-4 space-y-3 text-sm text-gray-700">
           <div class="grid md:grid-cols-2 gap-3 text-xs text-gray-500">
+            <div>文档ID：<span id="knowledge-detail-id" class="text-gray-700"></span></div>
+            <div>解析ID：<span id="knowledge-detail-upload-id" class="text-gray-700"></span></div>
+            <div>解析进度：<span id="knowledge-detail-progress" class="text-gray-700"></span></div>
             <div>分类：<span id="knowledge-detail-category" class="text-gray-700"></span></div>
             <div>标签：<span id="knowledge-detail-tags" class="text-gray-700"></span></div>
             <div>负责人：<span id="knowledge-detail-owner" class="text-gray-700"></span></div>
@@ -1838,8 +1536,10 @@
             <div id="knowledge-detail-summary" class="mt-1 text-sm text-gray-700"></div>
           </div>
           <div>
-            <div class="text-xs text-gray-500">内容</div>
-            <div id="knowledge-detail-content" class="mt-1 text-sm text-gray-700 whitespace-pre-line"></div>
+            <div class="text-xs text-gray-500">文档预览</div>
+            <div class="mt-2 rounded-xl border border-gray-200 bg-gray-50 p-3">
+              <div id="knowledge-detail-content" class="max-h-64 overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap leading-relaxed"></div>
+            </div>
           </div>
           <div>
             <div class="text-xs text-gray-500 flex items-center justify-between">
@@ -1866,10 +1566,6 @@
           </button>
         </div>
         <div class="p-4 space-y-4 text-sm text-gray-700">
-          <div>
-            <label class="text-xs text-gray-500">文档标题</label>
-            <input id="knowledge-add-title" type="text" readonly class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600 cursor-not-allowed" placeholder="上传后自动生成">
-          </div>
           <div>
             <label class="text-xs text-gray-500">分类</label>
             <select id="knowledge-add-category" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
@@ -1990,7 +1686,7 @@
     <div id="permissions-member-modal" class="hidden fixed inset-0 bg-black/40 z-[140] flex items-center justify-center px-4">
       <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900">新增成员</h3>
+          <h3 class="text-sm font-semibold text-gray-900" id="permissions-member-modal-title">新增成员</h3>
           <button id="permissions-member-close" class="text-gray-400 hover:text-gray-600">
             <i class="fa fa-times"></i>
           </button>
@@ -1999,6 +1695,16 @@
           <div>
             <label class="text-xs text-gray-500">成员姓名</label>
             <input id="permissions-member-name" type="text" placeholder="如：张敏"
+              class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">邮箱</label>
+            <input id="permissions-member-email" type="email" placeholder="如：name@example.com"
+              class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500">手机号</label>
+            <input id="permissions-member-phone" type="tel" placeholder="如：13800000000"
               class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
           </div>
           <div>
@@ -2015,11 +1721,16 @@
             <input id="permissions-member-badge" type="text" placeholder="如：对话/知识应用"
               class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
           </div>
-          <p id="permissions-member-error" class="hidden text-xs text-red-600">请填写成员姓名与角色</p>
+          <div id="permissions-member-password-field">
+            <label class="text-xs text-gray-500">初始密码</label>
+            <input id="permissions-member-password" type="password" placeholder="至少8位，包含大小写与数字"
+              class="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary">
+          </div>
+          <p id="permissions-member-error" class="hidden text-xs text-red-600">请填写成员姓名、角色及登录信息</p>
         </div>
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
           <button id="permissions-member-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
-          <button id="permissions-member-save" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">保存</button>
+          <button id="permissions-member-save" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark" data-permission="permissions.members.manage">保存</button>
         </div>
       </div>
     </div>
@@ -2038,7 +1749,7 @@
         </div>
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
           <button id="permissions-member-delete-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
-          <button id="permissions-member-delete-confirm" class="px-3 py-2 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700">确认删除</button>
+          <button id="permissions-member-delete-confirm" class="px-3 py-2 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700" data-permission="permissions.members.manage">确认删除</button>
         </div>
       </div>
     </div>
@@ -2047,7 +1758,7 @@
     <div id="permissions-role-modal" class="hidden fixed inset-0 bg-black/40 z-[140] flex items-center justify-center px-4">
       <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 class="text-sm font-semibold text-gray-900">新增角色</h3>
+          <h3 class="text-sm font-semibold text-gray-900" id="permissions-role-modal-title">新增角色</h3>
           <button id="permissions-role-close" class="text-gray-400 hover:text-gray-600">
             <i class="fa fa-times"></i>
           </button>
@@ -2067,7 +1778,7 @@
         </div>
         <div class="flex justify-end gap-2 px-4 py-3 border-t border-gray-200">
           <button id="permissions-role-cancel" class="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">取消</button>
-          <button id="permissions-role-save" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark">保存</button>
+          <button id="permissions-role-save" class="px-3 py-2 text-xs rounded-lg bg-primary text-white hover:bg-primary-dark" data-permission="permissions.roles.manage">保存</button>
         </div>
       </div>
     </div>
@@ -2082,6 +1793,55 @@
         const userMenuButton = document.getElementById('user-menu-button');
         const userMenuDropdown = document.getElementById('user-menu-dropdown');
         const logoutButton = document.getElementById('logout-button');
+        const userNameEl = document.getElementById('user-display-name');
+        const userInitialEl = document.getElementById('user-display-initial');
+
+        const updateUserDisplay = (user) => {
+          if (!user) {
+            return;
+          }
+          const displayName = user.name || user.email || user.phone || '用户';
+          if (userNameEl) {
+            userNameEl.textContent = displayName;
+          }
+          if (userInitialEl) {
+            userInitialEl.textContent = displayName.charAt(0) || '?';
+          }
+        };
+
+        const ensureAuthenticated = async () => {
+          if (!window.config?.authToken) {
+            window.location.href = 'index.html';
+            return;
+          }
+
+          const cachedUser = localStorage.getItem('authUser');
+          if (cachedUser) {
+            try {
+              updateUserDisplay(JSON.parse(cachedUser));
+            } catch (_error) {
+              localStorage.removeItem('authUser');
+            }
+          }
+
+          try {
+            const response = await fetch(`${window.config.apiBaseUrl}/api/auth/me`, {
+              headers: {
+                Authorization: `Bearer ${window.config.authToken}`,
+              },
+            });
+            const result = await response.json();
+            if (!response.ok || !result?.success) {
+              throw new Error(result?.error || 'unauthorized');
+            }
+            localStorage.setItem('authUser', JSON.stringify(result.data));
+            updateUserDisplay(result.data);
+          } catch (_error) {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('authUser');
+            window.location.href = 'index.html';
+          }
+        };
 
         // 切换下拉菜单显示/隐藏
         userMenuButton.addEventListener('click', function(e) {
@@ -2103,11 +1863,14 @@
             window.config.authToken = null;
           }
           localStorage.removeItem('authToken');
+          localStorage.removeItem('authUser');
           sessionStorage.clear();
 
           // 跳转到登录页
           window.location.href = 'index.html';
         });
+
+        ensureAuthenticated();
 
       });
     </script>

@@ -379,7 +379,7 @@ export class CustomerSupportSaga {
     // TODO: 获取客户等级
     // if (customer.isVIP) return true;
 
-    // 规则4: SLA告警 → 需要人工审核
+    // 规则4: 客户等级告警 → 需要人工审核
     if (conversation.slaStatus === 'warning') {
       return true;
     }

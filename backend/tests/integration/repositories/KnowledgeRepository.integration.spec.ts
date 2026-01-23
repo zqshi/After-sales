@@ -26,7 +26,7 @@ describe('KnowledgeRepository (integration)', () => {
   it('persists and retrieves a knowledge item', async () => {
     const item = KnowledgeItem.create({
       title: 'Service level overview',
-      content: 'Details about SLA commitments',
+      content: 'Details about 客户等级 commitments',
       category: KnowledgeCategory.create('guide'),
       tags: ['sla', 'guide'],
       source: 'manual',

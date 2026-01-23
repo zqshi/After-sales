@@ -3,7 +3,7 @@ const DEFAULT_BRIDGED_EVENT_TYPES = [
   'ConversationAssigned',
   'MessageSent',
   'ConversationClosed',
-  'SLAViolated',
+  'CustomerLevelViolated',
   'RequirementCreated',
   'RequirementStatusChanged',
   'RequirementPriorityChanged',

@@ -12,6 +12,8 @@ export interface SendMessageRequest {
   senderId: string;
   senderType: 'internal' | 'external';
   content: string;
+  metadata?: Record<string, unknown>;
+  conversationMetadata?: Record<string, unknown>;
 }
 
 export interface SendMessageResponse {
@@ -51,10 +53,15 @@ export class SendMessageUseCase {
 
     // 3. 执行领域逻辑
     const senderType = request.senderType === 'internal' ? 'agent' : 'customer';
+    if (request.conversationMetadata) {
+      conversation.mergeMetadata(request.conversationMetadata);
+    }
+
     conversation.sendMessage({
       senderId: request.senderId,
       senderType,
       content: request.content,
+      metadata: request.metadata,
     });
 
     // 4. 发布领域事件（先抓取后保存）

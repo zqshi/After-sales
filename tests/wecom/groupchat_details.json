@@ -1,0 +1,155 @@
+{
+  "errcode": 0,
+  "errmsg": "ok",
+  "group_chat_details": {
+    "wrOgQhDgAAMYQiS5ol9G7gK9JVAAAA": {
+      "group_chat": {
+        "chat_id": "wrOgQhDgAAMYQiS5ol9G7gK9JVAAAA",
+        "name": "盛世星火-金山云客户服务群",
+        "owner": "support_01",
+        "create_time": 1720693681,
+        "notice": "UID: 2000093790\n入公司名称: 北京盛世星火教育科技有限责任公司",
+        "member_list": [
+          {
+            "userid": "support_01",
+            "type": 1,
+            "join_time": 1720693800,
+            "join_scene": 1,
+            "group_nickname": "王岚(客服)",
+            "name": "王岚"
+          },
+          {
+            "userid": "admin_user",
+            "type": 1,
+            "join_time": 1720693810,
+            "join_scene": 1,
+            "group_nickname": "测试账号(管理员)",
+            "name": "测试账号"
+          },
+          {
+            "userid": "yolo",
+            "type": 2,
+            "join_time": 1720693681,
+            "join_scene": 1,
+            "invitor": { "userid": "support_01" },
+            "group_nickname": "陆瑾",
+            "name": "陆瑾"
+          },
+          {
+            "userid": "DunDunEr",
+            "type": 2,
+            "join_time": 1720693681,
+            "join_scene": 1,
+            "invitor": { "userid": "support_01" },
+            "group_nickname": "张金雷",
+            "name": "张金雷"
+          }
+        ],
+        "admin_list": [
+          { "userid": "support_01" },
+          { "userid": "admin_user" }
+        ],
+        "member_version": "71217227bbd112ecfe3a49c482195cb4"
+      }
+    },
+    "wrOgQhDgAAcwMTB7YmDkbeBsAAAA": {
+      "group_chat": {
+        "chat_id": "wrOgQhDgAAcwMTB7YmDkbeBsAAAA",
+        "name": "极光云-企业服务群",
+        "owner": "support_02",
+        "create_time": 1721600000,
+        "notice": "UID: 2000100088\n入公司名称: 上海极光云计算有限公司",
+        "member_list": [
+          {
+            "userid": "support_02",
+            "type": 1,
+            "join_time": 1721607300,
+            "join_scene": 1,
+            "group_nickname": "艾琳(客服)",
+            "name": "艾琳"
+          },
+          {
+            "userid": "admin_user",
+            "type": 1,
+            "join_time": 1721607350,
+            "join_scene": 1,
+            "group_nickname": "测试账号(管理员)",
+            "name": "测试账号"
+          },
+          {
+            "userid": "hong",
+            "type": 2,
+            "join_time": 1721603600,
+            "join_scene": 2,
+            "group_nickname": "洪杰",
+            "name": "洪杰"
+          },
+          {
+            "userid": "aileen",
+            "type": 2,
+            "join_time": 1721607200,
+            "join_scene": 1,
+            "invitor": { "userid": "support_02" },
+            "group_nickname": "艾琳(客户)",
+            "name": "艾琳"
+          }
+        ],
+        "admin_list": [
+          { "userid": "support_02" },
+          { "userid": "admin_user" }
+        ],
+        "member_version": "5c8a9f12d9a39c9d8d621fb7fa1c99c1"
+      }
+    },
+    "wrOgQhDgAALvK0KZtD5wq2QxAAAA": {
+      "group_chat": {
+        "chat_id": "wrOgQhDgAALvK0KZtD5wq2QxAAAA",
+        "name": "银河智云-技术支持群",
+        "owner": "support_03",
+        "create_time": 1721800000,
+        "notice": "UID: 2000100666\n入公司名称: 深圳银河智云科技有限公司",
+        "member_list": [
+          {
+            "userid": "support_03",
+            "type": 1,
+            "join_time": 1721807300,
+            "join_scene": 1,
+            "group_nickname": "马琦(客服)",
+            "name": "马琦"
+          },
+          {
+            "userid": "admin_user",
+            "type": 1,
+            "join_time": 1721807350,
+            "join_scene": 1,
+            "group_nickname": "测试账号(管理员)",
+            "name": "测试账号"
+          },
+          {
+            "userid": "daisy",
+            "type": 2,
+            "join_time": 1721803600,
+            "join_scene": 1,
+            "invitor": { "userid": "support_03" },
+            "group_nickname": "戴丝",
+            "name": "戴丝"
+          },
+          {
+            "userid": "mark",
+            "type": 2,
+            "join_time": 1721807200,
+            "join_scene": 1,
+            "invitor": { "userid": "support_03" },
+            "group_nickname": "马琦(客户)",
+            "name": "马琦"
+          }
+        ],
+        "admin_list": [
+          { "userid": "support_03" },
+          { "userid": "admin_user" }
+        ],
+        "member_version": "8a9f3e90e7b9f2cfe2c4d9a5d8a77510"
+      }
+    }
+  }
+}
