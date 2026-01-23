@@ -179,6 +179,24 @@ export async function imRoutes(
     await controller.sendMessage(request, reply);
   });
 
+  fastify.post('/im/messages/receipt', {
+    config: { permissions: ['im.write'] },
+  }, async (request, reply) => {
+    await controller.updateMessageReceipt(request, reply);
+  });
+
+  fastify.post('/im/reviews/submit', {
+    config: { permissions: ['im.write'] },
+  }, async (request, reply) => {
+    await controller.submitAgentReview(request, reply);
+  });
+
+  fastify.get('/im/conversations/:id/problems', {
+    config: { permissions: ['im.read'] },
+  }, async (request, reply) => {
+    await controller.getConversationProblems(request, reply);
+  });
+
   fastify.patch('/im/conversations/:id/status', {
     config: { permissions: ['im.write'] },
   }, async (request, reply) => {

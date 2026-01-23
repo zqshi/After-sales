@@ -8,6 +8,8 @@ import { createApp } from './app.js';
 import { AppDataSource } from './infrastructure/database/data-source.js';
 import { config } from './config/app.config.js';
 
+let appInstance: Awaited<ReturnType<typeof createApp>> | null = null;
+
 const start = async () => {
   try {
     // 1. 初始化数据库连接
@@ -18,6 +20,7 @@ const start = async () => {
     // 2. 创建Fastify应用（包含所有路由）
     console.log('🚀 正在初始化应用...');
     const app = await createApp(AppDataSource);
+    appInstance = app;
 
     // 3. 启动服务器
     const port = config.port;
@@ -40,6 +43,10 @@ const start = async () => {
 // 优雅关闭
 process.on('SIGINT', async () => {
   console.log('\n⏳ 正在关闭服务器...');
+  const outboxProcessor = (appInstance as any)?.outboxProcessor;
+  if (outboxProcessor) {
+    outboxProcessor.stop();
+  }
   if (AppDataSource.isInitialized) {
     await AppDataSource.destroy();
   }

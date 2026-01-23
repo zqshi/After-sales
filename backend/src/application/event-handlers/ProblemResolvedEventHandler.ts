@@ -1,0 +1,45 @@
+import { config } from '@config/app.config';
+import { ProblemResolvedEvent } from '@domain/problem/events/ProblemResolvedEvent';
+
+export class ProblemResolvedEventHandler {
+  async handle(event: ProblemResolvedEvent): Promise<void> {
+    const conversationId = event.payload.conversationId;
+
+    console.log(`[ProblemResolvedEventHandler] Triggering quality inspection for conversation: ${conversationId}`);
+
+    try {
+      const agentscopeUrl = config.agentscope.serviceUrl;
+      const inspectUrl = `${agentscopeUrl}/api/agents/inspect`;
+
+      const response = await fetch(inspectUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          conversation_id: conversationId,
+          problem_id: event.payload.problemId,
+        }),
+        signal: AbortSignal.timeout(config.agentscope.timeout),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`AgentScope API error: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      console.log(`[ProblemResolvedEventHandler] Quality inspection completed for conversation ${conversationId}:`, {
+        success: result.success,
+        quality_score: result.quality_score,
+      });
+
+      if (result.quality_score < 70) {
+        console.warn(`[ProblemResolvedEventHandler] Low quality score (${result.quality_score}) detected for conversation ${conversationId}`);
+      }
+    } catch (error) {
+      console.error(`[ProblemResolvedEventHandler] Failed to trigger quality inspection for conversation ${conversationId}:`, error);
+    }
+  }
+}

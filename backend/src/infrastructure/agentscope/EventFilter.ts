@@ -21,6 +21,12 @@ const DEFAULT_BRIDGED_EVENT_TYPES = [
   'InteractionAdded',
   'CustomerMarkedAsVIP',
   'RiskLevelChanged',
+  'ProblemCreated',
+  'ProblemStatusChanged',
+  'ProblemResolved',
+  'ProblemReopened',
+  'AgentReviewRequested',
+  'AgentReviewCompleted',
 ];
 
 export class EventFilter {

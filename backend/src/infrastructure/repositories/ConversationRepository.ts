@@ -4,6 +4,7 @@ import { validate as isUUID } from 'uuid';
 import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
 import { Conversation } from '@domain/conversation/models/Conversation';
 import { ConversationEntity } from '@infrastructure/database/entities/ConversationEntity';
+import { MessageEntity } from '@infrastructure/database/entities/MessageEntity';
 import { DomainEventEntity } from '@infrastructure/database/entities/DomainEventEntity';
 import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
 import { ConversationMapper } from './mappers/ConversationMapper';
@@ -23,11 +24,13 @@ export interface PaginationOptions {
 }
 export class ConversationRepository implements IConversationRepository {
   private repository: Repository<ConversationEntity>;
+  private messageRepository: Repository<MessageEntity>;
   private eventRepository: Repository<DomainEventEntity>;
   private outboxEventBus: OutboxEventBus;
 
   constructor(private dataSource: DataSource) {
     this.repository = dataSource.getRepository(ConversationEntity);
+    this.messageRepository = dataSource.getRepository(MessageEntity);
     this.eventRepository = dataSource.getRepository(DomainEventEntity);
     this.outboxEventBus = new OutboxEventBus(dataSource);
   }
@@ -118,6 +121,40 @@ export class ConversationRepository implements IConversationRepository {
       occurredAt: event.occurredAt,
       version: event.version,
     }));
+  }
+
+  async updateMessageReceipt(
+    messageId: string,
+    receipt: {
+      status: 'delivered' | 'read' | 'failed';
+      source?: string;
+      metadata?: Record<string, unknown>;
+      receivedAt: Date;
+    },
+    conversationId?: string,
+  ): Promise<void> {
+    const existing = await this.messageRepository.findOne({
+      where: {
+        id: messageId,
+        ...(conversationId ? { conversationId } : {}),
+      },
+    });
+
+    if (!existing) {
+      throw new Error('message not found');
+    }
+
+    const metadata = {
+      ...(existing.metadata || {}),
+      receipt: {
+        status: receipt.status,
+        source: receipt.source || 'im',
+        receivedAt: receipt.receivedAt.toISOString(),
+        ...(receipt.metadata || {}),
+      },
+    };
+
+    await this.messageRepository.update({ id: messageId }, { metadata });
   }
 
   async findByFilters(

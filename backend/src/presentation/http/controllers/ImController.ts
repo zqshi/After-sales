@@ -18,6 +18,10 @@ import { CustomerProfileResponseDTO } from '@application/dto/customer/CustomerPr
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
+import { ProblemRepository } from '@infrastructure/repositories/ProblemRepository';
+import { ReviewRequestRepository } from '@infrastructure/repositories/ReviewRequestRepository';
+import { CompleteReviewRequestUseCase } from '@application/use-cases/review/CompleteReviewRequestUseCase';
+import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
 import { config } from '@config/app.config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -48,6 +52,10 @@ export class ImController {
     private readonly conversationRepository: ConversationRepository,
     private readonly customerProfileRepository: CustomerProfileRepository,
     private readonly sendMessageUseCase: SendMessageUseCase,
+    private readonly reviewRequestRepository: ReviewRequestRepository,
+    private readonly completeReviewRequestUseCase: CompleteReviewRequestUseCase,
+    private readonly createTaskUseCase: CreateTaskUseCase,
+    private readonly problemRepository: ProblemRepository,
   ) {}
 
   /**
@@ -76,6 +84,7 @@ export class ImController {
         content: body.content,
         channel: body.channel,
         senderId: body.senderId,
+        mode: body.mode,
         metadata: body.metadata,
       });
 
@@ -224,6 +233,10 @@ export class ImController {
                 needsHumanReview:
                   processingResult.agentSuggestion.needsHumanReview,
                 reason: processingResult.agentSuggestion.reason,
+                agentName: processingResult.agentSuggestion.agentName,
+                mode: processingResult.agentSuggestion.mode,
+                reviewRequestId: processingResult.agentSuggestion.reviewRequestId,
+                recommendedTasks: processingResult.agentSuggestion.recommendedTasks || [],
               }
             : null,
           status: processingResult.status,
@@ -844,6 +857,169 @@ export class ImController {
       });
     } catch (error) {
       console.error('[ImController] sendMessage error', error);
+      reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : '服务器内部错误',
+      });
+    }
+  }
+
+  /**
+   * 更新消息回执状态
+   * POST /im/messages/receipt
+   */
+  async updateMessageReceipt(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const body = request.body as {
+        messageId: string;
+        conversationId?: string;
+        status: 'delivered' | 'read' | 'failed';
+        source?: string;
+        metadata?: Record<string, unknown>;
+        receivedAt?: string;
+      };
+
+      if (!body.messageId || !body.status) {
+        return reply.code(400).send({
+          success: false,
+          error: '缺少必需参数：messageId, status',
+        });
+      }
+
+      await this.conversationRepository.updateMessageReceipt(body.messageId, {
+        status: body.status,
+        source: body.source,
+        metadata: body.metadata,
+        receivedAt: body.receivedAt ? new Date(body.receivedAt) : new Date(),
+      }, body.conversationId);
+
+      reply.code(200).send({
+        success: true,
+        data: {
+          messageId: body.messageId,
+          status: body.status,
+        },
+      });
+    } catch (error) {
+      console.error('[ImController] updateMessageReceipt error', error);
+      reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : '服务器内部错误',
+      });
+    }
+  }
+
+  /**
+   * 提交人工审核结果
+   * POST /im/reviews/submit
+   */
+  async submitAgentReview(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const body = request.body as {
+        reviewId: string;
+        status: 'approved' | 'rejected';
+        reviewerNote?: string;
+        createTasks?: boolean;
+      };
+
+      if (!body.reviewId || !body.status) {
+        return reply.code(400).send({
+          success: false,
+          error: '缺少必需参数：reviewId, status',
+        });
+      }
+
+      const review = await this.reviewRequestRepository.findById(body.reviewId);
+      if (!review) {
+        return reply.code(404).send({
+          success: false,
+          error: '审核任务不存在',
+        });
+      }
+
+      const reviewerId = (request.user as { sub?: string } | undefined)?.sub;
+      await this.completeReviewRequestUseCase.execute({
+        reviewId: body.reviewId,
+        status: body.status === 'approved' ? 'approved' : 'rejected',
+        reviewerId,
+        reviewerNote: body.reviewerNote,
+      });
+
+      let tasksCreated: string[] = [];
+      if (body.status === 'approved' && body.createTasks !== false) {
+        const suggestion = review.suggestion as any;
+        const recommended = Array.isArray(suggestion?.recommendedTasks)
+          ? suggestion.recommendedTasks
+          : [];
+        for (const task of recommended) {
+          if (!task?.title) {
+            continue;
+          }
+          const created = await this.createTaskUseCase.execute({
+            title: task.title,
+            type: 'support',
+            conversationId: review.conversationId,
+            requirementId: task.requirementId,
+            priority: task.priority || 'medium',
+          });
+          tasksCreated.push(created.id);
+        }
+      }
+
+      reply.code(200).send({
+        success: true,
+        data: {
+          reviewId: body.reviewId,
+          status: body.status,
+          tasksCreated,
+        },
+      });
+    } catch (error) {
+      console.error('[ImController] submitAgentReview error', error);
+      reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : '服务器内部错误',
+      });
+    }
+  }
+
+  /**
+   * 获取会话问题列表
+   * GET /im/conversations/:id/problems
+   */
+  async getConversationProblems(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const problems = await this.problemRepository.findByFilters({ conversationId: id }, { limit: 50, offset: 0 });
+      reply.code(200).send({
+        success: true,
+        data: {
+          problems: problems.map((problem) => ({
+            id: problem.id,
+            conversationId: problem.conversationId,
+            customerId: problem.customerId,
+            title: problem.title,
+            description: problem.description,
+            status: problem.status,
+            intent: problem.intent,
+            confidence: problem.confidence,
+            createdAt: problem.createdAt.toISOString(),
+            updatedAt: problem.updatedAt.toISOString(),
+            resolvedAt: problem.resolvedAt?.toISOString(),
+          })),
+        },
+      });
+    } catch (error) {
+      console.error('[ImController] getConversationProblems error', error);
       reply.code(500).send({
         success: false,
         error: error instanceof Error ? error.message : '服务器内部错误',

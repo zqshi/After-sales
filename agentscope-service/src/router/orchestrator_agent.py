@@ -67,18 +67,23 @@ class OrchestratorAgent:
         """
         # Step 1: 请求分析
         analysis = await self._analyze_request(user_msg)
+        metadata = user_msg.metadata or {}
+        requested_mode = metadata.get("mode")
+        async_review = bool(metadata.get("async_review"))
 
         # Step 2: 执行模式决策
         mode = self._decide_execution_mode(analysis)
+        if requested_mode in ["agent_auto", "agent_supervised", "human_first"]:
+            mode = requested_mode
 
         # Step 3: 根据模式执行
         if mode == "human_first":
-            return await self._human_first_mode(user_msg, analysis)
+            return await self._human_first_mode(user_msg, analysis, async_review)
         elif mode == "parallel":
             # 并行模式：辅助+工程师并行处理
             return await self._execute_parallel(user_msg, analysis)
         elif mode == "agent_supervised":
-            return await self._agent_supervised_mode(user_msg)
+            return await self._agent_supervised_mode(user_msg, async_review)
         else:  # simple
             return await self._execute_simple(user_msg)
 
@@ -225,7 +230,13 @@ class OrchestratorAgent:
 
         适用场景：简单咨询、常见问题
         """
-        return await self.assistant_agent(msg)
+        response = await self.assistant_agent(msg)
+        response.metadata = {
+            **(response.metadata or {}),
+            "mode": "agent_auto",
+            "execution_mode": "simple",
+        }
+        return response
 
     async def _execute_parallel(self, msg: Msg, analysis: dict[str, Any]) -> Msg:
         """
@@ -372,12 +383,14 @@ class OrchestratorAgent:
             metadata={
                 **aggregated_metadata,
                 "confidence": min_confidence,
+                "mode": "agent_auto",
+                "execution_mode": "parallel",
                 "conversation_id": original_msg.metadata.get("conversationId"),
                 "customer_id": original_msg.metadata.get("customerId")
             }
         )
 
-    async def _agent_supervised_mode(self, msg: Msg) -> Msg:
+    async def _agent_supervised_mode(self, msg: Msg, async_review: bool = False) -> Msg:
         """
         Supervised模式：Agent处理 + 人工审核
 
@@ -392,7 +405,8 @@ class OrchestratorAgent:
         ) as hub:
             # Agent生成回复
             agent_response = await self.assistant_agent(msg)
-            confidence = agent_response.metadata.get("confidence", 1.0)
+            agent_metadata = agent_response.metadata or {}
+            confidence = agent_metadata.get("confidence", 1.0)
 
             # 低置信度需要人工审核
             if confidence < 0.7:
@@ -409,6 +423,16 @@ class OrchestratorAgent:
                     },
                 )
 
+                if async_review:
+                    agent_response.metadata = {
+                        **agent_metadata,
+                        "mode": "agent_supervised",
+                        "execution_mode": "agent_supervised_async",
+                        "needs_review": True,
+                        "confidence": confidence,
+                    }
+                    return agent_response
+
                 # 推送到前端供人工审核
                 await self._send_review_request_to_frontend(msg, agent_response, confidence)
 
@@ -420,15 +444,24 @@ class OrchestratorAgent:
                     return await self.human_agent(msg)
 
                 # 否则使用Agent版本（人工确认）
-                agent_response.metadata["human_reviewed"] = True
-                agent_response.metadata["reviewer_feedback"] = feedback.content
+                agent_response.metadata = {
+                    **(agent_response.metadata or {}),
+                    "human_reviewed": True,
+                    "reviewer_feedback": feedback.content,
+                    "mode": "agent_supervised",
+                }
                 return agent_response
 
             # 高置信度直接返回
+            agent_response.metadata = {
+                **agent_metadata,
+                "mode": "agent_supervised",
+                "execution_mode": "agent_supervised",
+            }
             return agent_response
 
     async def _human_first_mode(
-        self, msg: Msg, analysis: dict[str, Any] | None = None
+        self, msg: Msg, analysis: dict[str, Any] | None = None, async_review: bool = False
     ) -> Msg:
         """
         Human First模式：人工优先，Agent提供建议
@@ -468,8 +501,27 @@ class OrchestratorAgent:
         # 推送建议到前端
         await self._send_suggestions_to_frontend(msg, suggestions, context)
 
+        if async_review:
+            return Msg(
+                name="Orchestrator",
+                content="已转人工处理，稍后由客服跟进。",
+                role="assistant",
+                metadata={
+                    **(msg.metadata or {}),
+                    "mode": "human_first",
+                    "execution_mode": "human_first_async",
+                    "needs_review": True,
+                },
+            )
+
         # 人工处理
-        return await self.human_agent(msg)
+        response = await self.human_agent(msg)
+        response.metadata = {
+            **(response.metadata or {}),
+            "mode": "human_first",
+            "execution_mode": "human_first",
+        }
+        return response
 
     # ========== 辅助方法 ==========
 

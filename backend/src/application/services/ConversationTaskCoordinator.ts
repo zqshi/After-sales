@@ -12,17 +12,23 @@
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
+import { ProblemRepository } from '@infrastructure/repositories/ProblemRepository';
 import { CreateConversationUseCase } from '../use-cases/CreateConversationUseCase';
 import { CreateRequirementUseCase } from '../use-cases/requirement/CreateRequirementUseCase';
 import { CreateTaskUseCase } from '../use-cases/task/CreateTaskUseCase';
 import { CloseConversationUseCase } from '../use-cases/CloseConversationUseCase';
 import { SendMessageUseCase } from '../use-cases/SendMessageUseCase';
 import { AssociateRequirementWithConversationUseCase } from '../use-cases/requirement/AssociateRequirementWithConversationUseCase';
+import { CreateProblemUseCase } from '../use-cases/problem/CreateProblemUseCase';
+import { UpdateProblemStatusUseCase } from '../use-cases/problem/UpdateProblemStatusUseCase';
+import { CreateReviewRequestUseCase } from '../use-cases/review/CreateReviewRequestUseCase';
 import { AiService } from './AiService';
 import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
 import { EventBus } from '@infrastructure/events/EventBus';
 import { ConversationClosedEvent } from '@domain/conversation/events/ConversationClosedEvent';
 import { config } from '@config/app.config';
+import { AgentMode } from '@domain/conversation/models/Conversation';
+import { AgentScopeChatClient } from '@infrastructure/agentscope/AgentScopeChatClient';
 
 /**
  * 客户消息输入（IM集成接收的消息）
@@ -32,6 +38,7 @@ export interface IncomingMessage {
   content: string;
   channel: string; // 'feishu' | 'wecom' | 'web'
   senderId: string;
+  mode?: AgentMode;
   metadata?: Record<string, unknown>;
 }
 
@@ -54,6 +61,10 @@ export interface AgentSuggestion {
   conversationId: string;
   suggestedReply: string;
   confidence: number;
+  agentName?: string;
+  mode?: string;
+  metadata?: Record<string, unknown>;
+  reviewRequestId?: string;
   detectedRequirements: RequirementAnalysis[];
   recommendedTasks: Array<{
     title: string;
@@ -77,24 +88,29 @@ export interface ProcessingResult {
 
 export class ConversationTaskCoordinator {
   private requirementDetector: RequirementDetectorService;
+  private readonly agentScopeClient: AgentScopeChatClient;
 
   constructor(
     private readonly conversationRepository: ConversationRepository,
     private readonly taskRepository: TaskRepository,
     private readonly requirementRepository: RequirementRepository,
+    private readonly problemRepository: ProblemRepository,
     private readonly createConversationUseCase: CreateConversationUseCase,
     private readonly createRequirementUseCase: CreateRequirementUseCase,
     private readonly createTaskUseCase: CreateTaskUseCase,
     private readonly closeConversationUseCase: CloseConversationUseCase,
     private readonly sendMessageUseCase: SendMessageUseCase,
     private readonly associateRequirementWithConversationUseCase: AssociateRequirementWithConversationUseCase,
+    private readonly createProblemUseCase: CreateProblemUseCase,
+    private readonly updateProblemStatusUseCase: UpdateProblemStatusUseCase,
+    private readonly createReviewRequestUseCase: CreateReviewRequestUseCase,
     private readonly aiService: AiService,
     private readonly eventBus: EventBus,
   ) {
     this.requirementDetector = new RequirementDetectorService();
+    this.agentScopeClient = new AgentScopeChatClient();
 
-    // Phase 2: 订阅ConversationClosedEvent，触发异步质检
-    this.eventBus.subscribe('ConversationClosed', this.handleConversationClosed.bind(this));
+    // Phase 2: 质检触发改由ProblemResolved事件处理
   }
 
   /**
@@ -126,6 +142,7 @@ export class ConversationTaskCoordinator {
         channel: msg.channel,
         priority: 'normal',
         metadata: this.extractConversationMetadata(msg.metadata),
+        mode: msg.mode,
         initialMessage: {
           senderId: msg.senderId,
           senderType: 'external',
@@ -146,6 +163,14 @@ export class ConversationTaskCoordinator {
         metadata: msg.metadata,
         conversationMetadata: this.extractConversationMetadata(msg.metadata),
       });
+
+      if (msg.mode) {
+        const existing = await this.conversationRepository.findById(conversationId);
+        if (existing) {
+          existing.setMode(msg.mode);
+          await this.conversationRepository.save(existing);
+        }
+      }
     }
 
     // Step 2: AI分析需求
@@ -199,23 +224,27 @@ export class ConversationTaskCoordinator {
     }
 
     // Step 4: Agent生成回复建议
-    const suggestedReply = await this.generateAgentReply(
+    const agentReply = await this.generateAgentReply(
       conversationId,
       msg.content,
       detectedRequirements,
+      msg,
     );
 
     // Step 5: 决定是否需要人工审核
-    const needsHumanReview = this.shouldRequireHumanReview({
-      confidence: Math.max(...detectedRequirements.map((r) => r.confidence), 0.5),
+    const needsHumanReview = agentReply.needsHumanReview ?? this.shouldRequireHumanReview({
+      confidence: agentReply.confidence ?? Math.max(...detectedRequirements.map((r) => r.confidence), 0.5),
       hasRequirements: detectedRequirements.length > 0,
       tasksCreated: tasksCreated.length,
     });
 
     const agentSuggestion: AgentSuggestion = {
       conversationId,
-      suggestedReply,
-      confidence: Math.max(...detectedRequirements.map((r) => r.confidence), 0.8),
+      suggestedReply: agentReply.suggestedReply,
+      confidence: agentReply.confidence ?? Math.max(...detectedRequirements.map((r) => r.confidence), 0.8),
+      agentName: agentReply.agentName,
+      mode: agentReply.mode,
+      metadata: agentReply.metadata,
       detectedRequirements,
       recommendedTasks,
       needsHumanReview,
@@ -226,7 +255,19 @@ export class ConversationTaskCoordinator {
 
     // Step 6: 推送给前端（WebSocket或HTTP轮询）
     if (needsHumanReview) {
-      await this.notifyHumanReview(agentSuggestion);
+      agentSuggestion.reviewRequestId = await this.notifyHumanReview(agentSuggestion);
+    }
+
+    try {
+      await this.updateProblemLifecycle({
+        conversationId,
+        customerId: msg.customerId,
+        message: msg.content,
+        requirementsCreated,
+        tasksCreated,
+      });
+    } catch (error) {
+      console.warn('[ConversationTaskCoordinator] Problem lifecycle update failed:', error);
     }
 
     return {
@@ -393,7 +434,15 @@ export class ConversationTaskCoordinator {
     conversationId: string,
     userMessage: string,
     requirements: RequirementAnalysis[],
-  ): Promise<string> {
+    incoming: IncomingMessage,
+  ): Promise<{
+    suggestedReply: string;
+    confidence?: number;
+    agentName?: string;
+    mode?: string;
+    metadata?: Record<string, unknown>;
+    needsHumanReview?: boolean;
+  }> {
     try {
       // 1. 获取对话历史
       const conversation = await this.conversationRepository.findById(conversationId);
@@ -411,7 +460,31 @@ export class ConversationTaskCoordinator {
       // 3. 查询知识库
       const knowledgeItems = await this.getRelatedKnowledge(userMessage);
 
-      // 4. 使用LLM生成回复
+      // 4. 使用AgentScope生成回复（优先）
+      const agentScopeResponse = await this.agentScopeClient.sendMessage({
+        conversationId,
+        customerId: incoming.customerId,
+        message: userMessage,
+        metadata: {
+          ...(incoming.metadata || {}),
+          mode: incoming.mode ?? conversation?.mode,
+          async_review: true,
+          channel: incoming.channel,
+        },
+      });
+
+      if (agentScopeResponse?.success && agentScopeResponse.message) {
+        return {
+          suggestedReply: agentScopeResponse.message,
+          confidence: agentScopeResponse.confidence,
+          agentName: agentScopeResponse.agent_name,
+          mode: agentScopeResponse.mode,
+          metadata: agentScopeResponse.metadata,
+          needsHumanReview: agentScopeResponse.metadata?.needs_review === true,
+        };
+      }
+
+      // 5. 使用LLM生成回复
       const llmClient = (this.aiService as any).llmClient;
       if (llmClient && llmClient.isEnabled()) {
         const result = await llmClient.generateReply(
@@ -420,14 +493,23 @@ export class ConversationTaskCoordinator {
           knowledgeItems,
           conversationHistory.slice(-5), // 只传最近5条
         );
-        return result.suggestedReply;
+        return {
+          suggestedReply: result.suggestedReply,
+          confidence: result.confidence,
+        };
       }
 
       // 降级方案：模板回复
-      return this.fallbackGenerateReply(userMessage, sentiment, requirements, knowledgeItems);
+      return {
+        suggestedReply: this.fallbackGenerateReply(userMessage, sentiment, requirements, knowledgeItems),
+        confidence: 0.6,
+      };
     } catch (error) {
       console.warn('[ConversationTaskCoordinator] 生成回复失败，使用降级方案:', error);
-      return this.fallbackGenerateReply(userMessage, { overallSentiment: 'neutral' } as any, requirements, []);
+      return {
+        suggestedReply: this.fallbackGenerateReply(userMessage, { overallSentiment: 'neutral' } as any, requirements, []),
+        confidence: 0.4,
+      };
     }
   }
 
@@ -568,7 +650,7 @@ export class ConversationTaskCoordinator {
   /**
    * 通知人工审核
    */
-  private async notifyHumanReview(suggestion: AgentSuggestion): Promise<void> {
+  private async notifyHumanReview(suggestion: AgentSuggestion): Promise<string | undefined> {
     // Phase 1: 简单日志输出
     console.log('[ConversationTaskCoordinator] 需要人工审核:', {
       conversationId: suggestion.conversationId,
@@ -577,11 +659,89 @@ export class ConversationTaskCoordinator {
       tasksCount: suggestion.recommendedTasks.length,
     });
 
-    // TODO Phase 2: 通过WebSocket推送到前端审核面板
-    // await this.websocketService.emit('agent:review_request', suggestion);
+    const review = await this.createReviewRequestUseCase.execute({
+      conversationId: suggestion.conversationId,
+      suggestion: {
+        suggestedReply: suggestion.suggestedReply,
+        confidence: suggestion.confidence,
+        detectedRequirements: suggestion.detectedRequirements,
+        recommendedTasks: suggestion.recommendedTasks,
+        agentName: suggestion.agentName,
+        mode: suggestion.mode,
+        metadata: suggestion.metadata,
+      },
+      confidence: suggestion.confidence,
+    });
 
-    // TODO Phase 2: 或通过EventBus发布事件
-    // await this.eventBus.publish(new AgentReviewRequestedEvent({...}));
+    return review.id;
+  }
+
+  private async updateProblemLifecycle(input: {
+    conversationId: string;
+    customerId: string;
+    message: string;
+    requirementsCreated: string[];
+    tasksCreated: string[];
+  }): Promise<void> {
+    const conversation = await this.conversationRepository.findById(input.conversationId);
+    const history = conversation?.messages?.slice(-5).map((msg) => ({
+      role: msg.senderType === 'agent' ? 'agent' : 'customer',
+      content: msg.content,
+    })) || [];
+
+    const problemDetection = await this.aiService.detectProblemIntent(input.message, history);
+    const resolution = await this.aiService.detectProblemResolution(input.message, history);
+
+    const activeProblem = await this.problemRepository.findActiveByConversationId(input.conversationId);
+    const latestResolved = await this.problemRepository.findLatestResolvedByConversationId(input.conversationId);
+
+    if (problemDetection.isProblem && !activeProblem) {
+      const problem = await this.createProblemUseCase.execute({
+        customerId: input.customerId,
+        conversationId: input.conversationId,
+        title: problemDetection.title || this.extractTitle(input.message),
+        description: input.message,
+        intent: problemDetection.intent,
+        confidence: problemDetection.confidence,
+        metadata: {
+          source: 'im',
+          detectedRequirements: input.requirementsCreated,
+          detectedTasks: input.tasksCreated,
+        },
+      });
+
+      if (input.tasksCreated.length > 0) {
+        await this.updateProblemStatusUseCase.execute({
+          problemId: problem.id,
+          status: 'in_progress',
+          reason: '已创建关联工单',
+        });
+      }
+    }
+
+    if (activeProblem && input.tasksCreated.length > 0 && activeProblem.status === 'new') {
+      await this.updateProblemStatusUseCase.execute({
+        problemId: activeProblem.id,
+        status: 'in_progress',
+        reason: '已创建关联工单',
+      });
+    }
+
+    if (activeProblem && resolution.resolved) {
+      await this.updateProblemStatusUseCase.execute({
+        problemId: activeProblem.id,
+        status: 'resolved',
+        reason: resolution.reasoning,
+      });
+    }
+
+    if (!activeProblem && latestResolved && resolution.reopened) {
+      await this.updateProblemStatusUseCase.execute({
+        problemId: latestResolved.id,
+        status: 'reopened',
+        reason: resolution.reasoning,
+      });
+    }
   }
 
   private extractConversationMetadata(

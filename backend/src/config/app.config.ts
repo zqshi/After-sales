@@ -73,6 +73,11 @@ export const config = {
     timeout: parseInt(process.env.AGENTSCOPE_TIMEOUT || '30000', 10),
   },
 
+  outbox: {
+    enabled: process.env.OUTBOX_PROCESSOR_ENABLED !== 'false',
+    intervalMs: parseInt(process.env.OUTBOX_PROCESSOR_INTERVAL || '5000', 10),
+  },
+
   monitoring: {
     sentryDsn: process.env.SENTRY_DSN || '',
     prometheusEnabled: process.env.PROMETHEUS_ENABLED === 'true',

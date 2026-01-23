@@ -245,6 +245,140 @@ export class AiService {
     return this.fallbackSentimentAnalysis(content);
   }
 
+  async detectProblemIntent(
+    content: string,
+    conversationHistory?: Array<{ role: string; content: string }>,
+  ): Promise<{
+    isProblem: boolean;
+    intent?: string;
+    confidence?: number;
+    title?: string;
+  }> {
+    const llmClient = this.llmClient;
+    if (llmClient && llmClient.isEnabled()) {
+      try {
+        const intent = await llmClient.extractIntent(content, conversationHistory);
+        const isProblem =
+          intent.confidence >= 0.6 &&
+          (intent.isQuestion || ['complaint', 'request', 'urgent'].includes(intent.intent));
+        const title = intent.keywords?.length
+          ? intent.keywords.slice(0, 3).join(' / ')
+          : undefined;
+        return {
+          isProblem,
+          intent: intent.intent,
+          confidence: intent.confidence,
+          title,
+        };
+      } catch (err) {
+        console.warn('[ai] extract intent failed, fallback to heuristic', err);
+      }
+    }
+
+    const problemKeywords = [
+      '报错',
+      '错误',
+      '异常',
+      '崩溃',
+      '无法',
+      '失败',
+      '卡顿',
+      '白屏',
+      '投诉',
+      '不满意',
+      '退款',
+      'bug',
+    ];
+    const isProblem = problemKeywords.some((kw) => content.includes(kw));
+    return {
+      isProblem,
+      intent: isProblem ? 'inquiry' : undefined,
+      confidence: isProblem ? 0.5 : 0.2,
+      title: isProblem ? content.slice(0, 20) : undefined,
+    };
+  }
+
+  async detectProblemResolution(
+    content: string,
+    conversationHistory?: Array<{ role: string; content: string }>,
+  ): Promise<{ resolved: boolean; reopened: boolean; confidence: number; reasoning: string }> {
+    const llmClient = this.llmClient;
+    if (llmClient && llmClient.isEnabled()) {
+      try {
+        const prompt = [
+          {
+            role: 'system' as const,
+            content: `你是客服质检助手。判断客户消息是否表示“问题已解决”或“问题未解决/复开”，返回JSON：
+{
+  "resolved": true/false,
+  "reopened": true/false,
+  "confidence": 0.0-1.0,
+  "reasoning": "简要原因"
+}
+
+规则：
+1. resolved表示已解决/感谢/确认问题消失。
+2. reopened表示仍未解决/再次复发/仍然有问题。
+3. 如果无法判断，二者均为false。`,
+          },
+        ];
+
+        if (conversationHistory && conversationHistory.length > 0) {
+          prompt.push({
+            role: 'user' as const,
+            content: `对话历史：\n${conversationHistory
+              .map((msg) => `${msg.role}: ${msg.content}`)
+              .join('\n')}`,
+          });
+        }
+
+        prompt.push({
+          role: 'user' as const,
+          content: `客户消息：\n"${content}"`,
+        });
+
+        const response = await llmClient.generate(prompt);
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          return {
+            resolved: Boolean(parsed.resolved),
+            reopened: Boolean(parsed.reopened),
+            confidence: parseFloat(parsed.confidence) || 0.6,
+            reasoning: parsed.reasoning || 'LLM判断',
+          };
+        }
+      } catch (err) {
+        console.warn('[ai] detect resolution failed, fallback to heuristic', err);
+      }
+    }
+
+    const resolvedPattern = /问题.*解决|解决.*问题|已.*解决|感谢.*解决|已恢复|已修复/;
+    const reopenedPattern = /没解决|未解决|还是.*问题|仍然.*(报错|错误|异常)|依旧.*(失败|无法)/;
+    if (resolvedPattern.test(content)) {
+      return {
+        resolved: true,
+        reopened: false,
+        confidence: 0.7,
+        reasoning: '关键词命中：已解决/已修复',
+      };
+    }
+    if (reopenedPattern.test(content)) {
+      return {
+        resolved: false,
+        reopened: true,
+        confidence: 0.7,
+        reasoning: '关键词命中：未解决/仍然异常',
+      };
+    }
+    return {
+      resolved: false,
+      reopened: false,
+      confidence: 0.3,
+      reasoning: '未识别到明确结论',
+    };
+  }
+
   /**
    * 降级方案：关键词匹配情绪分析
    */

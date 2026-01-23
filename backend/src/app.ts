@@ -41,6 +41,8 @@ import { UpdateRequirementStatusUseCase } from './application/use-cases/requirem
 import { DeleteRequirementUseCase } from './application/use-cases/requirement/DeleteRequirementUseCase';
 import { GetRequirementStatisticsUseCase } from './application/use-cases/requirement/GetRequirementStatisticsUseCase';
 import { RequirementRepository } from './infrastructure/repositories/RequirementRepository';
+import { ProblemRepository } from './infrastructure/repositories/ProblemRepository';
+import { ReviewRequestRepository } from './infrastructure/repositories/ReviewRequestRepository';
 import { TaskController } from './presentation/http/controllers/TaskController';
 import { taskRoutes } from './presentation/http/routes/taskRoutes';
 import { CreateTaskUseCase } from './application/use-cases/task/CreateTaskUseCase';
@@ -77,6 +79,7 @@ import { AgentScopeGateway } from './infrastructure/agentscope/AgentScopeGateway
 import { TaskCompletedEventHandler } from './application/event-handlers/TaskCompletedEventHandler';
 import { ConversationReadyToCloseEventHandler } from './application/event-handlers/ConversationReadyToCloseEventHandler';
 import { RequirementCreatedEventHandler } from './application/event-handlers/RequirementCreatedEventHandler';
+import { ProblemResolvedEventHandler } from './application/event-handlers/ProblemResolvedEventHandler';
 import { ConversationTaskCoordinator } from './application/services/ConversationTaskCoordinator';
 import { metricsMiddleware, metricsResponseHook } from './presentation/http/middleware/metricsMiddleware';
 import metricsRoutes from './presentation/http/routes/metricsRoutes';
@@ -114,6 +117,12 @@ import { CreateMemberUseCase } from './application/use-cases/permissions/CreateM
 import { UpdateMemberUseCase } from './application/use-cases/permissions/UpdateMemberUseCase';
 import { DeleteMemberUseCase } from './application/use-cases/permissions/DeleteMemberUseCase';
 import { RolePermissionService } from './application/services/RolePermissionService';
+import { CreateProblemUseCase } from './application/use-cases/problem/CreateProblemUseCase';
+import { UpdateProblemStatusUseCase } from './application/use-cases/problem/UpdateProblemStatusUseCase';
+import { CreateReviewRequestUseCase } from './application/use-cases/review/CreateReviewRequestUseCase';
+import { CompleteReviewRequestUseCase } from './application/use-cases/review/CompleteReviewRequestUseCase';
+import { OutboxEventBus } from './infrastructure/events/OutboxEventBus';
+import { OutboxProcessor } from './infrastructure/events/OutboxProcessor';
 
 export async function createApp(
   dataSource: DataSource,
@@ -156,6 +165,8 @@ export async function createApp(
   const conversationRepository = new ConversationRepository(dataSource);
   const customerProfileRepository = new CustomerProfileRepository(dataSource);
   const requirementRepository = new RequirementRepository(dataSource);
+  const problemRepository = new ProblemRepository(dataSource);
+  const reviewRequestRepository = new ReviewRequestRepository(dataSource);
   const taskRepository = new TaskRepository(dataSource);
   const knowledgeRepository = new KnowledgeRepository(dataSource);
   const userRepository = new UserRepository(dataSource);
@@ -223,6 +234,10 @@ export async function createApp(
     requirementRepository,
     eventBus,
   );
+  const createProblemUseCase = new CreateProblemUseCase(problemRepository);
+  const updateProblemStatusUseCase = new UpdateProblemStatusUseCase(problemRepository);
+  const createReviewRequestUseCase = new CreateReviewRequestUseCase(reviewRequestRepository);
+  const completeReviewRequestUseCase = new CompleteReviewRequestUseCase(reviewRequestRepository);
   const getRequirementUseCase = new GetRequirementUseCase(
     requirementRepository,
   );
@@ -396,12 +411,16 @@ export async function createApp(
     conversationRepository,
     taskRepository,
     requirementRepository,
+    problemRepository,
     createConversationUseCase,
     createRequirementUseCase,
     createTaskUseCase,
     closeConversationUseCase,
     sendMessageUseCase,
     associateRequirementWithConversationUseCase,
+    createProblemUseCase,
+    updateProblemStatusUseCase,
+    createReviewRequestUseCase,
     aiService,
     eventBus,
   );
@@ -415,6 +434,10 @@ export async function createApp(
     conversationRepository,
     customerProfileRepository,
     sendMessageUseCase,
+    reviewRequestRepository,
+    completeReviewRequestUseCase,
+    createTaskUseCase,
+    problemRepository,
   );
 
   // 创建并注册事件处理器
@@ -431,6 +454,7 @@ export async function createApp(
     createTaskUseCase,
     requirementRepository,
   );
+  const problemResolvedEventHandler = new ProblemResolvedEventHandler();
 
   // 订阅事件
   eventBus.subscribe('TaskCompleted', (event) => taskCompletedEventHandler.handle(event as any));
@@ -440,6 +464,17 @@ export async function createApp(
   eventBus.subscribe('RequirementCreated', (event) =>
     requirementCreatedEventHandler.handle(event as any),
   );
+  eventBus.subscribe('ProblemResolved', (event) =>
+    problemResolvedEventHandler.handle(event as any),
+  );
+
+  if (config.outbox.enabled) {
+    const outboxEventBus = new OutboxEventBus(dataSource);
+    const outboxProcessor = new OutboxProcessor(outboxEventBus, eventBus, dataSource);
+    outboxProcessor.start(config.outbox.intervalMs);
+    app.decorate('outboxProcessor', outboxProcessor);
+    app.log.info(`[Outbox] Processor started (interval ${config.outbox.intervalMs}ms)`);
+  }
 
   // 注册路由 - 所有业务路由添加 /api/v1 前缀
   await app.register(async (apiApp) => {

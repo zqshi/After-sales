@@ -41,6 +41,7 @@ export class CreateConversationUseCase {
       priority: request.priority,
       slaDeadline,
       metadata: request.metadata,
+      mode: request.mode,
     });
 
     if (request.initialMessage) {
@@ -72,6 +73,9 @@ export class CreateConversationUseCase {
     }
     if (request.priority && !['low', 'normal', 'high'].includes(request.priority)) {
       throw new Error('invalid priority');
+    }
+    if (request.mode && !['agent_auto', 'agent_supervised', 'human_first'].includes(request.mode)) {
+      throw new Error('invalid mode');
     }
 
     if (request.initialMessage) {

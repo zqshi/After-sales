@@ -1,12 +1,13 @@
 import { qs, qsa, on } from '../../core/dom.js';
 import { scrollToBottom } from '../../core/scroll.js';
 import { showNotification } from '../../core/notifications.js';
-import { fetchConversationMessages, fetchConversationAiAnalysis, sendIncomingMessage, setConversationMode } from '../../api.js';
+import { fetchConversationMessages, fetchConversationAiAnalysis, sendIncomingMessage, setConversationMode, sendMessageReceipt, submitAgentReview } from '../../api.js';
 import { buildMessageNode } from './AgentMessageRenderer.js';
 import { AgentWebSocket } from '../../infrastructure/websocket/AgentWebSocket.js';
 import { AiAssistantPanel } from './AiAssistantPanel.js';
 import { AiAnalysisCache } from '../../infrastructure/cache/AiAnalysisCache.js';
 import { LRUCache } from '../../infrastructure/cache/LRUCache.js';
+import { openAiAssistantPanel } from '../../ui/layout.js';
 
 const DEFAULT_CUSTOMER = null;
 const DEFAULT_CONVERSATION = null;
@@ -138,6 +139,7 @@ export class UnifiedChatController {
         content: text,
         channel: 'web',
         senderId: this.customerId,
+        mode: this.mode,
       });
 
       if (!result.success) {
@@ -152,6 +154,13 @@ export class UnifiedChatController {
       // 4. 显示Agent回复建议（在辅助面板，不追加到聊天区）
       if (result.data.agentSuggestion) {
         this.updateAgentSuggestionPanel(result.data.agentSuggestion);
+        if (result.data.agentSuggestion.needsHumanReview && result.data.agentSuggestion.reviewRequestId) {
+          this.renderReviewRequest({
+            reviewId: result.data.agentSuggestion.reviewRequestId,
+            suggestion: result.data.agentSuggestion,
+            confidence: result.data.agentSuggestion.confidence,
+          });
+        }
       }
 
       // 5. 如果有知识推荐，展示卡片
@@ -290,6 +299,7 @@ export class UnifiedChatController {
       const items = await this.fetchAndCacheConversationMessages(conversationId);
       if (Array.isArray(items)) {
         this.renderConversationMessages(items);
+        this.markLatestCustomerMessageRead(conversationId, items);
       }
     } catch (error) {
       console.warn('[UnifiedChat] 无法加载历史消息', error);
@@ -424,15 +434,220 @@ export class UnifiedChatController {
     }
     if (payload.type === 'agent_suggestions') {
       showNotification('Agent 提供新建议，已同步到前端', 'info');
+      if (payload.suggestions) {
+        this.renderAgentSuggestions(payload);
+      }
     }
     if (payload.type === 'human_input_required') {
       this.showEscalationBanner(payload.message || 'Agent 请求人工介入');
+      this.renderHumanInputPrompt(payload);
+    }
+    if (payload.type === 'review_request') {
+      this.renderReviewRequest(payload);
+    }
+    if (payload.type === 'domain_event') {
+      this.handleDomainEvent(payload.event);
     }
 
     const incoming = this.extractIncomingMessage(payload);
     if (incoming) {
       this.handleIncomingMessage(incoming);
     }
+  }
+
+  handleDomainEvent(event) {
+    if (!event || typeof event !== 'object') {
+      return;
+    }
+    const eventType = event.eventType || event.type;
+    if (eventType === 'AgentReviewRequested') {
+      const payload = event.payload || {};
+      this.renderReviewRequest({
+        reviewId: payload.reviewId,
+        suggestion: payload.suggestion,
+        confidence: payload.confidence,
+      });
+    }
+    if (eventType === 'ProblemResolved') {
+      showNotification('问题已标记为解决，已触发质检流程', 'success');
+    }
+    if (eventType === 'AgentReviewCompleted') {
+      showNotification('人工审核已完成', 'success');
+    }
+  }
+
+  showActionPanel({ title, badge, desc, contentHtml }) {
+    openAiAssistantPanel();
+    const panel = document.querySelector('#ai-assistant-panel');
+    const replyPanel = document.querySelector('#ai-panel-reply');
+    const solutionPanel = document.querySelector('#ai-panel-solution');
+    const actionPanel = document.querySelector('#ai-panel-action');
+    const clarifyPanel = document.querySelector('#ai-panel-clarify');
+    const requirementsPanel = document.querySelector('#ai-panel-requirements');
+    if (panel) {
+      panel.classList.remove('hidden');
+    }
+    if (replyPanel) replyPanel.classList.add('hidden');
+    if (solutionPanel) solutionPanel.classList.add('hidden');
+    if (clarifyPanel) clarifyPanel.classList.add('hidden');
+    if (requirementsPanel) requirementsPanel.classList.add('hidden');
+    if (actionPanel) actionPanel.classList.remove('hidden');
+
+    const titleEl = document.querySelector('#ai-assistant-title');
+    const badgeEl = document.querySelector('#ai-assistant-badge');
+    const descEl = document.querySelector('#ai-assistant-desc');
+    if (titleEl) titleEl.textContent = title || '协作面板';
+    if (badgeEl) badgeEl.textContent = badge || '人工';
+    if (descEl) descEl.textContent = desc || '';
+
+    const contentEl = document.querySelector('#ai-action-content');
+    if (contentEl) {
+      contentEl.innerHTML = contentHtml || '';
+    }
+  }
+
+  renderReviewRequest(payload) {
+    const suggestion = payload?.suggestion || {};
+    const reply = suggestion.suggestedReply || payload?.agent_response || '';
+    const confidence = suggestion.confidence || payload?.confidence || 0;
+    const reviewId = payload?.reviewId || payload?.review_id || suggestion.reviewRequestId;
+    if (!reviewId) {
+      // 如果是AgentScope的审核请求，允许仅展示不落库的提示
+      if (payload?.agent_response) {
+        this.showActionPanel({
+          title: '人工审核',
+          badge: '审核',
+          desc: 'Agent 请求人工确认，请人工处理。',
+          contentHtml: `
+            <div class="panel-card space-y-3">
+              <div class="text-sm font-semibold text-gray-800">人工审核请求</div>
+              <div class="text-xs text-gray-500">置信度：${Math.round(confidence * 100)}%</div>
+              <div class="text-sm text-gray-800 whitespace-pre-line">${this.escapeHtml(reply)}</div>
+              <div class="text-xs text-gray-500">请在回复区编辑后手动发送。</div>
+            </div>
+          `,
+        });
+      }
+      return;
+    }
+
+    const tasks = Array.isArray(suggestion.recommendedTasks) ? suggestion.recommendedTasks : [];
+    const taskListHtml = tasks.length
+      ? `<div class="mt-2 space-y-1">
+          ${tasks.map((task) => `<div class="text-xs text-gray-600">• ${this.escapeHtml(task.title || '')} (${task.priority || 'medium'})</div>`).join('')}
+        </div>`
+      : '<div class="text-xs text-gray-500 mt-2">暂无推荐工单</div>';
+
+    const contentHtml = `
+      <div class="panel-card space-y-3">
+        <div class="text-sm font-semibold text-gray-800">人工审核请求</div>
+        <div class="text-xs text-gray-500">置信度：${Math.round(confidence * 100)}%</div>
+        <div class="text-sm text-gray-800 whitespace-pre-line">${this.escapeHtml(reply)}</div>
+        ${taskListHtml}
+        <div class="space-y-2">
+          <label class="text-xs text-gray-500">审核备注</label>
+          <textarea id="review-note-input" rows="3" class="w-full border border-gray-200 rounded-md px-3 py-2 text-xs" placeholder="填写审核意见"></textarea>
+        </div>
+        <label class="flex items-center gap-2 text-xs text-gray-600">
+          <input id="review-create-tasks" type="checkbox" class="rounded border-gray-300" checked>
+          确认后自动创建推荐工单
+        </label>
+        <div class="flex gap-2">
+          <button id="review-approve-btn" class="px-3 py-2 text-xs bg-primary text-white rounded-lg hover:bg-primary-dark">确认通过</button>
+          <button id="review-reject-btn" class="px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg hover:border-primary">驳回建议</button>
+        </div>
+      </div>
+    `;
+
+    this.showActionPanel({
+      title: '人工审核',
+      badge: '审核',
+      desc: '确认Agent建议后可同步创建工单并更新流程状态。',
+      contentHtml,
+    });
+
+    const approveBtn = document.querySelector('#review-approve-btn');
+    const rejectBtn = document.querySelector('#review-reject-btn');
+    const noteInput = document.querySelector('#review-note-input');
+    const taskToggle = document.querySelector('#review-create-tasks');
+
+    const submit = async (status) => {
+      try {
+        await submitAgentReview({
+          reviewId,
+          status,
+          reviewerNote: noteInput?.value?.trim?.(),
+          createTasks: taskToggle?.checked ?? true,
+        });
+        showNotification('审核结果已提交', 'success');
+      } catch (error) {
+        console.warn('[UnifiedChat] submit review failed', error);
+        showNotification('审核提交失败，请重试', 'error');
+      }
+    };
+
+    if (approveBtn) {
+      approveBtn.addEventListener('click', () => submit('approved'));
+    }
+    if (rejectBtn) {
+      rejectBtn.addEventListener('click', () => submit('rejected'));
+    }
+  }
+
+  renderHumanInputPrompt(payload) {
+    const message = payload?.message || '需要人工输入处理意见';
+    const contentHtml = `
+      <div class="panel-card space-y-3">
+        <div class="text-sm font-semibold text-gray-800">人工介入</div>
+        <div class="text-xs text-gray-500">${this.escapeHtml(message)}</div>
+        <textarea id="human-input-text" rows="3" class="w-full border border-gray-200 rounded-md px-3 py-2 text-xs" placeholder="输入回复或处理结果"></textarea>
+        <div class="flex gap-2">
+          <button id="human-input-submit" class="px-3 py-2 text-xs bg-primary text-white rounded-lg hover:bg-primary-dark">提交给Agent</button>
+        </div>
+      </div>
+    `;
+
+    this.showActionPanel({
+      title: '人工介入',
+      badge: '人工',
+      desc: 'Agent 请求人工确认，请填写处理意见。',
+      contentHtml,
+    });
+
+    const submitBtn = document.querySelector('#human-input-submit');
+    const input = document.querySelector('#human-input-text');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        const content = input?.value?.trim?.() || '';
+        if (!content) {
+          showNotification('请输入处理意见', 'warning');
+          return;
+        }
+        this.websocket?.sendHumanInput(content, payload?.metadata || {});
+        showNotification('已提交给Agent', 'success');
+      });
+    }
+  }
+
+  renderAgentSuggestions(payload) {
+    const suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : [];
+    if (!suggestions.length) {
+      return;
+    }
+    const contentHtml = `
+      <div class="panel-card space-y-2">
+        <div class="text-sm font-semibold text-gray-800">Agent建议资料</div>
+        ${suggestions
+          .map((item) => `<div class="text-xs text-gray-600">• ${this.escapeHtml(item.title || item.name || '')}</div>`)
+          .join('')}
+      </div>
+    `;
+    this.showActionPanel({
+      title: '协作建议',
+      badge: '建议',
+      desc: 'Agent 已检索相关资料，供人工参考。',
+      contentHtml,
+    });
   }
 
   extractIncomingMessage(payload) {
@@ -867,6 +1082,28 @@ export class UnifiedChatController {
       alert.className = 'p-2 bg-yellow-50 border-l-4 border-yellow-400 rounded text-xs text-yellow-800 mt-2';
       alert.innerHTML = `<strong>⚠️ 需要人工审核：</strong>${this.escapeHtml(suggestion.reason || '检测到复杂需求')}`;
       panel.appendChild(alert);
+    }
+  }
+
+  async markLatestCustomerMessageRead(conversationId, items) {
+    if (!conversationId || !Array.isArray(items) || items.length === 0) {
+      return;
+    }
+    const latestCustomer = [...items].reverse().find((item) => {
+      const senderType = item?.senderType || item?.sender_type;
+      return senderType === 'customer' || senderType === 'external';
+    });
+    if (!latestCustomer?.id) {
+      return;
+    }
+    try {
+      await sendMessageReceipt({
+        messageId: latestCustomer.id,
+        conversationId,
+        status: 'read',
+      });
+    } catch (error) {
+      console.warn('[UnifiedChat] update receipt failed', error);
     }
   }
 }

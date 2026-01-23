@@ -14,5 +14,6 @@ export interface CreateConversationRequestDTO {
   priority?: 'low' | 'normal' | 'high';
   slaDeadline?: string;
   metadata?: Record<string, unknown>;
+  mode?: 'agent_auto' | 'agent_supervised' | 'human_first';
   initialMessage?: InitialMessageDTO;
 }
