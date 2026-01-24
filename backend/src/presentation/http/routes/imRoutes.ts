@@ -191,6 +191,18 @@ export async function imRoutes(
     await controller.submitAgentReview(request, reply);
   });
 
+  fastify.get('/im/reviews/pending', {
+    config: { permissions: ['im.read'] },
+  }, async (request, reply) => {
+    await controller.getPendingReviews(request, reply);
+  });
+
+  fastify.get('/im/reviews/stream', {
+    config: { permissions: ['im.read'] },
+  }, async (request, reply) => {
+    await controller.streamReviewRequests(request, reply);
+  });
+
   fastify.get('/im/conversations/:id/problems', {
     config: { permissions: ['im.read'] },
   }, async (request, reply) => {
@@ -227,6 +239,18 @@ export async function imRoutes(
     config: { permissions: ['tasks.read'] },
   }, async (request, reply) => {
     await controller.getConversationQuality(request, reply);
+  });
+
+  fastify.get('/quality/:conversationId/reports', {
+    config: { permissions: ['tasks.read'] },
+  }, async (request, reply) => {
+    await controller.getConversationQualityReports(request, reply);
+  });
+
+  fastify.get('/quality/reports', {
+    config: { permissions: ['tasks.read'] },
+  }, async (request, reply) => {
+    await controller.listQualityReports(request, reply);
   });
 
   // AI分析接口

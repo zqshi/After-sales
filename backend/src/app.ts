@@ -118,6 +118,12 @@ import { UpdateMemberUseCase } from './application/use-cases/permissions/UpdateM
 import { DeleteMemberUseCase } from './application/use-cases/permissions/DeleteMemberUseCase';
 import { RolePermissionService } from './application/services/RolePermissionService';
 import { CreateProblemUseCase } from './application/use-cases/problem/CreateProblemUseCase';
+import { WorkflowEngine } from './infrastructure/workflow/WorkflowEngine';
+import { ActionStepExecutor } from './infrastructure/workflow/executors/ActionStepExecutor';
+import { HumanInLoopExecutor } from './infrastructure/workflow/executors/HumanInLoopExecutor';
+import { WorkflowRegistry } from './infrastructure/workflow/WorkflowRegistry';
+import { QualityReportRepository } from './infrastructure/repositories/QualityReportRepository';
+import { SurveyRepository } from './infrastructure/repositories/SurveyRepository';
 import { UpdateProblemStatusUseCase } from './application/use-cases/problem/UpdateProblemStatusUseCase';
 import { CreateReviewRequestUseCase } from './application/use-cases/review/CreateReviewRequestUseCase';
 import { CompleteReviewRequestUseCase } from './application/use-cases/review/CompleteReviewRequestUseCase';
@@ -405,6 +411,62 @@ export async function createApp(
     resolveMonitoringAlertUseCase,
   );
 
+  const qualityReportRepository = new QualityReportRepository(dataSource);
+  const surveyRepository = new SurveyRepository(dataSource);
+
+  let workflowEngine: WorkflowEngine | undefined;
+  if (config.workflow.enabled) {
+    const actionExecutor = new ActionStepExecutor({
+      sendMessageUseCase,
+      createTaskUseCase,
+      createRequirementUseCase,
+      closeConversationUseCase,
+      searchKnowledgeUseCase,
+      aiService,
+      conversationRepository,
+      createReviewRequestUseCase,
+      mode: config.workflow.mode,
+    });
+    const humanInLoopExecutor = new HumanInLoopExecutor();
+    workflowEngine = new WorkflowEngine(
+      {
+        workflowsDir: config.workflow.workflowsDir,
+        defaultTimeout: config.workflow.defaultTimeout,
+        maxParallelSteps: config.workflow.maxParallelSteps,
+        enableLogging: config.workflow.enableLogging,
+        enableMetrics: config.workflow.enableMetrics,
+      },
+      { actionExecutor, humanInLoopExecutor },
+    );
+    await workflowEngine.loadWorkflowsFromDirectory();
+
+    WorkflowRegistry.setWorkflowEngine(workflowEngine, humanInLoopExecutor);
+
+    humanInLoopExecutor.getEventEmitter().on('human_review_requested', async (request) => {
+      try {
+        const data = request.data || {};
+        const conversationId =
+          data.conversationId || data.conversation?.id || data.conversation_id;
+        if (!conversationId) {
+          app.log.warn('[Workflow] human_review_requested without conversationId');
+          return;
+        }
+        const review = await createReviewRequestUseCase.execute({
+          conversationId,
+          suggestion: {
+            ...data,
+            executionId: request.executionId,
+            stepName: request.stepName,
+          },
+          confidence: data.confidence,
+        });
+        app.log.info(`[Workflow] ReviewRequest created: ${review.id}`);
+      } catch (error) {
+        app.log.error({ error }, '[Workflow] Failed to create ReviewRequest');
+      }
+    });
+  }
+
   //创建ConversationTaskCoordinator应用层协调服务
   // 用于Saga协调：客户消息→Conversation→Requirement→Task→完成→关闭
   const conversationTaskCoordinator = new ConversationTaskCoordinator(
@@ -423,6 +485,7 @@ export async function createApp(
     createReviewRequestUseCase,
     aiService,
     eventBus,
+    workflowEngine,
   );
 
   // 创建ImController - IM消息接入
@@ -454,7 +517,7 @@ export async function createApp(
     createTaskUseCase,
     requirementRepository,
   );
-  const problemResolvedEventHandler = new ProblemResolvedEventHandler();
+  const problemResolvedEventHandler = new ProblemResolvedEventHandler(qualityReportRepository);
 
   // 订阅事件
   eventBus.subscribe('TaskCompleted', (event) => taskCompletedEventHandler.handle(event as any));
@@ -527,10 +590,13 @@ export async function createApp(
   await metricsRoutes(app);
 
   const agentScopeDependencies = {
+    conversationRepository,
+    taskRepository,
     createConversationUseCase,
     sendMessageUseCase,
     getConversationUseCase,
     closeConversationUseCase,
+    listConversationsUseCase,
     getCustomerProfileUseCase,
     refreshCustomerProfileUseCase,
     addServiceRecordUseCase,
@@ -545,6 +611,9 @@ export async function createApp(
     analyzeConversationUseCase,
     knowledgeRepository,
     knowledgeRecommender,
+    aiService,
+    qualityReportRepository,
+    surveyRepository,
   };
   const agentScopeGateway = new AgentScopeGateway(app, agentScopeDependencies, eventBus);
   await agentScopeGateway.initialize();

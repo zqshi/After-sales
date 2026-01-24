@@ -1,7 +1,10 @@
 import { config } from '@config/app.config';
 import { ProblemResolvedEvent } from '@domain/problem/events/ProblemResolvedEvent';
+import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
 
 export class ProblemResolvedEventHandler {
+  constructor(private readonly qualityReportRepository?: QualityReportRepository) {}
+
   async handle(event: ProblemResolvedEvent): Promise<void> {
     const conversationId = event.payload.conversationId;
 
@@ -29,6 +32,15 @@ export class ProblemResolvedEventHandler {
       }
 
       const result = await response.json();
+
+      if (this.qualityReportRepository) {
+        await this.qualityReportRepository.save({
+          conversationId,
+          problemId: event.payload.problemId,
+          qualityScore: typeof result.quality_score === 'number' ? result.quality_score : undefined,
+          report: result,
+        });
+      }
 
       console.log(`[ProblemResolvedEventHandler] Quality inspection completed for conversation ${conversationId}:`, {
         success: result.success,

@@ -82,4 +82,25 @@ export class TaskRepository implements ITaskRepository {
   async findByConversationId(conversationId: string): Promise<Task[]> {
     return this.findByFilters({ conversationId });
   }
+
+  async searchByQuery(
+    query: string,
+    pagination?: { limit?: number; offset?: number },
+  ): Promise<Task[]> {
+    const qb = this.repository.createQueryBuilder('task');
+    const like = `%${query.toLowerCase()}%`;
+    qb.where(
+      '(LOWER(task.title) LIKE :query OR LOWER(COALESCE(task.description, \'\')) LIKE :query OR CAST(task.metadata AS text) ILIKE :query)',
+      { query: like },
+    );
+    qb.orderBy('task.updated_at', 'DESC');
+    if (pagination?.limit !== undefined) {
+      qb.take(pagination.limit);
+    }
+    if (pagination?.offset !== undefined) {
+      qb.skip(pagination.offset);
+    }
+    const entities = await qb.getMany();
+    return entities.map((entity) => TaskMapper.toDomain(entity));
+  }
 }

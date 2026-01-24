@@ -29,6 +29,7 @@ import { ConversationClosedEvent } from '@domain/conversation/events/Conversatio
 import { config } from '@config/app.config';
 import { AgentMode } from '@domain/conversation/models/Conversation';
 import { AgentScopeChatClient } from '@infrastructure/agentscope/AgentScopeChatClient';
+import { WorkflowEngine } from '@infrastructure/workflow/WorkflowEngine';
 
 /**
  * 客户消息输入（IM集成接收的消息）
@@ -89,6 +90,7 @@ export interface ProcessingResult {
 export class ConversationTaskCoordinator {
   private requirementDetector: RequirementDetectorService;
   private readonly agentScopeClient: AgentScopeChatClient;
+  private readonly workflowEngine?: WorkflowEngine;
 
   constructor(
     private readonly conversationRepository: ConversationRepository,
@@ -106,9 +108,11 @@ export class ConversationTaskCoordinator {
     private readonly createReviewRequestUseCase: CreateReviewRequestUseCase,
     private readonly aiService: AiService,
     private readonly eventBus: EventBus,
+    workflowEngine?: WorkflowEngine,
   ) {
     this.requirementDetector = new RequirementDetectorService();
     this.agentScopeClient = new AgentScopeChatClient();
+    this.workflowEngine = workflowEngine;
 
     // Phase 2: 质检触发改由ProblemResolved事件处理
   }
@@ -451,6 +455,59 @@ export class ConversationTaskCoordinator {
         content: msg.content,
       })) || [];
 
+      // 1.1 优先尝试Workflow/ReAct路径
+      if (this.workflowEngine && config.workflow.enabled) {
+        try {
+          const workflowResult = await this.workflowEngine.execute(
+            'customer_service_workflow',
+            {
+              message: {
+                content: userMessage,
+                channel: incoming.channel,
+                senderId: incoming.senderId,
+              },
+              conversation: {
+                id: conversationId,
+                customerId: incoming.customerId,
+                channel: incoming.channel,
+                mode: incoming.mode ?? conversation?.mode,
+              },
+              history: conversationHistory,
+            },
+          );
+
+          const suggested =
+            workflowResult.output?.suggested_reply?.reply ||
+            workflowResult.output?.suggested_reply?.suggestedReply ||
+            workflowResult.output?.suggested_reply;
+          const confidence =
+            workflowResult.output?.suggested_reply?.confidence ??
+            workflowResult.output?.suggested_reply?.score ??
+            0.7;
+
+          if (suggested) {
+            return {
+              suggestedReply: String(suggested),
+              confidence: typeof confidence === 'number' ? confidence : 0.7,
+              agentName: 'react_workflow',
+              mode: 'agent_loop',
+              metadata: {
+                workflowName: workflowResult.workflowName,
+                executionId: workflowResult.executionId,
+                classification: workflowResult.output?.classification,
+                analysis: {
+                  sentiment: workflowResult.output?.sentiment_analysis,
+                  requirements: workflowResult.output?.requirement_detection,
+                  knowledge: workflowResult.output?.knowledge_search,
+                },
+              },
+            };
+          }
+        } catch (err) {
+          console.warn('[ConversationTaskCoordinator] Workflow生成回复失败，进入降级路径', err);
+        }
+      }
+
       // 2. 分析情绪
       const sentiment = await this.aiService.analyzeSentiment(
         userMessage,
@@ -499,7 +556,7 @@ export class ConversationTaskCoordinator {
         };
       }
 
-      // 降级方案：模板回复
+      // 降级方案：提示客服侧处理
       return {
         suggestedReply: this.fallbackGenerateReply(userMessage, sentiment, requirements, knowledgeItems),
         confidence: 0.6,
@@ -514,7 +571,7 @@ export class ConversationTaskCoordinator {
   }
 
   /**
-   * 降级方案：模板回复
+   * 降级方案：提示客服侧处理
    */
   private fallbackGenerateReply(
     _userMessage: string,
@@ -522,35 +579,7 @@ export class ConversationTaskCoordinator {
     requirements: RequirementAnalysis[],
     knowledgeItems: any[],
   ): string {
-    let reply = '';
-
-    // 根据情绪调整开头
-    if (sentiment.overallSentiment === 'negative') {
-      reply = '非常抱歉给您带来不便！我们理解您的困扰，会尽快帮您解决。\n\n';
-    } else if (sentiment.overallSentiment === 'positive') {
-      reply = '感谢您的反馈！很高兴能为您提供帮助。\n\n';
-    } else {
-      reply = '您好！我已收到您的消息。\n\n';
-    }
-
-    // 如果有需求，说明已创建工单
-    if (requirements.length > 0) {
-      const reqList = requirements.map((r, i) => `${i + 1}. ${r.title}`).join('\n');
-      reply += `我理解您的需求：\n${reqList}\n\n`;
-      reply += '我已为您记录相关信息，工程师会尽快处理。';
-    } else {
-      reply += '正在为您查询相关信息，请稍候。';
-    }
-
-    // 如果有知识库推荐，添加链接
-    if (knowledgeItems.length > 0) {
-      reply += '\n\n您也可以参考以下文档：\n';
-      knowledgeItems.slice(0, 2).forEach((item, i) => {
-        reply += `${i + 1}. [${item.title}](${item.url})\n`;
-      });
-    }
-
-    return reply;
+    return '已收到您的问题，我们会尽快回复。如需加急，请在消息中说明紧急事项。';
   }
 
   /**

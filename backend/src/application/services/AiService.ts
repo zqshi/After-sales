@@ -83,6 +83,191 @@ export class AiService {
     this.llmClient = new LLMClient();
   }
 
+  private extractJson(text: string): Record<string, unknown> | null {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) {
+      return null;
+    }
+    try {
+      return JSON.parse(text.slice(start, end + 1));
+    } catch {
+      return null;
+    }
+  }
+
+  private async generateJson(
+    systemPrompt: string,
+    userPrompt: string,
+  ): Promise<Record<string, unknown> | null> {
+    if (!this.llmClient.isEnabled()) {
+      return null;
+    }
+    try {
+      const raw = await this.llmClient.generate([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ]);
+      return this.extractJson(raw);
+    } catch (err) {
+      console.warn('[AiService] generateJson failed:', err);
+      return null;
+    }
+  }
+
+  async assessRisk(content: string): Promise<{ riskLevel: 'low' | 'medium' | 'high'; score: number; indicators: string[]; reasoning: string }> {
+    const systemPrompt = `你是客服风险评估专家，输出JSON:\n{\n  "riskLevel": "low|medium|high",\n  "score": 0.0-1.0,\n  "indicators": ["..."],\n  "reasoning": "..." \n}`;
+    const result = await this.generateJson(systemPrompt, `客户消息：${content}`);
+    if (result) {
+      return {
+        riskLevel: (result.riskLevel as any) || 'medium',
+        score: typeof result.score === 'number' ? result.score : 0.6,
+        indicators: Array.isArray(result.indicators) ? result.indicators.map(String) : [],
+        reasoning: String(result.reasoning ?? '模型评估完成'),
+      };
+    }
+    const urgent = ['投诉', '退款', '宕机', '崩溃', '无法使用'].some((kw) => content.includes(kw));
+    return {
+      riskLevel: urgent ? 'high' : 'low',
+      score: urgent ? 0.85 : 0.4,
+      indicators: urgent ? ['紧急/投诉关键词'] : [],
+      reasoning: urgent ? '检测到紧急关键词' : '未发现明显风险关键词',
+    };
+  }
+
+  async extractRequirements(content: string): Promise<Array<{ title: string; category: string; priority: string; confidence: number; clarification_needed: boolean }>> {
+    const systemPrompt = `你是需求分析专家，输出JSON:\n{\n  "requirements": [\n    {\n      "title": "...",\n      "category": "product|technical|service",\n      "priority": "urgent|high|medium|low",\n      "confidence": 0.0-1.0,\n      "clarification_needed": true/false\n    }\n  ]\n}`;
+    const result = await this.generateJson(systemPrompt, `客户消息：${content}`);
+    if (result && Array.isArray(result.requirements)) {
+      return result.requirements.map((req: any) => ({
+        title: String(req.title ?? content.substring(0, 30)),
+        category: String(req.category ?? 'service'),
+        priority: String(req.priority ?? 'medium'),
+        confidence: typeof req.confidence === 'number' ? req.confidence : 0.6,
+        clarification_needed: Boolean(req.clarification_needed),
+      }));
+    }
+    const hasReq = ['需要', '希望', '想要', '能不能', '可以', '功能'].some((kw) => content.includes(kw));
+    return hasReq
+      ? [{
+          title: content.substring(0, 30),
+          category: 'service',
+          priority: 'medium',
+          confidence: 0.65,
+          clarification_needed: false,
+        }]
+      : [];
+  }
+
+  async recommendNextAction(context: { riskLevel?: string; sentiment?: string; urgent?: boolean }): Promise<{ action: string; reason: string }> {
+    const urgent = context.urgent || context.riskLevel === 'high';
+    if (urgent) {
+      return { action: 'escalate_to_human', reason: '高风险/紧急场景' };
+    }
+    return { action: 'reply_with_suggestion', reason: '常规咨询可自动回复' };
+  }
+
+  async analyzeLogs(logs: string): Promise<{ summary: string; error_signatures: string[]; root_cause: string }> {
+    const systemPrompt = `你是日志分析专家，输出JSON:\n{\n  "summary": "...",\n  "error_signatures": ["..."],\n  "root_cause": "..." \n}`;
+    const result = await this.generateJson(systemPrompt, `日志内容：\n${logs}`);
+    if (result) {
+      return {
+        summary: String(result.summary ?? '日志分析完成'),
+        error_signatures: Array.isArray(result.error_signatures) ? result.error_signatures.map(String) : [],
+        root_cause: String(result.root_cause ?? 'unknown'),
+      };
+    }
+    const signatures = Array.from(new Set((logs.match(/(error|exception|fail|panic)/gi) || []).map((m) => m.toLowerCase())));
+    return {
+      summary: '未启用模型，返回基础日志分析结果',
+      error_signatures: signatures,
+      root_cause: signatures.length > 0 ? '存在错误关键词，需进一步排查' : '未发现明显错误关键词',
+    };
+  }
+
+  async classifyIssue(content: string): Promise<{ issue_type: string; category: string; severity: string; confidence: number }> {
+    const systemPrompt = `你是问题分类专家，输出JSON:\n{\n  "issue_type": "fault|request|complaint|inquiry",\n  "category": "product|technical|service",\n  "severity": "P0|P1|P2|P3|P4",\n  "confidence": 0.0-1.0\n}`;
+    const result = await this.generateJson(systemPrompt, `客户消息：${content}`);
+    if (result) {
+      return {
+        issue_type: String(result.issue_type ?? 'inquiry'),
+        category: String(result.category ?? 'service'),
+        severity: String(result.severity ?? 'P2'),
+        confidence: typeof result.confidence === 'number' ? result.confidence : 0.6,
+      };
+    }
+    const urgent = ['宕机', '崩溃', '无法'].some((kw) => content.includes(kw));
+    return {
+      issue_type: urgent ? 'fault' : 'inquiry',
+      category: urgent ? 'technical' : 'service',
+      severity: urgent ? 'P1' : 'P3',
+      confidence: 0.55,
+    };
+  }
+
+  async recommendSolution(issue: string): Promise<{ steps: string[]; temporary_solution?: string }> {
+    const systemPrompt = `你是故障解决专家，输出JSON:\n{\n  "steps": ["步骤1", "步骤2"],\n  "temporary_solution": "可选临时方案"\n}`;
+    const result = await this.generateJson(systemPrompt, `问题描述：${issue}`);
+    if (result) {
+      return {
+        steps: Array.isArray(result.steps) ? result.steps.map(String) : [],
+        temporary_solution: result.temporary_solution ? String(result.temporary_solution) : undefined,
+      };
+    }
+    return {
+      steps: ['收集错误信息', '确认影响范围', '安排技术排查'],
+      temporary_solution: '建议客户稍后重试并保持关注',
+    };
+  }
+
+  async estimateResolutionTime(severity: string): Promise<{ estimate: string }> {
+    const map: Record<string, string> = {
+      P0: '30分钟内',
+      P1: '2小时内',
+      P2: '1天内',
+      P3: '3天内',
+      P4: '1周内',
+    };
+    return { estimate: map[severity] ?? '待评估' };
+  }
+
+  async checkCompliance(content: string): Promise<{ compliant: boolean; issues: string[] }> {
+    const keywords = ['保证100%', '永久', '必须赔偿', '违法'];
+    const hits = keywords.filter((kw) => content.includes(kw));
+    return {
+      compliant: hits.length === 0,
+      issues: hits.length === 0 ? [] : hits.map((kw) => `包含潜在违规词：${kw}`),
+    };
+  }
+
+  async detectViolations(content: string): Promise<{ violations: string[] }> {
+    const result = await this.checkCompliance(content);
+    return { violations: result.issues };
+  }
+
+  async compareTeamPerformance(reports: Array<{ teamId: string; qualityScore?: number }>): Promise<{ averages: Record<string, number>; overall: number }> {
+    const sums: Record<string, { total: number; count: number }> = {};
+    for (const report of reports) {
+      if (!sums[report.teamId]) {
+        sums[report.teamId] = { total: 0, count: 0 };
+      }
+      if (typeof report.qualityScore === 'number') {
+        sums[report.teamId].total += report.qualityScore;
+        sums[report.teamId].count += 1;
+      }
+    }
+    const averages: Record<string, number> = {};
+    let total = 0;
+    let count = 0;
+    for (const [teamId, value] of Object.entries(sums)) {
+      const avg = value.count > 0 ? value.total / value.count : 0;
+      averages[teamId] = avg;
+      total += value.total;
+      count += value.count;
+    }
+    return { averages, overall: count > 0 ? total / count : 0 };
+  }
+
   async analyzeConversation(request: AnalyzeConversationRequest): Promise<AnalyzeConversationResult> {
     if (!request.conversationId) {
       throw new Error('conversationId is required');

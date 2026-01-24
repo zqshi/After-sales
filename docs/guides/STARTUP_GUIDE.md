@@ -2,6 +2,8 @@
 
 本指南帮助你快速启动售后系统的所有服务。
 
+> **统一 Docker 启动**：项目已切换为 Docker Compose 统一启动与编排，文中“手动启动/本地开发”步骤仅作参考，实际以 Docker Compose 为准。
+
 **版本**: v2.0
 **更新日期**: 2025-12-27
 **架构**: Multi-Agent (Phase 1 & 2 完成)
@@ -185,6 +187,11 @@ REDIS_PORT=6379
 AGENTSCOPE_URL=http://localhost:5000
 AGENTSCOPE_TIMEOUT=30000
 
+# Workflow配置（默认启用，设置为 false 可关闭）
+WORKFLOW_ENGINE_ENABLED=true
+WORKFLOW_ENGINE_MODE=full
+WORKFLOWS_DIR=./workflows
+
 # AI服务配置（可选）
 AI_SERVICE_PROVIDER=ksyun
 AI_SERVICE_URL=https://llm.cn-beijing.ksyun.com/v1
@@ -233,6 +240,9 @@ BACKEND_EVENT_BRIDGE_TIMEOUT=10
 HOST=0.0.0.0
 PORT=5000
 LOG_LEVEL=info
+
+# AgentScope预取上下文（可选，显式调用MCP工具）
+AGENTSCOPE_PREFETCH_ENABLED=false
 ```
 
 ---

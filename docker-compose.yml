@@ -66,6 +66,9 @@ services:
       REDIS_PORT: 6379
       REDIS_URL: redis://:redis123@redis:6379
       AGENTSCOPE_URL: http://agentscope-service:5000
+      WORKFLOW_ENGINE_ENABLED: "true"
+      WORKFLOW_ENGINE_MODE: full
+      WORKFLOWS_DIR: /app/workflows
       AI_SERVICE_URL: https://platform.deepseek.com/usage
       AI_SERVICE_API_KEY: sk-e583b61015a94e57956da61821c9d300
       AI_MODEL: deepseek-v3.1
@@ -103,6 +106,11 @@ services:
     environment:
       NODE_BACKEND_URL: http://backend:8080
       MCP_API_KEY:
+      AGENTSCOPE_MCP_ENABLED: "true"
+      AGENTSCOPE_MCP_TRANSPORT: streamable_http
+      AI_SERVICE_URL: https://platform.deepseek.com/usage
+      AI_SERVICE_API_KEY: sk-e583b61015a94e57956da61821c9d300
+      AI_MODEL: deepseek-v3.1
     depends_on:
       backend:
         condition: service_started

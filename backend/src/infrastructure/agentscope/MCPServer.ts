@@ -27,6 +27,7 @@ export class MCPServer {
   async initialize(): Promise<void> {
     this.registerTools();
     this.app.post('/mcp', this.handleRequest.bind(this));
+    this.app.get('/mcp', this.handleToolsList.bind(this));
     this.app.get('/mcp/tools', this.handleToolsList.bind(this));
   }
 
@@ -54,8 +55,8 @@ export class MCPServer {
     const body = request.body;
 
     if (!body || !body.method) {
-      reply.status(400);
-      return { error: 'method is required' };
+      // Graceful fallback for clients that probe /mcp without payload.
+      return this.listTools();
     }
 
     if (body.method === 'tools/list') {

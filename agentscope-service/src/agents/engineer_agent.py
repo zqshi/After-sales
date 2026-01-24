@@ -13,6 +13,9 @@ EngineerAgent - 售后工程师主Agent
 from __future__ import annotations
 
 from typing import Any
+import json
+import os
+import os
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIChatFormatter
@@ -22,10 +25,13 @@ from agentscope.model import OpenAIChatModel
 from agentscope.tool import Toolkit
 
 from src.tools.mcp_tools import BackendMCPClient
+from src.prompts.loader import prompt_registry
 
 
 # EngineerAgent的系统Prompt
-ENGINEER_AGENT_PROMPT = """你是专业的售后工程师。
+ENGINEER_AGENT_PROMPT = prompt_registry.get(
+    "engineer_agent.md",
+    fallback="""你是专业的售后工程师。
 
 核心职责：
 1. 故障诊断（根据症状分析根本原因）
@@ -157,7 +163,8 @@ ENGINEER_AGENT_PROMPT = """你是专业的售后工程师。
   "suggested_reply": "导出大量数据时可能会超时。临时方案：请使用筛选功能减少导出数据量。我们会尽快优化导出功能。",
   "confidence": 0.82
 }
-"""
+""",
+)
 
 
 class EngineerAgent(ReActAgent):
@@ -188,6 +195,60 @@ class EngineerAgent(ReActAgent):
             max_iters=max_iters,
         )
         self.mcp_client = mcp_client
+        self._prompt_filename = "engineer_agent.md"
+
+    async def __call__(self, msg: Msg) -> Msg:
+        base_prompt = prompt_registry.get(self._prompt_filename, fallback=ENGINEER_AGENT_PROMPT)
+        if os.getenv("AGENTSCOPE_PREFETCH_ENABLED", "false").lower() == "true":
+            await self._prefetch_context(msg)
+        self.sys_prompt = self._inject_prefetch_context(base_prompt, msg.metadata or {})
+        return await super().__call__(msg)
+
+    async def _prefetch_context(self, msg: Msg) -> None:
+        metadata = msg.metadata or {}
+        prefetch: dict[str, Any] = {}
+        try:
+            prefetch["system_status"] = await self.mcp_client.call_tool(
+                "getSystemStatus",
+                includeStats=False,
+            )
+        except Exception:
+            pass
+        try:
+            prefetch["knowledge"] = await self.mcp_client.call_tool(
+                "searchKnowledge",
+                query=msg.content,
+                mode="semantic",
+                filters={"limit": 5},
+            )
+        except Exception:
+            pass
+        try:
+            prefetch["similar_tickets"] = await self.mcp_client.call_tool(
+                "searchTickets",
+                query=msg.content,
+                limit=5,
+                offset=0,
+            )
+        except Exception:
+            pass
+        if prefetch:
+            metadata["prefetch"] = {**metadata.get("prefetch", {}), **prefetch}
+            msg.metadata = metadata
+
+    def _inject_prefetch_context(self, base_prompt: str, metadata: dict[str, Any]) -> str:
+        prefetch = metadata.get("prefetch")
+        if not prefetch:
+            return base_prompt
+        try:
+            payload = json.dumps(prefetch, ensure_ascii=False, indent=2)
+        except Exception:
+            payload = str(prefetch)
+        if len(payload) > 2000:
+            payload = payload[:2000] + "...(truncated)"
+        return (
+            f"{base_prompt}\n\n已加载上下文(自动获取):\n```json\n{payload}\n```"
+        )
 
     @classmethod
     async def create(
@@ -222,7 +283,7 @@ class EngineerAgent(ReActAgent):
 
         return cls(
             name="EngineerAgent",
-            sys_prompt=ENGINEER_AGENT_PROMPT,
+            sys_prompt=prompt_registry.get("engineer_agent.md", fallback=ENGINEER_AGENT_PROMPT),
             model=model,
             formatter=formatter,
             toolkit=toolkit,

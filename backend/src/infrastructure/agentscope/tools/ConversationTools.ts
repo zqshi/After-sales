@@ -85,6 +85,66 @@ export function buildConversationTools(deps: AgentScopeDependencies): MCPToolDef
       },
     },
     {
+      name: 'getConversationHistory',
+      description: '获取对话历史消息',
+      parameters: {
+        conversationId: { type: 'string', required: true },
+        includeMetadata: { type: 'boolean' },
+        limit: { type: 'number' },
+      },
+      handler: async (params) => {
+        const conversationId = requireString(params.conversationId, 'conversationId');
+        const includeMetadata = includeMessagesFlag(params.includeMetadata);
+        const limit = typeof params.limit === 'number' && params.limit > 0 ? Math.floor(params.limit) : undefined;
+        const conversation = await deps.conversationRepository.findById(conversationId);
+        if (!conversation) {
+          throw new Error(`Conversation not found: ${conversationId}`);
+        }
+        const messages = limit ? conversation.messages.slice(-limit) : conversation.messages;
+        return messages.map((msg) => ({
+          role: msg.senderType === 'customer' ? 'customer' : 'agent',
+          senderId: msg.senderId,
+          senderType: msg.senderType,
+          content: msg.content,
+          timestamp: msg.sentAt.toISOString(),
+          ...(includeMetadata ? { metadata: msg.metadata ?? {} } : {}),
+        }));
+      },
+    },
+    {
+      name: 'getConversationContext',
+      description: '获取对话上下文（元信息 + 最近消息）',
+      parameters: {
+        conversationId: { type: 'string', required: true },
+        limit: { type: 'number' },
+      },
+      handler: async (params) => {
+        const conversationId = requireString(params.conversationId, 'conversationId');
+        const limit = typeof params.limit === 'number' && params.limit > 0 ? Math.floor(params.limit) : 10;
+        const conversation = await deps.conversationRepository.findById(conversationId);
+        if (!conversation) {
+          throw new Error(`Conversation not found: ${conversationId}`);
+        }
+        const messages = conversation.messages.slice(-limit).map((msg) => ({
+          role: msg.senderType === 'customer' ? 'customer' : 'agent',
+          senderId: msg.senderId,
+          senderType: msg.senderType,
+          content: msg.content,
+          timestamp: msg.sentAt.toISOString(),
+        }));
+        return {
+          conversation: {
+            id: conversation.id,
+            customerId: conversation.customerId,
+            status: conversation.status.value,
+            channel: conversation.channel.value,
+            priority: conversation.priority.value,
+          },
+          messages,
+        };
+      },
+    },
+    {
       name: 'closeConversation',
       description: '关闭对话',
       parameters: {

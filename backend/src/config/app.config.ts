@@ -59,7 +59,7 @@ export const config = {
   },
 
   ai: {
-    provider: process.env.AI_SERVICE_PROVIDER || 'ksyun',
+    provider: process.env.AI_SERVICE_PROVIDER || 'deepseek',
     serviceUrl: process.env.AI_SERVICE_URL || '',
     apiKey: process.env.AI_SERVICE_API_KEY || '',
     model: process.env.AI_MODEL || 'deepseek-v3.1',
@@ -76,6 +76,18 @@ export const config = {
   outbox: {
     enabled: process.env.OUTBOX_PROCESSOR_ENABLED !== 'false',
     intervalMs: parseInt(process.env.OUTBOX_PROCESSOR_INTERVAL || '5000', 10),
+  },
+
+  workflow: {
+    enabled: process.env.WORKFLOW_ENGINE_ENABLED
+      ? process.env.WORKFLOW_ENGINE_ENABLED === 'true'
+      : true,
+    mode: (process.env.WORKFLOW_ENGINE_MODE || 'full') as 'analysis_only' | 'full',
+    workflowsDir: process.env.WORKFLOWS_DIR || path.resolve(process.cwd(), 'workflows'),
+    defaultTimeout: parseInt(process.env.WORKFLOW_DEFAULT_TIMEOUT || '10000', 10),
+    maxParallelSteps: parseInt(process.env.WORKFLOW_MAX_PARALLEL_STEPS || '6', 10),
+    enableLogging: process.env.WORKFLOW_LOGGING_ENABLED !== 'false',
+    enableMetrics: process.env.WORKFLOW_METRICS_ENABLED === 'true',
   },
 
   monitoring: {

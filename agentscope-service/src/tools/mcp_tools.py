@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -65,14 +66,21 @@ async def setup_toolkit() -> MCPToolkitBundle:
     """Set up the AgentScope toolkit and MCP client."""
 
     toolkit = Toolkit()
-    # Temporarily disable MCP client registration for quick startup
-    # mcp_client = HttpStatelessClient(
-    #     name="aftersales-node",
-    #     transport="streamable_http",
-    #     url=f"{settings.node_backend_url}/mcp",
-    #     headers={"Authorization": f"Bearer {settings.mcp_api_key}"} if settings.mcp_api_key else None,
-    # )
-    # await toolkit.register_mcp_client(mcp_client)
+    # Enable MCP tool registration by default to keep AgentScope in sync with backend startup.
+    enable_mcp = os.getenv("AGENTSCOPE_MCP_ENABLED", "true").lower() != "false"
+    if enable_mcp:
+        transport = os.getenv("AGENTSCOPE_MCP_TRANSPORT", "streamable_http")
+        mcp_client = HttpStatelessClient(
+            name="aftersales-node",
+            transport=transport,
+            url=f"{settings.node_backend_url}/mcp",
+            headers={"Authorization": f"Bearer {settings.mcp_api_key}"} if settings.mcp_api_key else None,
+        )
+        try:
+            await toolkit.register_mcp_client(mcp_client)
+        except Exception as exc:
+            # Keep AgentScope running even if MCP registration fails.
+            print(f"[AgentScope] MCP registration failed: {exc}")
 
     backend_client = BackendMCPClient(
         f"{settings.node_backend_url}/mcp",

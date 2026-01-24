@@ -14,8 +14,14 @@ import { UpdateRequirementStatusUseCase } from '@application/use-cases/requireme
 import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
 import { UpdateTaskStatusUseCase } from '@application/use-cases/task/UpdateTaskStatusUseCase';
 import { AnalyzeConversationUseCase } from '@application/use-cases/ai/AnalyzeConversationUseCase';
+import { ListConversationsUseCase } from '@application/use-cases/ListConversationsUseCase';
 import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 import { KnowledgeRecommender } from '@domain/knowledge/services/KnowledgeRecommender';
+import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
+import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
+import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
+import { SurveyRepository } from '@infrastructure/repositories/SurveyRepository';
+import { AiService } from '@application/services/AiService';
 
 export interface MCPToolDefinition {
   name: string;
@@ -25,10 +31,13 @@ export interface MCPToolDefinition {
 }
 
 export interface AgentScopeDependencies {
+  conversationRepository: ConversationRepository;
+  taskRepository: TaskRepository;
   createConversationUseCase: CreateConversationUseCase;
   sendMessageUseCase: SendMessageUseCase;
   getConversationUseCase: GetConversationUseCase;
   closeConversationUseCase: CloseConversationUseCase;
+  listConversationsUseCase: ListConversationsUseCase;
   getCustomerProfileUseCase: GetCustomerProfileUseCase;
   refreshCustomerProfileUseCase: RefreshCustomerProfileUseCase;
   addServiceRecordUseCase: AddServiceRecordUseCase;
@@ -43,4 +52,7 @@ export interface AgentScopeDependencies {
   analyzeConversationUseCase: AnalyzeConversationUseCase;
   knowledgeRepository: KnowledgeRepository;
   knowledgeRecommender: KnowledgeRecommender;
+  aiService: AiService;
+  qualityReportRepository: QualityReportRepository;
+  surveyRepository: SurveyRepository;
 }

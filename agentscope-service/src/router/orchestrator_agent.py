@@ -26,6 +26,18 @@ from src.agents.assistant_agent import AssistantAgent
 from src.agents.engineer_agent import EngineerAgent
 from src.agents.human_agent_adapter import HumanAgentAdapter
 from src.tools.mcp_tools import BackendMCPClient
+from src.prompts.loader import prompt_registry
+
+
+ORCHESTRATOR_AGENT_PROMPT = prompt_registry.get(
+    "orchestrator_agent.md",
+    fallback="""你是智能协调器，负责路由与编排多个Agent协作。
+核心任务：
+1. 识别场景与复杂度
+2. 选择执行模式（simple/parallel/agent_supervised/human_first）
+3. 汇总结果并输出可执行建议
+""",
+)
 
 
 class OrchestratorAgent:

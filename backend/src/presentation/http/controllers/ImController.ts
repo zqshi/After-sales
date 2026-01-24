@@ -33,6 +33,8 @@ import { CustomerLevelInfo } from '@domain/customer/value-objects/CustomerLevelI
 import { Metrics } from '@domain/customer/value-objects/Metrics';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { WorkflowRegistry } from '@infrastructure/workflow/WorkflowRegistry';
+import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
 
 interface IncomingMessageRequest {
   customerId: string;
@@ -926,6 +928,7 @@ export class ImController {
         status: 'approved' | 'rejected';
         reviewerNote?: string;
         createTasks?: boolean;
+        modifiedSuggestion?: Record<string, unknown>;
       };
 
       if (!body.reviewId || !body.status) {
@@ -951,10 +954,23 @@ export class ImController {
         reviewerNote: body.reviewerNote,
       });
 
+      const suggestion = review.suggestion as Record<string, unknown>;
+      const executionId = suggestion?.executionId as string | undefined;
+      const stepName = suggestion?.stepName as string | undefined;
+      if (executionId && stepName) {
+        WorkflowRegistry.submitHumanResponse(executionId, stepName, {
+          executionId,
+          stepName,
+          action: body.status === 'approved' ? 'approve' : 'reject',
+          modifiedData: body.modifiedSuggestion,
+          reason: body.reviewerNote,
+          respondedAt: new Date(),
+        });
+      }
+
       let tasksCreated: string[] = [];
       if (body.status === 'approved' && body.createTasks !== false) {
-        const suggestion = review.suggestion as any;
-        const recommended = Array.isArray(suggestion?.recommendedTasks)
+        const recommended = Array.isArray((suggestion as any)?.recommendedTasks)
           ? suggestion.recommendedTasks
           : [];
         for (const task of recommended) {
@@ -987,6 +1003,90 @@ export class ImController {
         error: error instanceof Error ? error.message : '服务器内部错误',
       });
     }
+  }
+
+  /**
+   * 获取待处理人工审核列表
+   * GET /im/reviews/pending
+   */
+  async getPendingReviews(
+    _request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const engine = WorkflowRegistry.getWorkflowEngine();
+      if (!engine) {
+        reply.code(200).send({ success: true, data: { pending: [] } });
+        return;
+      }
+      const pending = engine.getPendingHumanReviews();
+      reply.code(200).send({
+        success: true,
+        data: {
+          pending: pending.map((item) => ({
+            executionId: item.executionId,
+            workflowName: item.workflowName,
+            stepName: item.stepName,
+            requestedAt: item.requestedAt,
+            timeout: item.timeout,
+            data: item.data,
+          })),
+        },
+      });
+    } catch (error) {
+      console.error('[ImController] getPendingReviews error', error);
+      reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : '服务器内部错误',
+      });
+    }
+  }
+
+  /**
+   * 订阅人工审核请求（SSE）
+   * GET /im/reviews/stream
+   */
+  async streamReviewRequests(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    const engine = WorkflowRegistry.getWorkflowEngine();
+    if (!engine) {
+      reply.code(204).send();
+      return;
+    }
+
+    reply.raw.setHeader('Content-Type', 'text/event-stream');
+    reply.raw.setHeader('Cache-Control', 'no-cache');
+    reply.raw.setHeader('Connection', 'keep-alive');
+    reply.raw.flushHeaders?.();
+
+    const sendEvent = (payload: any) => {
+      reply.raw.write(`event: review\n`);
+      reply.raw.write(`data: ${JSON.stringify(payload)}\n\n`);
+    };
+
+    const listener = (event: any) => {
+      sendEvent({
+        executionId: event.executionId,
+        workflowName: event.workflowName,
+        stepName: event.stepName,
+        requestedAt: event.requestedAt,
+        timeout: event.timeout,
+        data: event.data,
+      });
+    };
+
+    engine.on('human_review_requested', listener);
+
+    const keepAlive = setInterval(() => {
+      reply.raw.write(`event: ping\ndata: {}\n\n`);
+    }, 15000);
+
+    request.raw.on('close', () => {
+      clearInterval(keepAlive);
+      reply.raw.end();
+    });
   }
 
   /**
@@ -1149,6 +1249,27 @@ export class ImController {
     try {
       const { conversationId } = request.params as { conversationId: string };
 
+      try {
+        const repo = new QualityReportRepository((this.conversationRepository as any).dataSource);
+        const latest = await repo.findLatestByConversationId(conversationId);
+        if (latest) {
+          reply.code(200).send({
+            success: true,
+            data: {
+              conversationId,
+              quality: {
+                score: latest.qualityScore,
+                report: latest.report,
+                createdAt: latest.createdAt,
+              },
+            },
+          });
+          return;
+        }
+      } catch (err) {
+        console.warn('[ImController] load quality report failed, fallback to AI analysis', err);
+      }
+
       const conversation = await this.conversationRepository.findById(conversationId);
       if (!conversation) {
         return reply.code(404).send({
@@ -1245,6 +1366,86 @@ export class ImController {
       });
     } catch (error) {
       console.error('[ImController] getConversationQuality error', error);
+      reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : '服务器内部错误',
+      });
+    }
+  }
+
+  /**
+   * 获取会话质检报告列表
+   * GET /quality/:conversationId/reports
+   */
+  async getConversationQualityReports(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { conversationId } = request.params as { conversationId: string };
+      const query = request.query as { limit?: string; offset?: string };
+      const limit = Number.parseInt(query.limit || '20', 10);
+      const offset = Number.parseInt(query.offset || '0', 10);
+
+      const repo = new QualityReportRepository((this.conversationRepository as any).dataSource);
+      const reports = await repo.findByConversationId(conversationId, { limit, offset });
+
+      reply.code(200).send({
+        success: true,
+        data: {
+          conversationId,
+          reports: reports.map((report) => ({
+            id: report.id,
+            qualityScore: report.qualityScore,
+            report: report.report,
+            createdAt: report.createdAt,
+          })),
+          limit,
+          offset,
+        },
+      });
+    } catch (error) {
+      console.error('[ImController] getConversationQualityReports error', error);
+      reply.code(500).send({
+        success: false,
+        error: error instanceof Error ? error.message : '服务器内部错误',
+      });
+    }
+  }
+
+  /**
+   * 获取最近质检报告列表
+   * GET /quality/reports
+   */
+  async listQualityReports(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const query = request.query as { limit?: string; offset?: string };
+      const limit = Number.parseInt(query.limit || '20', 10);
+      const offset = Number.parseInt(query.offset || '0', 10);
+
+      const repo = new QualityReportRepository((this.conversationRepository as any).dataSource);
+      const reports = await repo.listLatest({ limit, offset });
+
+      reply.code(200).send({
+        success: true,
+        data: {
+          reports: reports.map((report) => ({
+            id: report.id,
+            conversationId: report.conversationId,
+            problemId: report.problemId,
+            qualityScore: report.qualityScore,
+            report: report.report,
+            createdAt: report.createdAt,
+          })),
+          limit,
+          offset,
+        },
+      });
+    } catch (error) {
+      console.error('[ImController] listQualityReports error', error);
       reply.code(500).send({
         success: false,
         error: error instanceof Error ? error.message : '服务器内部错误',
@@ -1393,21 +1594,11 @@ export class ImController {
         console.warn('[ImController] 回复生成失败，未返回建议', err);
       }
       if (!replySuggestion && latestCustomerMessage) {
-        const issueProductLabel = issueSignals.issueProduct
-          ? `关于${issueSignals.issueProduct}`
-          : '关于您反馈的问题';
-        const faultLevelText = issueSignals.faultLevel
-          ? `我们已按${issueSignals.faultLevel}级别优先处理。`
-          : '';
-        const referenceTitle = knowledgeRecommendations[0]?.title;
-        const referenceLine = referenceTitle ? `可先参考《${referenceTitle}》进行自查。` : '';
-        const apology = sentiment.overallSentiment === 'negative' ? '给您带来不便非常抱歉，' : '';
-        const suggestedReply = `${apology}已收到您${issueProductLabel}的反馈。${faultLevelText}请提供相关账号/区域/报错截图（如有），我们将继续跟进。${referenceLine}`.trim();
         replySuggestion = {
-          suggestedReply,
+          suggestedReply: '已收到您的问题，我们会尽快回复。如需加急，请在消息中说明紧急事项。',
           confidence: 0.56,
           needsHumanReview: true,
-          reason: '本地模板生成',
+          reason: 'assistant_unavailable',
         };
       }
 

@@ -18,6 +18,23 @@ steps:
       output: classification
       timeout: 5000
 
+    # Step 1.1: 获取对话上下文
+    - name: load_conversation_context
+      action: get_conversation_context
+      input:
+        conversationId: $conversation.id
+        limit: 10
+      output: conversation_context
+      timeout: 3000
+
+    # Step 1.2: 识别意图
+    - name: classify_intent
+      action: classify_intent
+      input:
+        content: $message.content
+      output: intent
+      timeout: 3000
+
     # Step 2: 并行分析（情感分析 + 需求检测 + 知识检索）
     - name: parallel_analysis
       type: parallel
@@ -52,6 +69,8 @@ steps:
       action: classify
       input:
         message: $message
+        context: $conversation_context
+        intent: $intent
         sentiment: $parallel_analysis.sentiment_analysis
         requirements: $parallel_analysis.requirement_detection
         knowledge: $parallel_analysis.knowledge_search
@@ -82,6 +101,19 @@ steps:
         suggestedReply: $suggested_reply.reply
         detectedRequirements: $parallel_analysis.requirement_detection.requirements
         confidence: $suggested_reply.confidence
+
+    # Step 5.1: 风险升级（紧急/投诉场景）
+    - name: escalate_if_needed
+      action: escalate_to_human
+      condition: $classification.detectEmergency == true || $intent.intent == 'complaint'
+      input:
+        conversationId: $conversation.id
+        suggestion:
+          reason: $intent.intent
+          classification: $classification
+          intent: $intent
+        confidence: $suggested_reply.confidence
+      timeout: 3000
 
     # Step 6: 发送回复
     - name: send_reply

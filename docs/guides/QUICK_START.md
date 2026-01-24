@@ -54,9 +54,9 @@
 
 ---
 
-## 🚀 快速启动（3种方式）
+## 🚀 快速启动（Docker）
 
-### 方式 1: Docker 一键启动（推荐）
+### Docker 一键启动（推荐）
 
 ```bash
 # 1. 克隆项目
@@ -75,10 +75,10 @@ cd After-sales
 # docker-compose pull
 
 # 4. 启动所有服务
-docker-compose up -d
+docker compose up -d --build
 
 # 5. 等待服务就绪
-docker-compose logs -f backend
+docker compose logs -f backend
 
 # 6. 访问服务
 # 前端: http://localhost:3000
@@ -87,109 +87,46 @@ docker-compose logs -f backend
 # AgentScope FastAPI: http://localhost:5000/health
 ```
 
+### Workflow 与 Prefetch（可选）
+
+默认开启 Workflow（可手动关闭）：
+```
+WORKFLOW_ENGINE_ENABLED=true
+WORKFLOW_ENGINE_MODE=full
+```
+
+AgentScope 侧可选启用 MCP 预取（会把上下文注入提示词）：
+```
+AGENTSCOPE_PREFETCH_ENABLED=false
+```
+
 **遇到镜像拉取问题？** 查看 [Docker 故障排查指南](docs/DOCKER_GUIDE.md#拉取镜像故障排查)
-
-### 方式 2: 本地开发环境
-
-```bash
-# 1. 安装依赖
-npm install
-cd backend && npm install
-
-# 2. 启动数据库（Docker）
-docker-compose up -d postgres redis
-
-# 3. 配置环境变量
-cp backend/.env.example backend/.env
-# 编辑 backend/.env 配置数据库连接
-
-# 4. 运行数据库迁移
-cd backend
-npm run migration:run
-
-# 5. 启动后端服务
-npm run dev
-
-# 6. 启动前端服务（新终端）
-cd ..
-npm run dev
-```
-
-### 方式 3: 仅启动数据库
-
-```bash
-# 只启动 PostgreSQL 和 Redis
-docker-compose up -d postgres redis
-
-# 查看状态
-docker-compose ps
-```
 
 ---
 
 ## 📋 核心命令速查
 
-### 后端开发
-
-```bash
-cd backend
-
-# 开发
-npm run dev              # 启动开发服务器
-npm run build            # 构建生产版本
-npm start                # 启动生产服务器
-
-# 测试
-npm test                 # 运行所有测试
-npm run test:unit        # 单元测试
-npm run test:integration # 集成测试
-npm run test:e2e         # E2E测试
-npm run test:coverage    # 测试覆盖率
-
-# 代码质量
-npm run lint             # 代码检查
-npm run lint:fix         # 自动修复
-npm run format           # 格式化代码
-npm run type-check       # 类型检查
-
-# 数据库
-npm run migration:generate # 生成迁移文件
-npm run migration:run      # 运行迁移
-npm run migration:revert   # 回滚迁移
-```
-
-### 前端开发
-
-```bash
-npm run dev              # 启动开发服务器
-npm run build            # 构建生产版本
-npm run preview          # 预览生产版本
-npm run lint             # 代码检查
-npm run format           # 格式化代码
-npm test                 # 运行测试
-```
-
 ### Docker 操作
 
 ```bash
-docker-compose up -d              # 启动所有服务
-docker-compose down               # 停止所有服务
-docker-compose logs -f backend    # 查看后端日志
-docker-compose exec backend sh    # 进入后端容器
-docker-compose exec postgres psql -U admin -d aftersales  # 进入数据库
+docker compose up -d --build           # 启动所有服务
+docker compose down                    # 停止所有服务
+docker compose logs -f backend         # 查看后端日志
+docker compose exec backend sh         # 进入后端容器
+docker compose exec postgres psql -U admin -d aftersales  # 进入数据库
 ```
 
 ### 拉取镜像故障排查
 
-如果 `docker-compose pull` 或 `docker-compose up -d` 报 `Get "https://registry-1.docker.io/v2/": EOF`，说明 Docker Hub 镜像暂时不可用：
+如果 `docker compose pull` 或 `docker compose up -d` 报 `Get "https://registry-1.docker.io/v2/": EOF`，说明 Docker Hub 镜像暂时不可用：
 
-- 重试 `docker-compose pull` 或尝试逐个 `docker pull prom/prometheus:latest` 等。
+- 重试 `docker compose pull` 或尝试逐个 `docker pull prom/prometheus:latest` 等。
 - 检查本地网络/代理，必要时设置 `DOCKER_BUILDKIT=0`。
-- 只要能成功拉取 `prom/prometheus`, `grafana/grafana`, `postgres:15-alpine`, `redis:7-alpine`，就可以重新运行 `docker-compose up -d`。
+- 只要能成功拉取 `prom/prometheus`, `grafana/grafana`, `postgres:15-alpine`, `redis:7-alpine`，就可以重新运行 `docker compose up -d`。
 - 如果构建过程中提示访问 `docker.mirrors.ustc.edu.cn` 但无法解析（如 `lookup docker.mirrors.ustc.edu.cn: no such host`），说明 Docker Desktop 正在使用不可用的镜像加速器或代理：
   - 打开 Docker Desktop → Settings → Docker Engine，检查 `registry-mirrors` 配置，移除或替换为能解析的镜像源。
   - 如果使用了系统代理，确保 Docker Desktop 的代理设置（Settings → Resources → Proxies）与本地网络一致或设置成 “No proxy”。
-  - 重新运行 `docker pull node:18-alpine`/`docker-compose pull` 确认元数据读取成功。
+- 重新运行 `docker pull node:18-alpine`/`docker compose pull` 确认元数据读取成功。
 
 ---
 

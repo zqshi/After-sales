@@ -13,6 +13,9 @@ InspectorAgent - 质检专员Agent
 from __future__ import annotations
 
 from typing import Any
+import json
+import os
+import os
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIChatFormatter
@@ -22,10 +25,13 @@ from agentscope.model import OpenAIChatModel
 from agentscope.tool import Toolkit
 
 from src.tools.mcp_tools import BackendMCPClient
+from src.prompts.loader import prompt_registry
 
 
 # InspectorAgent的系统Prompt
-INSPECTOR_AGENT_PROMPT = """你是专业的质检专员。
+INSPECTOR_AGENT_PROMPT = prompt_registry.get(
+    "inspector_agent.md",
+    fallback="""你是专业的质检专员。
 
 核心职责：
 1. 对话质量评估（处理质量、合规性、专业度）
@@ -128,7 +134,8 @@ INSPECTOR_AGENT_PROMPT = """你是专业的质检专员。
     "您对我们的响应速度是否满意？"
   ]
 }
-"""
+""",
+)
 
 
 class InspectorAgent(ReActAgent):
@@ -159,6 +166,46 @@ class InspectorAgent(ReActAgent):
             max_iters=max_iters,
         )
         self.mcp_client = mcp_client
+        self._prompt_filename = "inspector_agent.md"
+
+    async def __call__(self, msg: Msg) -> Msg:
+        base_prompt = prompt_registry.get(self._prompt_filename, fallback=INSPECTOR_AGENT_PROMPT)
+        if os.getenv("AGENTSCOPE_PREFETCH_ENABLED", "false").lower() == "true":
+            await self._prefetch_context(msg)
+        self.sys_prompt = self._inject_prefetch_context(base_prompt, msg.metadata or {})
+        return await super().__call__(msg)
+
+    async def _prefetch_context(self, msg: Msg) -> None:
+        metadata = msg.metadata or {}
+        prefetch: dict[str, Any] = {}
+        conversation_id = metadata.get("conversationId") or msg.id
+        try:
+            prefetch["conversation_history"] = await self.get_conversation_history(conversation_id)
+        except Exception:
+            pass
+        customer_id = metadata.get("customerId")
+        if customer_id:
+            try:
+                prefetch["customer_history"] = await self.get_customer_history(customer_id)
+            except Exception:
+                pass
+        if prefetch:
+            metadata["prefetch"] = {**metadata.get("prefetch", {}), **prefetch}
+            msg.metadata = metadata
+
+    def _inject_prefetch_context(self, base_prompt: str, metadata: dict[str, Any]) -> str:
+        prefetch = metadata.get("prefetch")
+        if not prefetch:
+            return base_prompt
+        try:
+            payload = json.dumps(prefetch, ensure_ascii=False, indent=2)
+        except Exception:
+            payload = str(prefetch)
+        if len(payload) > 2000:
+            payload = payload[:2000] + "...(truncated)"
+        return (
+            f"{base_prompt}\n\n已加载上下文(自动获取):\n```json\n{payload}\n```"
+        )
 
     @classmethod
     async def create(
@@ -193,7 +240,7 @@ class InspectorAgent(ReActAgent):
 
         return cls(
             name="InspectorAgent",
-            sys_prompt=INSPECTOR_AGENT_PROMPT,
+            sys_prompt=prompt_registry.get("inspector_agent.md", fallback=INSPECTOR_AGENT_PROMPT),
             model=model,
             formatter=formatter,
             toolkit=toolkit,

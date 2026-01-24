@@ -2,55 +2,16 @@
 
 ## 🚀 立即开始
 
-### 1. 运行数据库迁移（创建outbox_events表）
+### Docker 一键启动（推荐）
 
 ```bash
-cd backend
-npm run typeorm migration:run
+./start-all.sh
 ```
 
-### 2. 启动应用并启用OutboxProcessor
+或直接使用 Docker Compose：
 
-在 `backend/src/server.ts` 中添加：
-
-```typescript
-import { initializeOutboxProcessor, shutdownOutboxProcessor } from './infrastructure/events/outbox-setup';
-
-// 启动时
-const outboxProcessor = await initializeOutboxProcessor();
-console.log('✅ OutboxProcessor started');
-
-// 优雅关闭
-process.on('SIGTERM', async () => {
-  await shutdownOutboxProcessor(outboxProcessor);
-  await AppDataSource.destroy();
-  process.exit(0);
-});
-```
-
-### 3. 订阅事件处理器
-
-在 `backend/src/infrastructure/events/outbox-setup.ts` 中添加：
-
-```typescript
-// 在initializeOutboxProcessor函数中
-const eventBus = new EventBus();
-
-// 订阅所有事件处理器
-eventBus.subscribe('RequirementCreatedEvent', async (event) => {
-  const handler = new RequirementCreatedEventHandler(
-    createTaskUseCase,
-    requirementRepository
-  );
-  await handler.handle(event);
-});
-
-eventBus.subscribe('TaskCompletedEvent', async (event) => {
-  const handler = new TaskCompletedEventHandler(/* dependencies */);
-  await handler.handle(event);
-});
-
-// 添加更多订阅...
+```bash
+docker compose up -d --build
 ```
 
 ---

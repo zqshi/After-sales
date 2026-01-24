@@ -41,61 +41,20 @@ Docker Compose 模式下前端默认映射到 http://localhost:3000。
 
 ### 前置要求
 
-- Node.js >= 18
-- Python >= 3.10
-- PostgreSQL 15.x
-- Redis 7.x
+- Docker Desktop 或 Docker Engine + Docker Compose
 
-### 方式一：一键启动（本地）
+### 一键启动（Docker）
 
 ```bash
 ./start-all.sh
 ```
 
-脚本会安装依赖、启动后端、AgentScope 与前端，并进行基础健康检查。
+脚本会通过 Docker Compose 启动全部服务。
 
-### 方式二：手动启动（本地）
-
-1. 安装依赖
+### 直接使用 Docker Compose
 
 ```bash
-npm install
-cd backend && npm install
-cd ../agentscope-service && python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-```
-
-2. 启动后端
-
-```bash
-cd backend
-npm run dev
-```
-
-3. 启动 AgentScope
-
-```bash
-cd agentscope-service
-source venv/bin/activate
-uvicorn src.api.main:app --reload --port 5000
-```
-
-4. 启动前端
-
-```bash
-npm run dev
-```
-
-### 方式三：Docker Compose
-
-```bash
-docker-compose up --build
-```
-
-如只需数据库与缓存，可使用：
-
-```bash
-docker-compose up -d postgres redis
+docker compose up -d --build
 ```
 
 ## 📁 项目结构
@@ -167,6 +126,17 @@ After-sales/
 - **缓存/消息**：Redis 7.x
 
 ### AgentScope 服务
+
+Workflow 默认开启（可关闭）：
+```
+WORKFLOW_ENGINE_ENABLED=true
+WORKFLOW_ENGINE_MODE=full
+```
+
+AgentScope 预取上下文（可选）：
+```
+AGENTSCOPE_PREFETCH_ENABLED=false
+```
 
 - **框架**：FastAPI
 - **语言**：Python 3.10+

@@ -36,14 +36,23 @@ export class WorkflowEngine {
   private actionExecutor: ActionStepExecutor;
   private humanInLoopExecutor: HumanInLoopExecutor;
 
-  constructor(config: WorkflowEngineConfig) {
+  constructor(
+    config: WorkflowEngineConfig,
+    overrides?: {
+      actionExecutor?: ActionStepExecutor;
+      humanInLoopExecutor?: HumanInLoopExecutor;
+      parallelExecutor?: ParallelStepExecutor;
+    },
+  ) {
     this.config = config;
     this.eventEmitter = new EventEmitter();
 
     // 初始化默认执行器
-    this.actionExecutor = new ActionStepExecutor();
-    this.humanInLoopExecutor = new HumanInLoopExecutor(this.eventEmitter);
-    const parallelExecutor = new ParallelStepExecutor(config.maxParallelSteps);
+    this.actionExecutor = overrides?.actionExecutor ?? new ActionStepExecutor();
+    this.humanInLoopExecutor =
+      overrides?.humanInLoopExecutor ?? new HumanInLoopExecutor(this.eventEmitter);
+    const parallelExecutor =
+      overrides?.parallelExecutor ?? new ParallelStepExecutor(config.maxParallelSteps);
 
     this.executors = [this.actionExecutor, parallelExecutor, this.humanInLoopExecutor];
 
@@ -218,6 +227,12 @@ export class WorkflowEngine {
 
     console.log(`[WorkflowEngine] Executing step: ${step.name}`);
 
+    // 并行步骤在引擎内执行，确保共享状态与结果记录
+    if (step.type === 'parallel') {
+      await this.executeParallelStep(step, state);
+      return;
+    }
+
     // 解析输入
     const resolvedInput = state.resolveInput(step.input);
 
@@ -236,30 +251,37 @@ export class WorkflowEngine {
       );
 
       let output: any;
-      if (timeout > 0) {
-        output = await Promise.race([
-          executionPromise,
-          this.createTimeoutPromise(timeout, step.name),
-        ]);
-      } else {
-        output = await executionPromise;
-      }
-
-      // 处理循环步骤
       if (step.loop) {
         const loopData = state.get(step.loop);
         if (Array.isArray(loopData)) {
           const loopResults = [];
           for (const item of loopData) {
             state.set('item', item);
-            const loopOutput = await executor.execute(
-              { ...step, input: resolvedInput },
+            const loopInput = state.resolveInput(step.input);
+            const loopPromise = executor.execute(
+              { ...step, input: loopInput },
               state.getContext(),
             );
+            const loopOutput =
+              timeout > 0
+                ? await Promise.race([
+                    loopPromise,
+                    this.createTimeoutPromise(timeout, step.name),
+                  ])
+                : await loopPromise;
             loopResults.push(loopOutput);
           }
           output = loopResults;
+        } else {
+          output = [];
         }
+      } else if (timeout > 0) {
+        output = await Promise.race([
+          executionPromise,
+          this.createTimeoutPromise(timeout, step.name),
+        ]);
+      } else {
+        output = await executionPromise;
       }
 
       // 记录步骤结果
@@ -302,6 +324,63 @@ export class WorkflowEngine {
         return;
       }
 
+      throw err;
+    }
+  }
+
+  private async executeParallelStep(step: WorkflowStep, state: WorkflowState): Promise<void> {
+    const stepStartTime = Date.now();
+    if (!step.steps || step.steps.length === 0) {
+      throw new Error(`Parallel step ${step.name} has no sub-steps`);
+    }
+
+    const maxParallel = Math.max(this.config.maxParallelSteps, 1);
+    const results: Record<string, any> = {};
+
+    try {
+      for (let i = 0; i < step.steps.length; i += maxParallel) {
+        const batch = step.steps.slice(i, i + maxParallel);
+        const batchResults = await Promise.allSettled(
+          batch.map(async (subStep) => {
+            await this.executeStep(subStep, state);
+            return state.get(subStep.name);
+          }),
+        );
+
+        batchResults.forEach((result, index) => {
+          const subStep = batch[index];
+          if (result.status === 'fulfilled') {
+            results[subStep.name] = result.value;
+          } else {
+            results[subStep.name] = { error: (result.reason as Error).message };
+          }
+        });
+      }
+
+      const stepResult: StepResult = {
+        stepName: step.name,
+        status: 'completed',
+        startedAt: new Date(stepStartTime),
+        completedAt: new Date(),
+        duration: Date.now() - stepStartTime,
+        input: state.resolveInput(step.input),
+        output: results,
+      };
+      state.recordStepResult(stepResult);
+      if (step.output) {
+        state.set(step.output, results);
+      }
+    } catch (err) {
+      const stepResult: StepResult = {
+        stepName: step.name,
+        status: 'failed',
+        startedAt: new Date(stepStartTime),
+        completedAt: new Date(),
+        duration: Date.now() - stepStartTime,
+        input: state.resolveInput(step.input),
+        error: (err as Error).message,
+      };
+      state.recordStepResult(stepResult);
       throw err;
     }
   }

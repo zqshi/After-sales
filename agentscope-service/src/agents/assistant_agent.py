@@ -13,6 +13,9 @@ AssistantAgent - 辅助Agent
 from __future__ import annotations
 
 from typing import Any
+import json
+import os
+import os
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIChatFormatter
@@ -22,10 +25,13 @@ from agentscope.model import OpenAIChatModel
 from agentscope.tool import Toolkit
 
 from src.tools.mcp_tools import BackendMCPClient
+from src.prompts.loader import prompt_registry
 
 
 # AssistantAgent的系统Prompt
-ASSISTANT_AGENT_PROMPT = """你是专业的售后客服助手。
+ASSISTANT_AGENT_PROMPT = prompt_registry.get(
+    "assistant_agent.md",
+    fallback="""你是专业的售后客服助手。
 
 核心职责：
 1. 分析客户情感（正面/中性/负面，风险等级）
@@ -118,7 +124,8 @@ ASSISTANT_AGENT_PROMPT = """你是专业的售后客服助手。
   "suggested_reply": "非常抱歉给您带来不便！请问您具体遇到了什么问题？我会立即为您处理并上报。",
   "confidence": 0.65
 }
-"""
+""",
+)
 
 
 class AssistantAgent(ReActAgent):
@@ -149,6 +156,55 @@ class AssistantAgent(ReActAgent):
             max_iters=max_iters,
         )
         self.mcp_client = mcp_client
+        self._prompt_filename = "assistant_agent.md"
+
+    async def __call__(self, msg: Msg) -> Msg:
+        # Hot reload prompt on each call
+        base_prompt = prompt_registry.get(self._prompt_filename, fallback=ASSISTANT_AGENT_PROMPT)
+        if os.getenv("AGENTSCOPE_PREFETCH_ENABLED", "false").lower() == "true":
+            await self._prefetch_context(msg)
+        self.sys_prompt = self._inject_prefetch_context(base_prompt, msg.metadata or {})
+        return await super().__call__(msg)
+
+    async def _prefetch_context(self, msg: Msg) -> None:
+        metadata = msg.metadata or {}
+        prefetch: dict[str, Any] = {}
+        try:
+            prefetch["sentiment"] = await self.analyze_sentiment(msg)
+        except Exception:
+            pass
+        customer_id = metadata.get("customerId")
+        if customer_id:
+            try:
+                prefetch["customer_profile"] = await self.get_customer_profile(customer_id)
+            except Exception:
+                pass
+        try:
+            prefetch["knowledge"] = await self.mcp_client.call_tool(
+                "searchKnowledge",
+                query=msg.content,
+                mode="semantic",
+                filters={"limit": 5},
+            )
+        except Exception:
+            pass
+        if prefetch:
+            metadata["prefetch"] = {**metadata.get("prefetch", {}), **prefetch}
+            msg.metadata = metadata
+
+    def _inject_prefetch_context(self, base_prompt: str, metadata: dict[str, Any]) -> str:
+        prefetch = metadata.get("prefetch")
+        if not prefetch:
+            return base_prompt
+        try:
+            payload = json.dumps(prefetch, ensure_ascii=False, indent=2)
+        except Exception:
+            payload = str(prefetch)
+        if len(payload) > 2000:
+            payload = payload[:2000] + "...(truncated)"
+        return (
+            f"{base_prompt}\n\n已加载上下文(自动获取):\n```json\n{payload}\n```"
+        )
 
     @classmethod
     async def create(
@@ -183,7 +239,7 @@ class AssistantAgent(ReActAgent):
 
         return cls(
             name="AssistantAgent",
-            sys_prompt=ASSISTANT_AGENT_PROMPT,
+            sys_prompt=prompt_registry.get("assistant_agent.md", fallback=ASSISTANT_AGENT_PROMPT),
             model=model,
             formatter=formatter,
             toolkit=toolkit,

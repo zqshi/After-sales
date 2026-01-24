@@ -1,5 +1,5 @@
 import { RefreshCustomerProfileRequest } from '@application/use-cases/customer/RefreshCustomerProfileUseCase';
-import { optionalArray, optionalString, requireString } from './helpers';
+import { optionalArray, optionalNumber, optionalString, requireString } from './helpers';
 import { AgentScopeDependencies, MCPToolDefinition } from '../types';
 
 export function buildCustomerTools(deps: AgentScopeDependencies): MCPToolDefinition[] {
@@ -57,6 +57,25 @@ export function buildCustomerTools(deps: AgentScopeDependencies): MCPToolDefinit
           description: requireString(params.description, 'description'),
           ownerId: optionalString(params.ownerId),
           outcome: optionalString(params.outcome),
+        });
+      },
+    },
+    {
+      name: 'getCustomerHistory',
+      description: '获取客户历史对话列表',
+      parameters: {
+        customerId: { type: 'string', required: true },
+        limit: { type: 'number' },
+        page: { type: 'number' },
+      },
+      handler: async (params) => {
+        const customerId = requireString(params.customerId, 'customerId');
+        const limit = optionalNumber(params.limit);
+        const page = optionalNumber(params.page);
+        return deps.listConversationsUseCase.execute({
+          customerId,
+          limit,
+          page,
         });
       },
     },

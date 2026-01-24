@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# After-Sales System - 停止所有服务脚本
+# After-Sales System - Docker 停止脚本
+# 使用 Docker Compose 停止全部服务
 
 set -e
 
-# 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -19,63 +19,46 @@ log_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-echo ""
-echo "========================================"
-echo "  After-Sales System - 停止所有服务"
-echo "========================================"
-echo ""
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
 
-log_info "正在查找运行中的服务进程..."
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
-# 停止Node后端
-BACKEND_PIDS=$(lsof -ti :8080 2>/dev/null || true)
-if [ ! -z "$BACKEND_PIDS" ]; then
-    log_info "停止后端服务..."
-    kill $BACKEND_PIDS 2>/dev/null || true
-    log_success "后端服务已停止"
-else
-    log_info "后端服务未运行"
-fi
-
-# 停止AgentScope
-AGENTSCOPE_PIDS=$(lsof -ti :5000 2>/dev/null || true)
-if [ ! -z "$AGENTSCOPE_PIDS" ]; then
-    log_info "停止AgentScope服务..."
-    kill $AGENTSCOPE_PIDS 2>/dev/null || true
-    log_success "AgentScope服务已停止"
-else
-    log_info "AgentScope服务未运行"
-fi
-
-# 停止前端
-FRONTEND_PIDS=$(lsof -ti :3000 2>/dev/null || true)
-if [ ! -z "$FRONTEND_PIDS" ]; then
-    log_info "停止前端服务..."
-    kill $FRONTEND_PIDS 2>/dev/null || true
-    log_success "前端服务已停止"
-else
-    log_info "前端服务未运行"
-fi
-
-# 可选：停止数据库服务
-read -p "是否停止数据库服务 (PostgreSQL/Redis)? [y/N]: " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    if command -v brew &> /dev/null; then
-        # macOS
-        brew services stop postgresql
-        brew services stop redis
-        log_success "数据库服务已停止"
-    else
-        # Linux
-        sudo systemctl stop postgresql
-        sudo systemctl stop redis
-        log_success "数据库服务已停止"
+compose_cmd() {
+    if command -v docker &> /dev/null && docker compose version &> /dev/null; then
+        echo "docker compose"
+        return
     fi
+    if command -v docker-compose &> /dev/null; then
+        echo "docker-compose"
+        return
+    fi
+    echo ""
+}
+
+COMPOSE=$(compose_cmd)
+if [ -z "$COMPOSE" ]; then
+    log_error "未检测到 Docker Compose，请安装 Docker Desktop 或 docker-compose"
+    exit 1
 fi
 
 echo ""
 echo "========================================"
-echo "  所有服务已停止"
+echo "  After-Sales System - Docker 停止"
 echo "========================================"
+echo ""
+
+log_info "使用命令: $COMPOSE"
+log_info "停止全部服务..."
+
+$COMPOSE down
+
+log_success "所有服务已停止"
+
+echo ""
+echo -e "${YELLOW}提示:${NC}"
+echo "  - 如需清理数据卷: $COMPOSE down -v"
 echo ""
