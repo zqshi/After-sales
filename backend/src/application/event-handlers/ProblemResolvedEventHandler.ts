@@ -47,7 +47,7 @@ export class ProblemResolvedEventHandler {
         quality_score: result.quality_score,
       });
 
-      if (result.quality_score < 70) {
+      if (result.quality_score < config.quality.lowScoreThreshold) {
         console.warn(`[ProblemResolvedEventHandler] Low quality score (${result.quality_score}) detected for conversation ${conversationId}`);
       }
     } catch (error) {

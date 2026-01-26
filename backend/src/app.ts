@@ -168,18 +168,20 @@ export async function createApp(
   });
 
   // 创建依赖
+  const eventBus = new EventBus();
+  const outboxEventBus = new OutboxEventBus(dataSource);
+
   const conversationRepository = new ConversationRepository(dataSource);
   const customerProfileRepository = new CustomerProfileRepository(dataSource);
-  const requirementRepository = new RequirementRepository(dataSource);
+  const requirementRepository = new RequirementRepository(dataSource, outboxEventBus);
   const problemRepository = new ProblemRepository(dataSource);
   const reviewRequestRepository = new ReviewRequestRepository(dataSource);
-  const taskRepository = new TaskRepository(dataSource);
+  const taskRepository = new TaskRepository(dataSource, outboxEventBus);
   const knowledgeRepository = new KnowledgeRepository(dataSource);
   const userRepository = new UserRepository(dataSource);
   const roleRepository = new RoleRepository(dataSource);
   const auditEventRepository = new AuditEventRepository(dataSource);
   const monitoringAlertRepository = new MonitoringAlertRepository(dataSource);
-  const eventBus = new EventBus();
   const taxkbAdapter = new TaxKBAdapter();
   const taxkbKnowledgeRepository = new TaxKBKnowledgeRepository(taxkbAdapter);
 
@@ -485,6 +487,7 @@ export async function createApp(
     createReviewRequestUseCase,
     aiService,
     eventBus,
+    qualityReportRepository,
     workflowEngine,
   );
 
@@ -530,9 +533,11 @@ export async function createApp(
   eventBus.subscribe('ProblemResolved', (event) =>
     problemResolvedEventHandler.handle(event as any),
   );
+  eventBus.subscribe('ConversationClosed', (event) =>
+    conversationTaskCoordinator.onConversationClosed(event as any),
+  );
 
   if (config.outbox.enabled) {
-    const outboxEventBus = new OutboxEventBus(dataSource);
     const outboxProcessor = new OutboxProcessor(outboxEventBus, eventBus, dataSource);
     outboxProcessor.start(config.outbox.intervalMs);
     app.decorate('outboxProcessor', outboxProcessor);

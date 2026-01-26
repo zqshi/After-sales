@@ -150,7 +150,7 @@ kubectl exec -it postgres-0 -n after-sales-prod -- \
 
 ```bash
 # 检查Agent服务状态
-curl -f http://agent-service:8000/health
+curl -f http://agentscope-service:5000/health
 
 # 查看Agent服务日志
 kubectl logs deployment/agent -n after-sales-prod --tail=100

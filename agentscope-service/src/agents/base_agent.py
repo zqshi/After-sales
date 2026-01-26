@@ -26,7 +26,6 @@ class BaseReActAgent(ReActAgent):
             api_key=cfg["api_key"],
             stream=cfg.get("stream", True),
             client_kwargs={"base_url": cfg["base_url"], "timeout": cfg["timeout"]},
-            generate_kwargs={"max_retries": cfg["max_retries"]}
         )
         formatter = OpenAIChatFormatter()
         return cls(

@@ -146,15 +146,29 @@ export function buildConversationTools(deps: AgentScopeDependencies): MCPToolDef
     },
     {
       name: 'closeConversation',
-      description: '关闭对话',
+      description: '关闭对话（注意：IM渠道不支持关闭对话操作）',
       parameters: {
         conversationId: { type: 'string', required: true },
         closedBy: { type: 'string', required: true },
         reason: { type: 'string' },
       },
       handler: async (params) => {
+        const conversationId = requireString(params.conversationId, 'conversationId');
+
+        // 检查是否为IM渠道
+        const conversation = await deps.conversationRepository.findById(conversationId);
+        if (conversation && ['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
+          return {
+            success: false,
+            error: 'IM渠道不支持关闭对话操作。IM对话永久存在，通过问题生命周期管理来驱动业务流程。',
+            channel: conversation.channel.value,
+            suggestion: '请使用问题状态管理（updateProblemStatus）来标记问题已解决，系统会自动触发质检。',
+          };
+        }
+
+        // 非IM渠道（如工单系统）可以关闭
         return deps.closeConversationUseCase.execute({
-          conversationId: requireString(params.conversationId, 'conversationId'),
+          conversationId,
           closedBy: requireString(params.closedBy, 'closedBy'),
           reason: optionalString(params.reason),
         });

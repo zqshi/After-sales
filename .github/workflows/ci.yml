@@ -78,3 +78,55 @@ jobs:
       - name: Build backend
         working-directory: backend
         run: npm run build
+
+  agentscope-service:
+    name: AgentScope Service Lint & Tests
+    runs-on: ubuntu-latest
+
+    env:
+      CI: true
+      ENVIRONMENT: test
+      DEEPSEEK_API_KEY: test-api-key
+      DEEPSEEK_BASE_URL: https://api.test.com
+      BACKEND_MCP_URL: http://localhost:3000
+      AGENTSCOPE_PREFETCH_ENABLED: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        working-directory: agentscope-service
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run ruff format check
+        working-directory: agentscope-service
+        run: ruff format --check .
+
+      - name: Run ruff lint
+        working-directory: agentscope-service
+        run: ruff check .
+
+      - name: Run mypy type check
+        working-directory: agentscope-service
+        run: mypy src/
+
+      - name: Run tests with coverage
+        working-directory: agentscope-service
+        run: pytest
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./agentscope-service/coverage.xml
+          flags: agentscope-service
+          name: agentscope-service-coverage
+        if: always()

@@ -1,9 +1,9 @@
 # AgentScope API Reference
 
 **服务名称**: AgentScope Service
-**Base URL**: `http://localhost:8000` (开发环境)
+**Base URL**: `http://localhost:5000` (开发环境)
 **版本**: v1.0
-**最后更新**: 2025-12-27
+**最后更新**: 2026-01-26
 
 ---
 
@@ -13,6 +13,7 @@
 - [Agent管理API](#agent管理api)
 - [质检API](#质检api)
 - [对话处理API](#对话处理api)
+- [事件桥接API](#事件桥接api)
 - [MCP工具API](#mcp工具api)
 - [错误处理](#错误处理)
 
@@ -24,16 +25,20 @@
 
 ```
 ┌──────────────────────────────────────┐
-│  FastAPI Application (Port 8000)     │
+│  FastAPI Application (Port 5000)     │
 │  ┌────────────────────────────────┐ │
 │  │  /api/agents/*                  │ │
 │  │  • GET  /list                   │ │
 │  │  • POST /inspect                │ │
-│  │  • POST /chat                   │ │
 │  └────────────────────────────────┘ │
 │  ┌────────────────────────────────┐ │
-│  │  /api/orchestrator/*            │ │
-│  │  • POST /route                  │ │
+│  │  /api/chat/*                    │ │
+│  │  • POST /message                │ │
+│  │  • WS   /ws/{conversation_id}   │ │
+│  └────────────────────────────────┘ │
+│  ┌────────────────────────────────┐ │
+│  │  /api/events/*                  │ │
+│  │  • POST /bridge                 │ │
 │  └────────────────────────────────┘ │
 │  ┌────────────────────────────────┐ │
 │  │  /health                        │ │
@@ -45,6 +50,8 @@
 ### 认证方式
 
 **当前版本**: 无认证（内部服务）
+
+> 备注：`/api/orchestrator/*` 相关路由为规划接口，当前实现未提供。
 
 **未来计划**: API Key认证
 
@@ -60,7 +67,7 @@
 
 ```http
 GET /api/agents/list HTTP/1.1
-Host: localhost:8000
+Host: localhost:5000
 ```
 
 #### 响应
@@ -81,7 +88,7 @@ Host: localhost:8000
 #### 示例
 
 ```bash
-curl http://localhost:8000/api/agents/list
+curl http://localhost:5000/api/agents/list
 ```
 
 ---
@@ -191,7 +198,7 @@ curl http://localhost:8000/api/agents/list
 #### 示例
 
 ```bash
-curl -X POST http://localhost:8000/api/agents/inspect \
+curl -X POST http://localhost:5000/api/agents/inspect \
   -H "Content-Type: application/json" \
   -d '{"conversation_id": "conv-123"}'
 ```
@@ -208,25 +215,24 @@ curl -X POST http://localhost:8000/api/agents/inspect \
 
 ## 对话处理API
 
-### POST /api/orchestrator/route
+### POST /api/chat/message
 
-智能路由用户消息，选择合适的Agent处理。
+发送消息给路由器，由Agent响应。
 
 #### 请求
 
-**URL**: `/api/orchestrator/route`
+**URL**: `/api/chat/message`
 **Method**: POST
 **Content-Type**: application/json
 
 **请求体**:
 ```json
 {
-  "message": "系统报500错误，无法登录",
   "conversation_id": "conv-123",
+  "message": "系统报500错误，无法登录",
   "customer_id": "customer-456",
   "metadata": {
-    "channel": "web",
-    "timestamp": "2025-12-27T10:00:00Z"
+    "channel": "web"
   }
 }
 ```
@@ -234,8 +240,8 @@ curl -X POST http://localhost:8000/api/agents/inspect \
 **参数说明**:
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| message | string | ✅ | 用户消息内容 |
 | conversation_id | string | ✅ | 对话ID |
+| message | string | ✅ | 用户消息内容 |
 | customer_id | string | ✅ | 客户ID |
 | metadata | object | ❌ | 元数据（渠道、时间等） |
 
@@ -243,51 +249,80 @@ curl -X POST http://localhost:8000/api/agents/inspect \
 
 **状态码**: 200 OK
 
-**响应体** (Parallel模式示例):
+**响应体**:
 ```json
 {
-  "content": "这是认证服务问题，技术团队已紧急处理。预计15分钟内恢复，请稍候重试。",
-  "execution_mode": "parallel",
-  "agents_used": ["AssistantAgent", "EngineerAgent"],
+  "success": true,
+  "message": "已收到反馈，正在排查问题。",
+  "agent_name": "AssistantAgent",
+  "mode": "agent_auto",
   "confidence": 0.88,
-  "sentiment": {
-    "sentiment": "neutral",
-    "intensity": "urgent",
-    "score": 0.6,
-    "risk_level": "medium"
-  },
-  "fault_diagnosis": {
-    "severity": "P0",
-    "root_cause": "认证服务宕机，数据库连接池耗尽",
-    "affected_scope": "所有用户，登录功能完全不可用",
-    "solution_steps": [
-      "1. 重启认证服务（容器：auth-service）",
-      "2. 扩容数据库连接池（从50→200）",
-      "3. 检查Redis缓存状态"
-    ],
-    "need_escalation": true
+  "metadata": {
+    "mode": "agent_auto"
   }
 }
 ```
 
-**执行模式说明**:
-| 模式 | 说明 | 场景 |
-|------|------|------|
-| **simple** | 单AssistantAgent处理 | 简单咨询 |
-| **parallel** | Assistant+Engineer并行 | 故障场景 |
-| **agent_supervised** | Agent处理+人工审核 | 中高复杂度 |
-| **human_first** | 人工优先+Agent建议 | 高风险/VIP/投诉 |
-
 #### 示例
 
 ```bash
-curl -X POST http://localhost:8000/api/orchestrator/route \
+curl -X POST http://localhost:5000/api/chat/message \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "系统报500错误",
     "conversation_id": "conv-123",
+    "message": "系统报500错误",
     "customer_id": "customer-456"
   }'
+```
+
+---
+
+### WS /api/chat/ws/{conversation_id}
+
+WebSocket 用于接收事件回推与人工输入。
+
+---
+
+### GET /api/chat/status
+
+服务状态。
+
+#### 响应
+
+```json
+{ "status": "ready" }
+```
+
+---
+
+## 事件桥接API
+
+### POST /api/events/bridge
+
+接收后端 Domain Event 并推送到前端 WebSocket。
+
+#### 请求
+
+**URL**: `/api/events/bridge`
+**Method**: POST
+**Content-Type**: application/json
+
+**请求体**:
+```json
+{
+  "eventId": "evt-123",
+  "eventType": "ConversationClosed",
+  "aggregateId": "conv-123",
+  "payload": { "summary": "resolved" },
+  "occurredAt": "2026-01-26T06:20:00Z",
+  "version": 1
+}
+```
+
+#### 响应
+
+```json
+{ "status": "accepted" }
 ```
 
 ---
@@ -298,7 +333,7 @@ curl -X POST http://localhost:8000/api/orchestrator/route \
 
 MCP（Model Context Protocol）工具由Backend提供，AgentScope通过HTTP调用。
 
-**Base URL**: `http://localhost:3000/mcp/tools` (Backend)
+**Base URL**: `http://localhost:8080/mcp/tools` (Backend)
 
 ### 可用工具列表
 
@@ -525,7 +560,7 @@ MCP（Model Context Protocol）工具由Backend提供，AgentScope通过HTTP调�
 | API | P50 | P95 | P99 |
 |-----|-----|-----|-----|
 | **/api/agents/inspect** | 8s | 15s | 25s |
-| **/api/orchestrator/route** | 3s | 10s | 18s |
+| **/api/chat/message** | 3s | 10s | 18s |
 | **/api/agents/list** | 10ms | 20ms | 50ms |
 
 ### API成功率
@@ -533,7 +568,7 @@ MCP（Model Context Protocol）工具由Backend提供，AgentScope通过HTTP调�
 | API | 目标成功率 | 当前成功率 |
 |-----|-----------|-----------|
 | **/api/agents/inspect** | >95% | 97% |
-| **/api/orchestrator/route** | >98% | 99% |
+| **/api/chat/message** | >98% | 99% |
 
 ---
 
@@ -541,9 +576,9 @@ MCP（Model Context Protocol）工具由Backend提供，AgentScope通过HTTP调�
 
 | 版本 | 日期 | 变更内容 |
 |------|------|---------|
-| v1.0 | 2025-12-27 | 初始版本，包含质检API和路由API |
+| v1.0 | 2026-01-26 | 初始版本，包含质检与对话API |
 
 ---
 
 **文档维护者**: After-Sales 开发团队
-**最后更新**: 2025-12-27
+**最后更新**: 2026-01-26

@@ -10,8 +10,8 @@
 
 | 文档 | 状态 | 描述 | 优先级 |
 |------|------|------|--------|
-| `DEPLOYMENT_GUIDE.md` | 🚧待创建 | 部署指南(Docker/K8s) | P0 |
-| `ENVIRONMENT_SETUP.md` | 🚧待创建 | 环境配置(dev/staging/prod) | P0 |
+| `DEPLOYMENT_GUIDE.md` | ⚠️需对齐 | 部署指南(Docker/K8s) | P0 |
+| `ENVIRONMENT_SETUP.md` | ⚠️需对齐 | 环境配置(dev/staging/prod) | P0 |
 | `DATABASE_MIGRATION.md` | 🚧待创建 | 数据库迁移指南 | P0 |
 | `CI_CD_PIPELINE.md` | 🚧待创建 | CI/CD流水线配置 | P1 |
 | `MONITORING_SETUP.md` | 🚧待创建 | 监控告警配置 | P1 |
@@ -22,6 +22,11 @@
 ## 🎯 待补充内容
 
 根据 `docs/prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md` 中的部署需求，需要补充以下内容：
+
+> 当前仓库的真实运行配置以根目录 `docker-compose.yml` 为准：
+> - Backend (Fastify): `http://localhost:8080`
+> - AgentScope (FastAPI): `http://localhost:5000`
+> - Frontend (Vite): `http://localhost:5173`（Docker 映射到 `http://localhost:3000`）
 
 ### 1. 部署指南 (DEPLOYMENT_GUIDE.md)
 ```yaml

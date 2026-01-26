@@ -589,32 +589,49 @@ export class ActionStepExecutor extends BaseStepExecutor {
 
   /**
    * 处理close_conversation动作
+   * 注意：IM渠道不支持关闭对话操作
    */
   private async handleCloseConversation(
     step: WorkflowStep,
     context: WorkflowContext,
   ): Promise<any> {
-    console.log(`[ActionExecutor] Closing conversation:`, step.input?.conversationId);
+    const conversationId =
+      step.input?.conversationId || context.variables?.conversation?.id;
+
+    console.log(`[ActionExecutor] Close conversation requested:`, conversationId);
+
+    // 检查是否为IM渠道
+    const channel = context.variables?.conversation?.channel;
+    if (channel && ['wecom', 'feishu', 'dingtalk'].includes(channel)) {
+      console.log(`[ActionExecutor] IM渠道不支持关闭对话操作: ${channel}`);
+      return {
+        conversationId,
+        skipped: true,
+        reason: `IM渠道（${channel}）不支持关闭对话操作。IM对话永久存在，通过问题生命周期管理来驱动业务流程。`,
+        suggestion: '请使用问题状态管理（updateProblemStatus）来标记问题已解决',
+      };
+    }
 
     if (this.deps.mode !== 'full' || !this.deps.closeConversationUseCase) {
       return {
-        conversationId: step.input?.conversationId,
+        conversationId,
         closedAt: new Date().toISOString(),
         resolution: step.input?.resolution || 'Completed',
         dryRun: true,
       };
     }
 
-    const conversationId =
-      step.input?.conversationId || context.variables?.conversation?.id;
     if (!conversationId) {
       throw new Error('conversationId is required for close_conversation');
     }
+
+    // 非IM渠道（如工单系统）可以关闭
     await this.deps.closeConversationUseCase.execute({
       conversationId,
       closedBy: 'system',
       reason: step.input?.resolution || 'Completed',
     });
+
     return {
       conversationId,
       closedAt: new Date().toISOString(),

@@ -30,6 +30,12 @@
 - 审计日志自动记录写操作（POST/PATCH/DELETE）用于报表汇总
 - 测试用例沉淀：`tests/WEB_APP_TEST_CASES.md`
 
+## 备注：当前对话入口策略（2026-01-26）
+
+- 客服主动发送的对话（`/api/conversations/:id/messages`）仅落库与事件记录，不走 Agent 生成回复（不走 AgentScope 路由）。  
+- 外部 IM 入站消息（`/api/im/incoming-message`）走 Agent 辅助链路（情绪/意图分析、知识推荐、回复建议等）。  
+- 该策略用于阶段性稳定性考虑，后续可按需优化调用链路与自动化程度。
+
 ## 仍需推进的生产化事项
 
 - 统一 TypeORM 迁移与 SQL 初始化策略（避免环境偏差）

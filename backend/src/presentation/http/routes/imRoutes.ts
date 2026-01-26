@@ -179,11 +179,16 @@ export async function imRoutes(
     await controller.sendMessage(request, reply);
   });
 
+  // ⚠️ 已废弃：消息回执状态更新接口
+  // 废弃原因：接口仅记录数据，无业务逻辑，实际价值有限
+  // 如需恢复，请先补充完整的业务逻辑（失败告警、已读统计等）
+  /*
   fastify.post('/im/messages/receipt', {
     config: { permissions: ['im.write'] },
   }, async (request, reply) => {
     await controller.updateMessageReceipt(request, reply);
   });
+  */
 
   fastify.post('/im/reviews/submit', {
     config: { permissions: ['im.write'] },

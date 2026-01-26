@@ -1,20 +1,67 @@
 import { DataSource, Repository } from 'typeorm';
 
-import { ITaskRepository, TaskFilters } from '@domain/task/repositories/ITaskRepository';
+import { ITaskRepository, TaskFilters, TaskPagination } from '@domain/task/repositories/ITaskRepository';
 import { Task } from '@domain/task/models/Task';
 import { TaskEntity } from '@infrastructure/database/entities/TaskEntity';
+import { DomainEventEntity } from '@infrastructure/database/entities/DomainEventEntity';
+import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
 import { TaskMapper } from './mappers/TaskMapper';
+import type { ISpecification } from '@domain/shared/Specification';
 
 export class TaskRepository implements ITaskRepository {
   private repository: Repository<TaskEntity>;
+  private outboxEventBus: OutboxEventBus;
 
-  constructor(private dataSource: DataSource) {
+  constructor(private dataSource: DataSource, outboxEventBus: OutboxEventBus) {
     this.repository = this.dataSource.getRepository(TaskEntity);
+    this.outboxEventBus = outboxEventBus;
   }
 
   async save(task: Task): Promise<void> {
-    const entity = TaskMapper.toEntity(task);
-    await this.repository.save(entity);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. 保存实体
+      const entity = TaskMapper.toEntity(task);
+      await queryRunner.manager.save(entity);
+
+      // 2. 获取未提交的领域事件
+      const events = task.getUncommittedEvents();
+
+      // 3. 保存到 domain_events 表（事件溯源）
+      for (const event of events) {
+        const eventEntity = new DomainEventEntity();
+        eventEntity.id = event.eventId;
+        eventEntity.aggregateId = task.id;
+        eventEntity.aggregateType = 'Task';
+        eventEntity.eventType = event.eventType;
+        eventEntity.eventData = event.payload as Record<string, unknown>;
+        eventEntity.occurredAt = event.occurredAt;
+        eventEntity.version = event.version;
+
+        await queryRunner.manager.save(eventEntity);
+      }
+
+      // 4. 保存到 outbox_events 表（Outbox 模式）
+      await this.outboxEventBus.publishInTransaction(
+        events,
+        'Task',
+        queryRunner,
+      );
+
+      // 5. 清空事件
+      task.clearEvents();
+
+      // 6. 提交事务
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async findById(id: string): Promise<Task | null> {
@@ -102,5 +149,25 @@ export class TaskRepository implements ITaskRepository {
     }
     const entities = await qb.getMany();
     return entities.map((entity) => TaskMapper.toDomain(entity));
+  }
+
+  async findBySpecification(
+    specification: ISpecification<Task>,
+    pagination?: TaskPagination,
+  ): Promise<Task[]> {
+    // 获取所有任务并在内存中过滤（简单实现）
+    // 生产环境应该将Specification转换为SQL查询
+    const qb = this.repository.createQueryBuilder('task');
+
+    if (pagination) {
+      qb.take(pagination.limit);
+      qb.skip(pagination.offset);
+    }
+
+    const entities = await qb.getMany();
+    const tasks = entities.map((entity) => TaskMapper.toDomain(entity));
+
+    // 使用Specification过滤
+    return tasks.filter((task) => specification.isSatisfiedBy(task));
   }
 }

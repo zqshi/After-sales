@@ -13,6 +13,7 @@ import { ConversationRepository } from '@infrastructure/repositories/Conversatio
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
 import { ProblemRepository } from '@infrastructure/repositories/ProblemRepository';
+import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
 import { CreateConversationUseCase } from '../use-cases/CreateConversationUseCase';
 import { CreateRequirementUseCase } from '../use-cases/requirement/CreateRequirementUseCase';
 import { CreateTaskUseCase } from '../use-cases/task/CreateTaskUseCase';
@@ -108,6 +109,7 @@ export class ConversationTaskCoordinator {
     private readonly createReviewRequestUseCase: CreateReviewRequestUseCase,
     private readonly aiService: AiService,
     private readonly eventBus: EventBus,
+    private readonly qualityReportRepository?: QualityReportRepository,
     workflowEngine?: WorkflowEngine,
   ) {
     this.requirementDetector = new RequirementDetectorService();
@@ -191,7 +193,7 @@ export class ConversationTaskCoordinator {
 
     for (const reqAnalysis of detectedRequirements) {
       // 只创建高置信度的需求
-      if (reqAnalysis.confidence > 0.7) {
+      if (reqAnalysis.confidence > config.requirement.confidenceThreshold) {
         const requirement = await this.createRequirementUseCase.execute({
           customerId: msg.customerId,
           conversationId,
@@ -284,12 +286,17 @@ export class ConversationTaskCoordinator {
   }
 
   /**
-   * 完成所有Task并关闭Conversation
+   * 完成所有Task（IM渠道不关闭对话）
+   *
+   * ⚠️ IM渠道的本质特性：
+   * - IM对话永久存在，不支持关闭操作（这是IM的本质特性，如微信、企业微信、钉钉）
+   * - 业务流程通过问题生命周期管理来驱动（问题提出 → 处理 → 解决）
+   * - 质检由 ProblemResolvedEvent 触发，而非 ConversationClosedEvent
    *
    * 流程：
    * 1. 检查所有Task是否完成
    * 2. AI生成总结
-   * 3. 关闭Conversation
+   * 3. ⚠️ IM渠道不关闭对话（这是IM的本质特性）
    * 4. 通知客户（TODO: IM集成）
    * 5. 知识库沉淀（TODO: Phase 3）
    */
@@ -319,12 +326,19 @@ export class ConversationTaskCoordinator {
     // Step 2: AI生成总结
     const summary = await this.aiService.summarizeConversation(conversationId);
 
-    // Step 3: 关闭Conversation
-    await this.closeConversationUseCase.execute({
-      conversationId,
-      closedBy: 'system',
-      reason: summary,
-    });
+    // Step 3: ⚠️ IM渠道不关闭对话
+    // IM对话永久存在（这是IM的本质特性），业务流程通过问题生命周期管理
+    // 质检由 ProblemResolvedEvent 触发，而非 ConversationClosedEvent
+    //
+    // 如果是非IM渠道（如工单系统），可以调用：
+    // const conversation = await this.conversationRepository.findById(conversationId);
+    // if (conversation && !['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
+    //   await this.closeConversationUseCase.execute({
+    //     conversationId,
+    //     closedBy: 'system',
+    //     reason: summary,
+    //   });
+    // }
 
     // Step 4: 通知客户（Phase 2实现）
     // await this.notifyCustomer(conversationId, summary);
@@ -455,7 +469,18 @@ export class ConversationTaskCoordinator {
         content: msg.content,
       })) || [];
 
-      // 1.1 优先尝试Workflow/ReAct路径
+      // 1.1 Workflow/ReAct路径（暂时禁用）
+      // ⚠️ 设计说明：
+      // - Workflow 提供确定性的业务流程控制（适用于合规检查、SLA 管理等场景）
+      // - AgentScope ReActAgent 提供智能灵活的回复生成（基于 LLM）
+      // - 当前 AgentScope 已经可以满足需求，Workflow YAML 定义缺失
+      // - 保留代码以便未来需要确定性流程时快速启用
+      //
+      // 启用方法：
+      // 1. 创建 workflow YAML 定义文件（如 customer_service_workflow.yaml）
+      // 2. 取消下方代码注释
+      // 3. 设置 config.workflow.enabled = true
+      /*
       if (this.workflowEngine && config.workflow.enabled) {
         try {
           const workflowResult = await this.workflowEngine.execute(
@@ -507,6 +532,7 @@ export class ConversationTaskCoordinator {
           console.warn('[ConversationTaskCoordinator] Workflow生成回复失败，进入降级路径', err);
         }
       }
+      */
 
       // 2. 分析情绪
       const sentiment = await this.aiService.analyzeSentiment(
@@ -541,6 +567,14 @@ export class ConversationTaskCoordinator {
         };
       }
 
+      // AgentScope 降级：记录降级原因和触发监控
+      console.warn('[ConversationTaskCoordinator] AgentScope 回复生成失败，降级到 LLM 路径', {
+        conversationId,
+        customerId: incoming.customerId,
+        reason: agentScopeResponse ? 'response_invalid' : 'service_unavailable',
+        timestamp: new Date().toISOString(),
+      });
+
       // 5. 使用LLM生成回复
       const llmClient = (this.aiService as any).llmClient;
       if (llmClient && llmClient.isEnabled()) {
@@ -556,13 +590,26 @@ export class ConversationTaskCoordinator {
         };
       }
 
+      // LLM 降级：记录降级原因
+      console.warn('[ConversationTaskCoordinator] LLM 回复生成失败，降级到固定文案', {
+        conversationId,
+        customerId: incoming.customerId,
+        reason: 'llm_unavailable',
+        timestamp: new Date().toISOString(),
+      });
+
       // 降级方案：提示客服侧处理
       return {
         suggestedReply: this.fallbackGenerateReply(userMessage, sentiment, requirements, knowledgeItems),
         confidence: 0.6,
       };
     } catch (error) {
-      console.warn('[ConversationTaskCoordinator] 生成回复失败，使用降级方案:', error);
+      console.error('[ConversationTaskCoordinator] 生成回复异常，使用降级方案:', {
+        error: error instanceof Error ? error.message : String(error),
+        conversationId,
+        customerId: incoming.customerId,
+        timestamp: new Date().toISOString(),
+      });
       return {
         suggestedReply: this.fallbackGenerateReply(userMessage, { overallSentiment: 'neutral' } as any, requirements, []),
         confidence: 0.4,
@@ -802,18 +849,35 @@ export class ConversationTaskCoordinator {
   }
 
   /**
-   * Phase 2: 处理ConversationClosedEvent，触发InspectorAgent异步质检
+   * Phase 2: 处理ConversationClosedEvent（仅用于非IM渠道）
+   *
+   * ⚠️ IM渠道不支持关闭对话操作
+   * - IM对话永久存在，质检由 ProblemResolvedEvent 触发
+   * - 此方法仅用于非IM渠道（如工单系统）
    *
    * 工作流程：
-   * 1. 从事件中提取conversationId
-   * 2. 调用AgentScope服务的/api/agents/inspect接口
-   * 3. 异步执行，不阻塞对话关闭流程
-   * 4. InspectorAgent将自动保存质检报告、创建调研等
+   * 1. 检查是否为IM渠道，如果是则跳过
+   * 2. 从事件中提取conversationId
+   * 3. 调用AgentScope服务的/api/agents/inspect接口
+   * 4. 异步执行，不阻塞对话关闭流程
+   * 5. InspectorAgent将自动保存质检报告、创建调研等
    */
   private async handleConversationClosed(event: ConversationClosedEvent): Promise<void> {
-    const conversationId = event.conversationId;
+    const conversationId = event.conversationId ?? event.aggregateId;
+    if (!conversationId) {
+      console.warn('[ConversationTaskCoordinator] Missing conversationId for quality inspection');
+      return;
+    }
 
-    console.log(`[ConversationTaskCoordinator] Triggering quality inspection for conversation: ${conversationId}`);
+    // 检查是否为IM渠道
+    const conversation = await this.conversationRepository.findById(conversationId);
+    if (conversation && ['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
+      console.log(`[ConversationTaskCoordinator] Skipping quality inspection for IM channel: ${conversation.channel.value}`);
+      console.log(`[ConversationTaskCoordinator] IM对话不支持关闭操作，质检由 ProblemResolvedEvent 触发`);
+      return;
+    }
+
+    console.log(`[ConversationTaskCoordinator] Triggering quality inspection for non-IM conversation: ${conversationId}`);
 
     try {
       // 调用AgentScope服务的质检接口
@@ -843,6 +907,14 @@ export class ConversationTaskCoordinator {
         quality_score: result.quality_score,
       });
 
+      if (this.qualityReportRepository && result?.report) {
+        await this.qualityReportRepository.save({
+          conversationId,
+          qualityScore: typeof result.quality_score === 'number' ? result.quality_score : undefined,
+          report: result.report,
+        });
+      }
+
       // 可选：根据质检结果触发进一步动作
       if (result.quality_score < 70) {
         console.warn(`[ConversationTaskCoordinator] Low quality score (${result.quality_score}) detected for conversation ${conversationId}`);
@@ -852,6 +924,10 @@ export class ConversationTaskCoordinator {
       // 异步质检失败不影响对话关闭流程
       console.error(`[ConversationTaskCoordinator] Failed to trigger quality inspection for conversation ${conversationId}:`, error);
     }
+  }
+
+  async onConversationClosed(event: ConversationClosedEvent): Promise<void> {
+    await this.handleConversationClosed(event);
   }
 
   /**

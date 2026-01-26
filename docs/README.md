@@ -1,7 +1,7 @@
 # After-Sales 项目文档中心
 
 **项目名称**: 智能售后工作台 (After-Sales Platform)
-**技术栈**: AgentScope + NestJS + PostgreSQL + Redis + Milvus
+**技术栈**: AgentScope + Fastify + PostgreSQL + Redis
 **架构模式**: Multi-Agent + DDD + Event-Driven
 **文档版本**: v2.0
 **最后更新**: 2025-12-30

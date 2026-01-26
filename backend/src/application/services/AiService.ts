@@ -510,7 +510,7 @@ export class AiService {
 
         if (conversationHistory && conversationHistory.length > 0) {
           prompt.push({
-            role: 'user' as const,
+            role: 'system',
             content: `对话历史：\n${conversationHistory
               .map((msg) => `${msg.role}: ${msg.content}`)
               .join('\n')}`,
@@ -518,7 +518,7 @@ export class AiService {
         }
 
         prompt.push({
-          role: 'user' as const,
+          role: 'user',
           content: `客户消息：\n"${content}"`,
         });
 

@@ -233,7 +233,6 @@ class AssistantAgent(ReActAgent):
                 "base_url": cfg["base_url"],
                 "timeout": cfg["timeout"]
             },
-            generate_kwargs={"max_retries": 3}
         )
         formatter = OpenAIChatFormatter()
 

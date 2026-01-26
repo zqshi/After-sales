@@ -69,7 +69,7 @@ npm test
 
 ```bash
 # 1. 检查Backend服务
-curl http://localhost:8080/api/health
+curl http://localhost:8080/health
 
 # 2. 检查AgentScope服务
 curl http://localhost:5000/health
@@ -133,7 +133,11 @@ npm test
 
 **运行**:
 ```bash
+# 默认使用 demo 账号登录（AUTH_EMAIL / AUTH_PASSWORD 可覆盖）
 ./tests/integration/test-quality-inspection.sh
+
+# 或显式传入 Token
+BACKEND_TOKEN=xxx ./tests/integration/test-quality-inspection.sh
 ```
 
 **预期输出**:

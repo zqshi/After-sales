@@ -173,15 +173,54 @@ export class OutboxProcessor {
     outboxEvent: any,
     errorMessage: string,
   ): Promise<void> {
-    // TODO: 集成告警系统（如Slack、钉钉、邮件等）
-    console.error(
-      `[ALERT] Dead Letter Event Detected:
+    const alertMessage = `[ALERT] Dead Letter Event Detected:
       Event ID: ${outboxEvent.id}
       Event Type: ${outboxEvent.eventType}
       Aggregate ID: ${outboxEvent.aggregateId}
+      Aggregate Type: ${outboxEvent.aggregateType}
       Error: ${errorMessage}
-      Retry Count: ${outboxEvent.retryCount}`,
-    );
+      Retry Count: ${outboxEvent.retryCount}
+      Created At: ${outboxEvent.createdAt}
+      Last Retry At: ${outboxEvent.lastRetryAt}`;
+
+    // 1. 控制台告警（始终输出）
+    console.error(alertMessage);
+
+    // 2. Webhook 告警（如果配置了）
+    const webhookUrl = process.env.DEAD_LETTER_ALERT_WEBHOOK_URL;
+    if (webhookUrl) {
+      try {
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            msgtype: 'text',
+            text: {
+              content: alertMessage,
+            },
+            // 兼容钉钉格式
+            at: {
+              isAtAll: false,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('[OutboxProcessor] 发送死信队列告警失败:', response.statusText);
+        }
+      } catch (error) {
+        console.error('[OutboxProcessor] 发送死信队列告警异常:', error);
+      }
+    }
+
+    // 3. 邮件告警（如果配置了）
+    const alertEmail = process.env.DEAD_LETTER_ALERT_EMAIL;
+    if (alertEmail) {
+      // TODO: 集成邮件服务（如 SendGrid、AWS SES 等）
+      console.warn('[OutboxProcessor] 邮件告警未实现，请配置邮件服务');
+    }
   }
 
   /**

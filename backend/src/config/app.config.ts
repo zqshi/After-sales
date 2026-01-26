@@ -71,11 +71,25 @@ export const config = {
   agentscope: {
     serviceUrl: process.env.AGENTSCOPE_URL || 'http://localhost:5000',
     timeout: parseInt(process.env.AGENTSCOPE_TIMEOUT || '30000', 10),
+    circuitBreaker: {
+      enabled: process.env.AGENTSCOPE_CIRCUIT_BREAKER_ENABLED !== 'false',
+      failureThreshold: parseInt(process.env.AGENTSCOPE_FAILURE_THRESHOLD || '5', 10),
+      resetTimeout: parseInt(process.env.AGENTSCOPE_RESET_TIMEOUT || '60000', 10),
+    },
   },
 
   outbox: {
     enabled: process.env.OUTBOX_PROCESSOR_ENABLED !== 'false',
     intervalMs: parseInt(process.env.OUTBOX_PROCESSOR_INTERVAL || '5000', 10),
+    concurrency: parseInt(process.env.OUTBOX_PROCESSOR_CONCURRENCY || '10', 10),
+  },
+
+  quality: {
+    lowScoreThreshold: parseInt(process.env.QUALITY_LOW_SCORE_THRESHOLD || '70', 10),
+  },
+
+  requirement: {
+    confidenceThreshold: parseFloat(process.env.REQUIREMENT_CONFIDENCE_THRESHOLD || '0.7'),
   },
 
   workflow: {

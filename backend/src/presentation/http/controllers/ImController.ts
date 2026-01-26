@@ -867,9 +867,19 @@ export class ImController {
   }
 
   /**
-   * 更新消息回执状态
-   * POST /im/messages/receipt
+   * ⚠️ 已废弃：更新消息回执状态
+   *
+   * 废弃原因：
+   * - 接口仅记录数据，无任何业务逻辑
+   * - 缺少失败告警、已读统计、超时提醒等实际应用场景
+   * - IM 渠道的消息送达状态追踪价值有限
+   *
+   * 如需恢复：
+   * 1. 明确业务场景（如消息未送达告警、已读率统计）
+   * 2. 补充完整的业务逻辑
+   * 3. 取消下方注释
    */
+  /*
   async updateMessageReceipt(
     request: FastifyRequest,
     reply: FastifyReply,
@@ -913,6 +923,7 @@ export class ImController {
       });
     }
   }
+  */
 
   /**
    * 提交人工审核结果
