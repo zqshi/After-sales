@@ -17,7 +17,7 @@
 | 角色 | 推荐路径 | 预计时间 |
 |-----|---------|---------|
 | **产品经理** | [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) → [PRD目录](prd/README.md) | 30分钟 |
-| **开发工程师** | [快速开始](guides/QUICK_START.md) → [启动指南](guides/STARTUP_GUIDE.md) → [架构设计](architecture/AGENT_ARCHITECTURE_DESIGN.md) | 1小时 |
+| **开发工程师** | [快速开始](QUICK_START.md) → [启动指南](guides/STARTUP_GUIDE.md) → [架构设计](architecture/AGENT_ARCHITECTURE_DESIGN.md) | 1小时 |
 | **架构师** | [产品概述](prd/2-baseline/1-overview/Product-Overview.md) → [架构设计](architecture/AGENT_ARCHITECTURE_DESIGN.md) → [ADR文档](architecture/decision-records/) | 2小时 |
 | **测试工程师** | [启动指南](guides/STARTUP_GUIDE.md) → [测试文档](testing/) → [PRD验收标准](prd/README.md) | 1小时 |
 
@@ -44,6 +44,8 @@ docs/
 │
 ├── 🏗️ 架构设计 (architecture/)          # 系统架构文档
 │   ├── AGENT_ARCHITECTURE_DESIGN.md    # Multi-Agent架构详解
+│   ├── DDD_IMPROVEMENT_SUMMARY.md      # DDD架构改进总结
+│   ├── BUSINESS_MODEL_CORRECTION.md    # 业务模型修正说明
 │   └── decision-records/               # 架构决策记录(ADR)
 │       └── ADR-001-MULTI-AGENT.md      # ADR-001: 为什么选择Multi-Agent
 │
@@ -58,17 +60,33 @@ docs/
 │   ├── QUICK_START.md                  # 5分钟快速开始
 │   └── STARTUP_GUIDE.md                # 完整启动指南(30分钟)
 │
+├── 📦 开发文档 (development/)          # 开发集成指南
+│   └── INTEGRATION_GUIDE.md            # 系统集成指南
+│
 ├── ✨ 功能文档 (features/)              # 具体功能说明
 │   └── SENTIMENT_ICON_FEATURE.md       # 情感图标功能
 │
 ├── 🚀 部署文档 (deployment/)            # 部署运维
-│   └── README.md                       # 部署文档索引(待补充)
+│   ├── README.md                       # 部署文档索引
+│   ├── DEPLOYMENT_GUIDE.md             # 部署指南
+│   ├── DEPLOYMENT_CHECKLIST.md         # 部署检查清单
+│   └── ENVIRONMENT_SETUP.md            # 环境配置指南
 │
 ├── 🧪 测试文档 (testing/)               # 测试策略
 │   └── README.md                       # 测试文档索引(待补充)
 │
-└── 🔧 运维文档 (operations/)            # 运维手册
-    └── README.md                       # 运维文档索引(待补充)
+├── 🔧 运维文档 (operations/)            # 运维手册
+│   ├── README.md                       # 运维文档索引
+│   ├── TROUBLESHOOTING_GUIDE.md        # 故障排查指南
+│   ├── MONITORING_SETUP.md             # 监控配置指南
+│   ├── PERFORMANCE_TUNING.md           # 性能调优指南
+│   ├── SCALING_GUIDE.md                # 扩容指南
+│   └── INCIDENT_RESPONSE.md            # 事件响应手册
+│
+├── 📄 项目报告 (根目录)                 # 项目交付与执行报告
+│   ├── DELIVERY_REPORT.md              # 项目交付报告
+│   ├── EXECUTION_REPORT_20260126_FINAL.md  # 执行报告(2026-01-26)
+│   └── QUICK_START.md                  # 快速开始指南
 ```
 
 ---
@@ -156,6 +174,8 @@ docs/
 |------|------|------|--------|
 | [Multi-Agent架构](architecture/AGENT_ARCHITECTURE_DESIGN.md) | 完整架构设计(需求、设计、实现) | ⭐⭐⭐ | P0 |
 | [ADR-001](architecture/decision-records/ADR-001-MULTI-AGENT.md) | 为什么选择Multi-Agent架构 | ⭐⭐ | P0 |
+| [DDD改进总结](architecture/DDD_IMPROVEMENT_SUMMARY.md) | DDD架构改进与优化总结 | ⭐⭐⭐ | P1 |
+| [业务模型修正](architecture/BUSINESS_MODEL_CORRECTION.md) | 业务模型修正说明 | ⭐⭐ | P1 |
 | [产品概述](prd/2-baseline/1-overview/Product-Overview.md) | 产品定位、用户、价值、技术栈 | ⭐ | P0 |
 | [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) | 业务层面流程设计 | ⭐⭐ | P1 |
 
@@ -166,7 +186,8 @@ docs/
 | 文档 | 描述 | 难度 | 优先级 |
 |------|------|------|--------|
 | [启动指南](guides/STARTUP_GUIDE.md) | 完整启动指南(30分钟) | ⭐⭐ | P0 |
-| [快速开始](guides/QUICK_START.md) | 快速开始(5分钟) | ⭐ | P0 |
+| [快速开始](QUICK_START.md) | 快速开始(5分钟) | ⭐ | P0 |
+| [集成指南](development/INTEGRATION_GUIDE.md) | 系统集成开发指南 | ⭐⭐ | P1 |
 | [Phase 1实施](implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) | 3个Agent实现详情 | ⭐⭐⭐ | P1 |
 | [Phase 2实施](implementation/PHASE_2_QUALITY_INSPECTION.md) | 质检异步化实现 | ⭐⭐⭐ | P1 |
 
@@ -199,16 +220,24 @@ docs/
 
 | 文档 | 描述 | 优先级 | 状态 |
 |------|------|--------|------|
-| [部署文档目录](deployment/README.md) | 部署、环境、CI/CD | P0 | 🚧 待补充 |
+| [部署文档目录](deployment/README.md) | 部署、环境、CI/CD | P0 | ✅ 已完成 |
+| [部署指南](deployment/DEPLOYMENT_GUIDE.md) | 详细部署步骤 | P0 | ✅ 已完成 |
+| [部署检查清单](deployment/DEPLOYMENT_CHECKLIST.md) | 部署前检查项 | P0 | ✅ 已完成 |
+| [环境配置](deployment/ENVIRONMENT_SETUP.md) | 环境变量配置 | P0 | ✅ 已完成 |
 | [测试文档目录](testing/README.md) | 测试策略、用例、性能测试 | P0 | 🚧 待补充 |
-| [运维文档目录](operations/README.md) | 运维手册、故障排查 | P0 | 🚧 待补充 |
+| [运维文档目录](operations/README.md) | 运维手册、故障排查 | P0 | ✅ 已完成 |
+| [故障排查指南](operations/TROUBLESHOOTING_GUIDE.md) | 常见问题排查 | P0 | ✅ 已完成 |
+| [监控配置](operations/MONITORING_SETUP.md) | 监控系统配置 | P1 | ✅ 已完成 |
+| [性能调优](operations/PERFORMANCE_TUNING.md) | 性能优化指南 | P1 | ✅ 已完成 |
+| [扩容指南](operations/SCALING_GUIDE.md) | 系统扩容方案 | P1 | ✅ 已完成 |
+| [事件响应](operations/INCIDENT_RESPONSE.md) | 事件响应流程 | P1 | ✅ 已完成 |
 
 ---
 
 ## 🔍 常见问题导航
 
 ### Q: 如何快速运行项目？
-**A**: 阅读 [快速开始](guides/QUICK_START.md) (5分钟) 或 [启动指南](guides/STARTUP_GUIDE.md) (完整版30分钟)
+**A**: 阅读 [快速开始](QUICK_START.md) (5分钟) 或 [启动指南](guides/STARTUP_GUIDE.md) (完整版30分钟)
 
 ### Q: 什么是Multi-Agent架构？
 **A**: 阅读 [Multi-Agent架构](architecture/AGENT_ARCHITECTURE_DESIGN.md) 第一、二章，或查看 [产品概述](prd/2-baseline/1-overview/Product-Overview.md)
@@ -250,18 +279,19 @@ docs/
 
 ### 当前文档状态总览
 
-#### ✅ 已完成 (19个文档)
+#### ✅ 已完成 (30+个文档)
 - 产品PRD体系 (17个文档, ~18,000行)
-- 架构设计文档 (1个)
+- 架构设计文档 (4个)
 - 使用指南 (2个)
+- 部署文档 (4个)
+- 运维文档 (6个)
+- 开发文档 (1个)
+- 项目报告 (3个)
 
-#### 🚧 待补充 (6个文档)
-- 部署指南 (DEPLOYMENT_GUIDE.md)
-- 环境配置 (ENVIRONMENT_SETUP.md)
+#### 🚧 待补充 (3个文档)
 - 测试策略 (TEST_STRATEGY.md)
 - 测试用例 (TEST_CASES.md)
-- 运维手册 (OPERATIONS_RUNBOOK.md)
-- 故障排查 (TROUBLESHOOTING_GUIDE.md)
+- 性能测试 (PERFORMANCE_TEST.md)
 
 ---
 
@@ -361,11 +391,12 @@ docs/
 
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|---------|------|
+| v2.1 | 2026-01-27 | 全局文件清理:重组文档结构,更新索引 | Claude |
 | v2.0 | 2025-12-30 | 文档治理:删除冗余,补充缺失,更新索引 | Claude |
 | v1.0 | 2025-12-27 | 创建文档导航，新增MULTI_AGENT_ARCHITECTURE.md | Claude |
 
 ---
 
 **文档维护者**: 架构团队 + 产品团队
-**最后审查**: 2025-12-30
-**下次审查**: 2026-01-30
+**最后审查**: 2026-01-27
+**下次审查**: 2026-02-27

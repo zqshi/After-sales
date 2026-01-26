@@ -189,7 +189,7 @@ Vite 开发环境会将 `/api/v1` 代理到 `http://localhost:8080`，可通过 
 ## 📖 文档
 
 - [文档中心](./docs/README.md) - 文档导航入口
-- [快速开始](./docs/guides/QUICK_START.md) - 5分钟启动指南
+- [快速开始](./docs/QUICK_START.md) - 5分钟启动指南
 - [启动指南](./docs/guides/STARTUP_GUIDE.md) - 完整启动说明
 - [架构设计](./docs/architecture/AGENT_ARCHITECTURE_DESIGN.md)
 - [API 参考](./docs/api/API_REFERENCE.md)
