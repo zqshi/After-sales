@@ -4,8 +4,10 @@
  * 应用层用例：编排领域对象完成业务操作
  */
 
-import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
 import { EventBus } from '../../infrastructure/events/EventBus';
+import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
+import { Validator } from '../../infrastructure/validation/Validator';
+import { SendMessageRequestSchema, SendMessageRequestDTO } from '../dto/SendMessageRequestDTO';
 
 export interface SendMessageRequest {
   conversationId: string;
@@ -39,29 +41,29 @@ export class SendMessageUseCase {
   ) {}
 
   async execute(request: SendMessageRequest): Promise<SendMessageResponse> {
-    // 1. 验证输入
-    this.validateRequest(request);
+    // 1. 验证输入（使用 Zod）
+    const validatedRequest = Validator.validate(SendMessageRequestSchema, request);
 
     // 2. 加载聚合根
     const conversation = await this.conversationRepository.findById(
-      request.conversationId,
+      validatedRequest.conversationId,
     );
 
     if (!conversation) {
-      throw new Error(`Conversation not found: ${request.conversationId}`);
+      throw new Error(`Conversation not found: ${validatedRequest.conversationId}`);
     }
 
     // 3. 执行领域逻辑
-    const senderType = request.senderType === 'internal' ? 'agent' : 'customer';
-    if (request.conversationMetadata) {
-      conversation.mergeMetadata(request.conversationMetadata);
+    const senderType = validatedRequest.senderType === 'internal' ? 'agent' : 'customer';
+    if (validatedRequest.conversationMetadata) {
+      conversation.mergeMetadata(validatedRequest.conversationMetadata);
     }
 
     conversation.sendMessage({
-      senderId: request.senderId,
+      senderId: validatedRequest.senderId,
       senderType,
-      content: request.content,
-      metadata: request.metadata,
+      content: validatedRequest.content,
+      metadata: validatedRequest.metadata,
     });
 
     // 4. 发布领域事件（先抓取后保存）
@@ -76,7 +78,7 @@ export class SendMessageUseCase {
     }
     conversation.clearEvents();
 
-    // 6. 返回结果
+    // 7. 返回结果
     const lastMessage = conversation.messages[conversation.messages.length - 1];
 
     const messagePayload = {
@@ -96,23 +98,5 @@ export class SendMessageUseCase {
       timestamp: lastMessage.sentAt.toISOString(),
       message: messagePayload,
     };
-  }
-
-  private validateRequest(request: SendMessageRequest): void {
-    if (!request.conversationId) {
-      throw new Error('conversationId is required');
-    }
-    if (!request.senderId) {
-      throw new Error('senderId is required');
-    }
-    if (!request.senderType) {
-      throw new Error('senderType is required');
-    }
-    if (!request.content || request.content.trim() === '') {
-      throw new Error('content is required');
-    }
-    if (!['internal', 'external'].includes(request.senderType)) {
-      throw new Error('invalid senderType');
-    }
   }
 }

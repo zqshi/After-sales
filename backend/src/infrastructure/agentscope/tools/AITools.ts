@@ -1,6 +1,8 @@
-import { optionalArray, optionalNumber, optionalString, requireString, toRecord } from './helpers';
-import { AgentScopeDependencies, MCPToolDefinition } from '../types';
 import { config } from '@config/app.config';
+
+import { AgentScopeDependencies, MCPToolDefinition } from '../types';
+
+import { optionalArray, optionalNumber, optionalString, requireString, toRecord } from './helpers';
 
 export function buildAITools(deps: AgentScopeDependencies): MCPToolDefinition[] {
   return [

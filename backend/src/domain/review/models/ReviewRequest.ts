@@ -1,7 +1,8 @@
 import { AggregateRoot } from '@domain/shared/AggregateRoot';
-import { ReviewStatus } from '../types';
-import { AgentReviewRequestedEvent } from '../events/AgentReviewRequestedEvent';
+
 import { AgentReviewCompletedEvent } from '../events/AgentReviewCompletedEvent';
+import { AgentReviewRequestedEvent } from '../events/AgentReviewRequestedEvent';
+import { ReviewStatus } from '../types';
 
 interface ReviewRequestProps {
   conversationId: string;

@@ -3,6 +3,7 @@
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify';
+
 import { metricsCollector } from '../../../infrastructure/monitoring/MetricsCollector';
 
 /**

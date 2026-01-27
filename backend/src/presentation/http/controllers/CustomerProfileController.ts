@@ -1,7 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+
+import { GetCustomerInteractionsUseCase } from '../../../application/use-cases/customer/GetCustomerInteractionsUseCase';
 import { GetCustomerProfileUseCase } from '../../../application/use-cases/customer/GetCustomerProfileUseCase';
 import { RefreshCustomerProfileUseCase } from '../../../application/use-cases/customer/RefreshCustomerProfileUseCase';
-import { GetCustomerInteractionsUseCase } from '../../../application/use-cases/customer/GetCustomerInteractionsUseCase';
 
 export class CustomerProfileController {
   constructor(

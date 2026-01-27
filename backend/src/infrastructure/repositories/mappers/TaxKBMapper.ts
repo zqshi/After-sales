@@ -1,5 +1,6 @@
 import { KnowledgeItem } from '@domain/knowledge/models/KnowledgeItem';
 import { KnowledgeCategory } from '@domain/knowledge/value-objects/KnowledgeCategory';
+
 import type { TaxKBDocument } from '../../adapters/TaxKBAdapter';
 
 export class TaxKBMapper {
@@ -35,7 +36,7 @@ export class TaxKBMapper {
   }
 
   static toTaxKBDocument(item: KnowledgeItem): Partial<TaxKBDocument> {
-    const metadata = item.metadata as Record<string, unknown> | undefined;
+    const metadata = item.metadata;
     return {
       title: item.title,
       content: item.content,
@@ -127,7 +128,7 @@ export class TaxKBMapper {
         return;
       }
 
-      let cleaned = trimmed.replace(/^[•\uF0A1\u25CF\u25E6\u2022]\s*/, '- ');
+      const cleaned = trimmed.replace(/^[•\uF0A1\u25CF\u25E6\u2022]\s*/, '- ');
       const isBullet = cleaned.startsWith('- ');
 
       if (isBullet) {

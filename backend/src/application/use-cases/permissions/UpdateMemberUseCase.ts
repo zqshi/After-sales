@@ -1,5 +1,5 @@
-import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
 import { RoleRepository } from '../../../infrastructure/repositories/RoleRepository';
+import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
 import { UpdateMemberRequestDTO } from '../../dto/permissions/MemberRequestDTO';
 import { MemberResponseDTO } from '../../dto/permissions/MemberResponseDTO';
 

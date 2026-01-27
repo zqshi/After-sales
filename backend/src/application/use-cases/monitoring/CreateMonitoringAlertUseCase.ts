@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
 
+import { MonitoringAlertEntity } from '../../../infrastructure/database/entities/MonitoringAlertEntity';
 import { MonitoringAlertRepository } from '../../../infrastructure/repositories/MonitoringAlertRepository';
 import { CreateMonitoringAlertRequestDTO } from '../../dto/monitoring/CreateMonitoringAlertRequestDTO';
-import { MonitoringAlertEntity } from '../../../infrastructure/database/entities/MonitoringAlertEntity';
 
 export class CreateMonitoringAlertUseCase {
   constructor(private readonly monitoringAlertRepository: MonitoringAlertRepository) {}

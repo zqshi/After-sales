@@ -17,17 +17,17 @@
  * - 如果Conversation创建失败 → 返回错误给客户
  */
 
-import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
-import { IRequirementRepository } from '@domain/requirement/repositories/IRequirementRepository';
-import { ITaskRepository } from '@domain/task/repositories/ITaskRepository';
-import { ICustomerProfileRepository } from '@domain/customer/repositories/ICustomerProfileRepository';
 import { Conversation } from '@domain/conversation/models/Conversation';
+import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
+import { Channel } from '@domain/conversation/value-objects/Channel';
+import { ICustomerProfileRepository } from '@domain/customer/repositories/ICustomerProfileRepository';
 import { Requirement } from '@domain/requirement/models/Requirement';
-import { Task } from '@domain/task/models/Task';
+import { IRequirementRepository } from '@domain/requirement/repositories/IRequirementRepository';
 import { Priority } from '@domain/requirement/value-objects/Priority';
 import { RequirementSource } from '@domain/requirement/value-objects/RequirementSource';
+import { Task } from '@domain/task/models/Task';
+import { ITaskRepository } from '@domain/task/repositories/ITaskRepository';
 import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
-import { Channel } from '@domain/conversation/value-objects/Channel';
 
 /**
  * SAGA执行上下文
@@ -177,12 +177,14 @@ export class CustomerSupportSaga {
       const conversation = Conversation.create({
         customerId: request.customerId,
         channel: Channel.fromString(request.channel),
-        initialMessage: {
-          content: request.message,
-          senderId: request.customerId,
-          senderType: 'customer',
-        },
         metadata: request.metadata,
+      });
+
+      // 添加初始消息
+      conversation.sendMessage({
+        content: request.message,
+        senderId: request.customerId,
+        senderType: 'customer',
       });
 
       await this.conversationRepo.save(conversation);
@@ -216,7 +218,7 @@ export class CustomerSupportSaga {
         throw new Error('AI analysis timeout');
       }
 
-      return requirements as Requirement[];
+      return requirements;
     } catch (error) {
       context.errors.push({
         step: 'analyzeRequirements',
@@ -297,7 +299,6 @@ export class CustomerSupportSaga {
         if (requirement.shouldAutoCreateTask()) {
           const task = Task.create({
             title: `处理需求: ${requirement.title}`,
-            description: requirement.description,
             type: 'requirement',
             conversationId: conversation.id,
             requirementId: requirement.id,
@@ -305,6 +306,7 @@ export class CustomerSupportSaga {
             metadata: {
               autoCreated: true,
               source: 'CustomerSupportSaga',
+              requirementDescription: requirement.description, // 将description放在metadata中
             },
           });
 

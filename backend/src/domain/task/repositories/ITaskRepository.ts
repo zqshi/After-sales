@@ -1,5 +1,6 @@
-import { Task } from '../models/Task';
 import type { ISpecification } from '@domain/shared/Specification';
+
+import { Task } from '../models/Task';
 
 export interface TaskFilters {
   assigneeId?: string;

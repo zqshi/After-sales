@@ -1,8 +1,8 @@
+import { ConversationReadyToCloseEvent } from '@domain/conversation/events/ConversationReadyToCloseEvent';
+import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
 import { TaskCompletedEvent } from '@domain/task/events/TaskCompletedEvent';
 import { ITaskRepository } from '@domain/task/repositories/ITaskRepository';
-import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
 import { EventBus } from '@infrastructure/events/EventBus';
-import { ConversationReadyToCloseEvent } from '@domain/conversation/events/ConversationReadyToCloseEvent';
 
 /**
  * TaskCompletedEventHandler

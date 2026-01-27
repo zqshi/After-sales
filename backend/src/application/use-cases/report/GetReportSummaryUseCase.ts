@@ -1,8 +1,8 @@
 import { DataSource } from 'typeorm';
 
 import { ConversationEntity } from '@infrastructure/database/entities/ConversationEntity';
-import { TaskEntity } from '@infrastructure/database/entities/TaskEntity';
 import { MessageEntity } from '@infrastructure/database/entities/MessageEntity';
+import { TaskEntity } from '@infrastructure/database/entities/TaskEntity';
 
 export interface ReportTrendSummary {
   labels: string[];

@@ -169,11 +169,11 @@ export class KnowledgeAdapter {
     return items
       .filter((item) => item !== null)
       .map((item) => ({
-        id: item!.id,
-        title: item!.title,
-        content: item!.content,
-        category: item!.category.value,
-        source: item!.source,
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        category: item.category.value,
+        source: item.source,
       }));
   }
 

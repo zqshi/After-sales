@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export interface CompleteTaskRequestDTO {
   qualityScore?: {
     timeliness: number;
@@ -5,3 +7,11 @@ export interface CompleteTaskRequestDTO {
     satisfaction: number;
   };
 }
+
+export const CompleteTaskRequestSchema = z.object({
+  qualityScore: z.object({
+    timeliness: z.number().min(0).max(100),
+    completeness: z.number().min(0).max(100),
+    satisfaction: z.number().min(0).max(100),
+  }).optional(),
+});

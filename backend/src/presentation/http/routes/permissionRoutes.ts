@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+
 import { PermissionController } from '../controllers/PermissionController';
 
 export async function permissionRoutes(

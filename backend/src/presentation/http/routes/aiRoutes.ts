@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+
 import { AiController } from '../controllers/AiController';
 
 export async function aiRoutes(

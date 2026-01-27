@@ -1,5 +1,6 @@
 import { DataSource, Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
+
 import { QualityReportEntity } from '@infrastructure/database/entities/QualityReportEntity';
 
 export class QualityReportRepository {

@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+
 import { AnalyzeConversationUseCase } from '../../../application/use-cases/ai/AnalyzeConversationUseCase';
 import { ApplySolutionUseCase } from '../../../application/use-cases/ai/ApplySolutionUseCase';
 

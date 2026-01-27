@@ -9,28 +9,31 @@
  * 设计模式：Saga Pattern（应用层协调）
  */
 
+import { config } from '@config/app.config';
+import { ConversationClosedEvent } from '@domain/conversation/events/ConversationClosedEvent';
+import { AgentMode } from '@domain/conversation/models/Conversation';
+import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
+import { AgentScopeChatClient } from '@infrastructure/agentscope/AgentScopeChatClient';
+import { EventBus } from '@infrastructure/events/EventBus';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
-import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
-import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
 import { ProblemRepository } from '@infrastructure/repositories/ProblemRepository';
 import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
+import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
+import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
+import { WorkflowEngine } from '@infrastructure/workflow/WorkflowEngine';
+
+import { CloseConversationUseCase } from '../use-cases/CloseConversationUseCase';
 import { CreateConversationUseCase } from '../use-cases/CreateConversationUseCase';
+import { CreateProblemUseCase } from '../use-cases/problem/CreateProblemUseCase';
+import { AssociateRequirementWithConversationUseCase } from '../use-cases/requirement/AssociateRequirementWithConversationUseCase';
 import { CreateRequirementUseCase } from '../use-cases/requirement/CreateRequirementUseCase';
 import { CreateTaskUseCase } from '../use-cases/task/CreateTaskUseCase';
-import { CloseConversationUseCase } from '../use-cases/CloseConversationUseCase';
 import { SendMessageUseCase } from '../use-cases/SendMessageUseCase';
-import { AssociateRequirementWithConversationUseCase } from '../use-cases/requirement/AssociateRequirementWithConversationUseCase';
-import { CreateProblemUseCase } from '../use-cases/problem/CreateProblemUseCase';
 import { UpdateProblemStatusUseCase } from '../use-cases/problem/UpdateProblemStatusUseCase';
 import { CreateReviewRequestUseCase } from '../use-cases/review/CreateReviewRequestUseCase';
+
 import { AiService } from './AiService';
-import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
-import { EventBus } from '@infrastructure/events/EventBus';
-import { ConversationClosedEvent } from '@domain/conversation/events/ConversationClosedEvent';
-import { config } from '@config/app.config';
-import { AgentMode } from '@domain/conversation/models/Conversation';
-import { AgentScopeChatClient } from '@infrastructure/agentscope/AgentScopeChatClient';
-import { WorkflowEngine } from '@infrastructure/workflow/WorkflowEngine';
+
 
 /**
  * 客户消息输入（IM集成接收的消息）
@@ -131,7 +134,7 @@ export class ConversationTaskCoordinator {
    */
   async processCustomerMessage(msg: IncomingMessage): Promise<ProcessingResult> {
     // Step 1: 创建或获取Conversation
-    let conversation = await this.conversationRepository.findByFilters(
+    const conversation = await this.conversationRepository.findByFilters(
       {
         customerId: msg.customerId,
         status: 'open',

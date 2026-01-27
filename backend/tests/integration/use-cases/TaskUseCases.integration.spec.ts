@@ -9,12 +9,18 @@ import { UpdateTaskStatusUseCase } from '@application/use-cases/task/UpdateTaskS
 import { TaskListQueryDTO } from '@application/dto/task/TaskListQueryDTO';
 import { AssignTaskRequestDTO } from '@application/dto/task/AssignTaskRequestDTO';
 import { CompleteTaskRequestDTO } from '@application/dto/task/CompleteTaskRequestDTO';
+import { EventBus } from '@infrastructure/events/EventBus';
+import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
+import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { closeTestDataSource, getTestDataSource } from '../../helpers/testDatabase';
 
 describe('Task use cases (integration)', () => {
   let dataSource: DataSource;
   let repository: TaskRepository;
+  let conversationRepository: ConversationRepository;
+  let eventBus: EventBus;
+  let outboxEventBus: OutboxEventBus;
   let createUseCase: CreateTaskUseCase;
   let listUseCase: ListTasksUseCase;
   let assignUseCase: AssignTaskUseCase;
@@ -23,12 +29,15 @@ describe('Task use cases (integration)', () => {
 
   beforeAll(async () => {
     dataSource = await getTestDataSource();
-    repository = new TaskRepository(dataSource);
-    createUseCase = new CreateTaskUseCase(repository);
+    outboxEventBus = new OutboxEventBus(dataSource);
+    repository = new TaskRepository(dataSource, outboxEventBus);
+    conversationRepository = new ConversationRepository(dataSource);
+    eventBus = new EventBus();
+    createUseCase = new CreateTaskUseCase(repository, conversationRepository);
     listUseCase = new ListTasksUseCase(repository);
     assignUseCase = new AssignTaskUseCase(repository);
     updateStatusUseCase = new UpdateTaskStatusUseCase(repository);
-    completeUseCase = new CompleteTaskUseCase(repository);
+    completeUseCase = new CompleteTaskUseCase(repository, eventBus);
   });
 
   beforeEach(async () => {
@@ -76,7 +85,10 @@ describe('Task use cases (integration)', () => {
     const assigned = await assignUseCase.execute(assignRequest);
     expect(assigned.assigneeId).toBe('agent-10');
 
-    const updated = await updateStatusUseCase.execute(created.id, { status: 'in_progress' });
+    const updated = await updateStatusUseCase.execute({
+      taskId: created.id,
+      status: 'in_progress',
+    });
     expect(updated.status).toBe('in_progress');
 
     const completeRequest: CompleteTaskRequestDTO = {
@@ -87,7 +99,10 @@ describe('Task use cases (integration)', () => {
       },
     };
 
-    const completed = await completeUseCase.execute(created.id, completeRequest);
+    const completed = await completeUseCase.execute({
+      taskId: created.id,
+      qualityScore: completeRequest.qualityScore,
+    });
     expect(completed.status).toBe('completed');
     expect(completed.qualityScore).toBeDefined();
     expect(completed.qualityScore).toBeGreaterThan(0);

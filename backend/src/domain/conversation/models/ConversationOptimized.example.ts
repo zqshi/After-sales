@@ -11,16 +11,19 @@
  */
 
 import { AggregateRoot } from '@domain/shared/AggregateRoot';
-import { ConversationCreatedEvent } from '../events/ConversationCreatedEvent';
-import { ConversationClosedEvent } from '../events/ConversationClosedEvent';
+
 import { ConversationAssignedEvent } from '../events/ConversationAssignedEvent';
-import { MessageSentEvent } from '../events/MessageSentEvent';
+import { ConversationClosedEvent } from '../events/ConversationClosedEvent';
+import { ConversationCreatedEvent } from '../events/ConversationCreatedEvent';
 import { CustomerLevelViolatedEvent } from '../events/CustomerLevelViolatedEvent';
-import { Message } from './Message';
+import { MessageSentEvent } from '../events/MessageSentEvent';
+import type { IMessageRepository } from '../repositories/IMessageRepository';
+import { ConversationStatus, MessagePriority, CustomerLevelStatus } from '../types';
 import { Channel } from '../value-objects/Channel';
 import { MessageSummary } from '../value-objects/MessageSummary';
-import { ConversationStatus, MessagePriority, CustomerLevelStatus } from '../types';
-import type { IMessageRepository } from '../repositories/IMessageRepository';
+
+import { Message } from './Message';
+
 
 export type AgentMode = 'agent_auto' | 'agent_supervised' | 'human_first';
 
@@ -537,12 +540,12 @@ export async function example5_AgentWorklist(
     // 优先级1: 客户等待回复
     const aWaiting = a.isCustomerWaitingForResponse();
     const bWaiting = b.isCustomerWaitingForResponse();
-    if (aWaiting !== bWaiting) return aWaiting ? -1 : 1;
+    if (aWaiting !== bWaiting) {return aWaiting ? -1 : 1;}
 
     // 优先级2: 未读消息数
     const aUnread = a.messageSummary.unreadCount;
     const bUnread = b.messageSummary.unreadCount;
-    if (aUnread !== bUnread) return bUnread - aUnread;
+    if (aUnread !== bUnread) {return bUnread - aUnread;}
 
     // 优先级3: 最后消息时间
     return b.messageSummary.lastMessageAt.getTime() - a.messageSummary.lastMessageAt.getTime();

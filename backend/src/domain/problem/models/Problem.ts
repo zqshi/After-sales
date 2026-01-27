@@ -1,9 +1,10 @@
 import { AggregateRoot } from '@domain/shared/AggregateRoot';
-import { ProblemStatus } from '../types';
+
 import { ProblemCreatedEvent } from '../events/ProblemCreatedEvent';
-import { ProblemStatusChangedEvent } from '../events/ProblemStatusChangedEvent';
-import { ProblemResolvedEvent } from '../events/ProblemResolvedEvent';
 import { ProblemReopenedEvent } from '../events/ProblemReopenedEvent';
+import { ProblemResolvedEvent } from '../events/ProblemResolvedEvent';
+import { ProblemStatusChangedEvent } from '../events/ProblemStatusChangedEvent';
+import { ProblemStatus } from '../types';
 
 interface ProblemProps {
   customerId: string;

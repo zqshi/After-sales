@@ -1,7 +1,9 @@
 import { DataSource } from 'typeorm';
-import { OutboxEventBus } from './OutboxEventBus';
-import { EventBus } from './EventBus';
+
 import { DomainEvent } from '@domain/shared/DomainEvent';
+
+import { EventBus } from './EventBus';
+import { OutboxEventBus } from './OutboxEventBus';
 
 /**
  * OutboxProcessor - Outbox事件处理器

@@ -1,12 +1,12 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
-import { AgentScopeDependencies, MCPToolDefinition } from './types';
+import { buildAITools } from './tools/AITools';
 import { buildConversationTools } from './tools/ConversationTools';
 import { buildCustomerTools } from './tools/CustomerTools';
 import { buildKnowledgeTools } from './tools/KnowledgeTools';
 import { buildRequirementTools } from './tools/RequirementTools';
 import { buildTaskTools } from './tools/TaskTools';
-import { buildAITools } from './tools/AITools';
+import { AgentScopeDependencies, MCPToolDefinition } from './types';
 
 interface MCPRequestPayload {
   method: 'tools/list' | 'tools/call';

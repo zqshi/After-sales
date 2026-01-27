@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+
 import { MonitoringController } from '../controllers/MonitoringController';
 
 export async function monitoringRoutes(

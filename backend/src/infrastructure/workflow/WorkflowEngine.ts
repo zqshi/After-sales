@@ -9,10 +9,15 @@
  * 5. 收集执行指标
  */
 
+import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
+
 import * as yaml from 'yaml';
-import { EventEmitter } from 'events';
+
+import { ActionStepExecutor } from './executors/ActionStepExecutor';
+import { HumanInLoopExecutor } from './executors/HumanInLoopExecutor';
+import { ParallelStepExecutor } from './executors/ParallelStepExecutor';
 import {
   WorkflowDefinition,
   WorkflowContext,
@@ -24,9 +29,6 @@ import {
   HumanInLoopResponse,
 } from './types';
 import { WorkflowState } from './WorkflowState';
-import { ActionStepExecutor } from './executors/ActionStepExecutor';
-import { ParallelStepExecutor } from './executors/ParallelStepExecutor';
-import { HumanInLoopExecutor } from './executors/HumanInLoopExecutor';
 
 export class WorkflowEngine {
   private workflows: Map<string, WorkflowDefinition> = new Map();

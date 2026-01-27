@@ -1,10 +1,10 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 
-import { LoginUseCase } from '../../../application/use-cases/auth/LoginUseCase';
-import { RegisterUseCase } from '../../../application/use-cases/auth/RegisterUseCase';
-import { GetCurrentUserUseCase } from '../../../application/use-cases/auth/GetCurrentUserUseCase';
 import { LoginRequestDTO } from '../../../application/dto/auth/LoginRequestDTO';
 import { RegisterRequestDTO } from '../../../application/dto/auth/RegisterRequestDTO';
+import { GetCurrentUserUseCase } from '../../../application/use-cases/auth/GetCurrentUserUseCase';
+import { LoginUseCase } from '../../../application/use-cases/auth/LoginUseCase';
+import { RegisterUseCase } from '../../../application/use-cases/auth/RegisterUseCase';
 
 export class AuthController {
   constructor(

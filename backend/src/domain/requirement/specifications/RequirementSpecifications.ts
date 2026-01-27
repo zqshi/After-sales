@@ -1,4 +1,5 @@
 import { Specification } from '@domain/shared/Specification';
+
 import { Requirement } from '../models/Requirement';
 
 /**

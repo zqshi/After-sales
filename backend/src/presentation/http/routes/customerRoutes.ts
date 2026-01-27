@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { CustomerProfileController } from '../controllers/CustomerProfileController';
+
 import { CustomerActionController } from '../controllers/CustomerActionController';
+import { CustomerProfileController } from '../controllers/CustomerProfileController';
 
 export async function customerRoutes(
   fastify: FastifyInstance,

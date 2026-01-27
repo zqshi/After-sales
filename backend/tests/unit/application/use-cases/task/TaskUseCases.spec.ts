@@ -19,6 +19,7 @@ import { GetTaskUseCase } from '@application/use-cases/task/GetTaskUseCase';
 import { ListTasksUseCase } from '@application/use-cases/task/ListTasksUseCase';
 import { Task } from '@domain/task/models/Task';
 import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
+import { ValidationError } from '@infrastructure/validation/Validator';
 
 // ============================================
 // Mock Dependencies
@@ -30,6 +31,10 @@ const createMockTaskRepository = () => ({
   save: vi.fn(),
   findAll: vi.fn(),
   delete: vi.fn(),
+});
+
+const createMockConversationRepository = () => ({
+  findById: vi.fn(),
 });
 
 const createMockEventBus = () => ({
@@ -44,10 +49,12 @@ const createMockEventBus = () => ({
 
 describe('Task Use Cases', () => {
   let mockTaskRepo: ReturnType<typeof createMockTaskRepository>;
+  let mockConversationRepo: ReturnType<typeof createMockConversationRepository>;
   let mockEventBus: ReturnType<typeof createMockEventBus>;
 
   beforeEach(() => {
     mockTaskRepo = createMockTaskRepository();
+    mockConversationRepo = createMockConversationRepository();
     mockEventBus = createMockEventBus();
   });
 
@@ -59,7 +66,7 @@ describe('Task Use Cases', () => {
     let useCase: CreateTaskUseCase;
 
     beforeEach(() => {
-      useCase = new CreateTaskUseCase(mockTaskRepo as any);
+      useCase = new CreateTaskUseCase(mockTaskRepo as any, mockConversationRepo as any);
     });
 
     it('应该成功创建任务', async () => {
@@ -101,7 +108,7 @@ describe('Task Use Cases', () => {
         type: 'support' as const,
       } as any;
 
-      await expect(useCase.execute(request)).rejects.toThrow('title is required');
+      await expect(useCase.execute(request)).rejects.toThrow(ValidationError);
     });
 
     it('应该支持设置截止日期', async () => {
@@ -187,7 +194,7 @@ describe('Task Use Cases', () => {
           taskId: '',
           assigneeId: 'agent-001',
         }),
-      ).rejects.toThrow('taskId and assigneeId are required');
+      ).rejects.toThrow(ValidationError);
     });
 
     it('应该在缺少assigneeId时抛出错误', async () => {
@@ -196,7 +203,7 @@ describe('Task Use Cases', () => {
           taskId: 'task-001',
           assigneeId: '',
         }),
-      ).rejects.toThrow('taskId and assigneeId are required');
+      ).rejects.toThrow(ValidationError);
     });
   });
 
@@ -223,7 +230,8 @@ describe('Task Use Cases', () => {
       mockTaskRepo.findById.mockResolvedValue(mockTask);
       mockTaskRepo.save.mockResolvedValue(undefined);
 
-      const result = await useCase.execute(taskId, {
+      const result = await useCase.execute({
+        taskId,
         status: 'in_progress',
       });
 
@@ -232,7 +240,7 @@ describe('Task Use Cases', () => {
       expect(mockTaskRepo.save).toHaveBeenCalled();
     });
 
-    it('应该成功更新任务状态为blocked', async () => {
+    it('应该成功更新任务状态为cancelled', async () => {
       const taskId = 'task-001';
 
       const mockTask = Task.create({
@@ -244,19 +252,21 @@ describe('Task Use Cases', () => {
       mockTaskRepo.findById.mockResolvedValue(mockTask);
       mockTaskRepo.save.mockResolvedValue(undefined);
 
-      const result = await useCase.execute(taskId, {
-        status: 'blocked',
+      const result = await useCase.execute({
+        taskId,
+        status: 'cancelled',
       });
 
       expect(result).toBeDefined();
-      expect(result.status).toBe('blocked');
+      expect(result.status).toBe('cancelled');
     });
 
     it('应该在任务不存在时抛出错误', async () => {
       mockTaskRepo.findById.mockResolvedValue(null);
 
       await expect(
-        useCase.execute('non-existent', {
+        useCase.execute({
+          taskId: 'non-existent',
           status: 'in_progress',
         }),
       ).rejects.toThrow('Task not found: non-existent');
@@ -290,7 +300,7 @@ describe('Task Use Cases', () => {
       mockTaskRepo.findById.mockResolvedValue(mockTask);
       mockTaskRepo.save.mockResolvedValue(undefined);
 
-      const result = await useCase.execute(taskId, {});
+      const result = await useCase.execute({ taskId });
 
       expect(result).toBeDefined();
       expect(result.status).toBe('completed');
@@ -312,13 +322,18 @@ describe('Task Use Cases', () => {
       mockTaskRepo.findById.mockResolvedValue(mockTask);
       mockTaskRepo.save.mockResolvedValue(undefined);
 
-      const result = await useCase.execute(taskId, {
-        qualityScore: 85,
+      const result = await useCase.execute({
+        taskId,
+        qualityScore: {
+          timeliness: 85,
+          completeness: 90,
+          satisfaction: 88,
+        },
       });
 
       expect(result).toBeDefined();
       expect(result.status).toBe('completed');
-      expect(result.qualityScore).toBe(85);
+      expect(result.qualityScore).toBe(88);
     });
 
     it('应该发布TaskCompleted事件', async () => {
@@ -336,7 +351,7 @@ describe('Task Use Cases', () => {
       mockTaskRepo.findById.mockResolvedValue(mockTask);
       mockTaskRepo.save.mockResolvedValue(undefined);
 
-      await useCase.execute(taskId, {});
+      await useCase.execute({ taskId });
 
       expect(mockEventBus.publish).toHaveBeenCalled();
     });
@@ -344,7 +359,7 @@ describe('Task Use Cases', () => {
     it('应该在任务不存在时抛出错误', async () => {
       mockTaskRepo.findById.mockResolvedValue(null);
 
-      await expect(useCase.execute('non-existent', {})).rejects.toThrow(
+      await expect(useCase.execute({ taskId: 'non-existent' })).rejects.toThrow(
         'Task not found: non-existent',
       );
     });
@@ -372,19 +387,19 @@ describe('Task Use Cases', () => {
 
       mockTaskRepo.findById.mockResolvedValue(mockTask);
 
-      const result = await useCase.execute(taskId);
+      const result = await useCase.execute({ taskId });
 
       expect(result).toBeDefined();
       expect(result.title).toBe('测试任务');
       expect(mockTaskRepo.findById).toHaveBeenCalledWith(taskId);
     });
 
-    it('应该在任务不存在时返回null', async () => {
+    it('应该在任务不存在时抛出错误', async () => {
       mockTaskRepo.findById.mockResolvedValue(null);
 
-      const result = await useCase.execute('non-existent');
-
-      expect(result).toBeNull();
+      await expect(useCase.execute({ taskId: 'non-existent' })).rejects.toThrow(
+        'Task not found: non-existent',
+      );
     });
   });
 
@@ -544,7 +559,7 @@ describe('Task Use Cases', () => {
     let completeUseCase: CompleteTaskUseCase;
 
     beforeEach(() => {
-      createUseCase = new CreateTaskUseCase(mockTaskRepo as any);
+      createUseCase = new CreateTaskUseCase(mockTaskRepo as any, mockConversationRepo as any);
       assignUseCase = new AssignTaskUseCase(mockTaskRepo as any);
       updateStatusUseCase = new UpdateTaskStatusUseCase(mockTaskRepo as any);
       completeUseCase = new CompleteTaskUseCase(mockTaskRepo as any, mockEventBus as any);
@@ -580,7 +595,8 @@ describe('Task Use Cases', () => {
 
       // 3. 开始任务
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      const startedTask = await updateStatusUseCase.execute(createdTask.id, {
+      const startedTask = await updateStatusUseCase.execute({
+        taskId: createdTask.id,
         status: 'in_progress',
       });
 
@@ -589,8 +605,13 @@ describe('Task Use Cases', () => {
       // 4. 完成任务
       mockTask.start();
       mockTaskRepo.findById.mockResolvedValue(mockTask);
-      const completedTask = await completeUseCase.execute(createdTask.id, {
-        qualityScore: 90,
+      const completedTask = await completeUseCase.execute({
+        taskId: createdTask.id,
+        qualityScore: {
+          timeliness: 90,
+          completeness: 90,
+          satisfaction: 90,
+        },
       });
 
       expect(completedTask.status).toBe('completed');

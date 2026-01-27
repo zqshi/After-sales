@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
 import { createApp } from '../../src/app';
 import { getTestDataSource, closeTestDataSource } from '../helpers/testDatabase';
+import { OutboxEventBus } from '../../src/infrastructure/events/OutboxEventBus';
 import { RequirementRepository } from '../../src/infrastructure/repositories/RequirementRepository';
 import { Requirement } from '../../src/domain/requirement/models/Requirement';
 import { Priority } from '../../src/domain/requirement/value-objects/Priority';
@@ -22,7 +23,7 @@ describe('Requirement API E2E Tests', () => {
 
   beforeEach(async () => {
     await dataSource.synchronize(true);
-    repository = new RequirementRepository(dataSource);
+    repository = new RequirementRepository(dataSource, new OutboxEventBus(dataSource));
 
     const requirement = Requirement.create({
       customerId: 'CUST-REQ-001',

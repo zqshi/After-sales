@@ -1,6 +1,8 @@
-import { IKnowledgeRepository, KnowledgeFilters, KnowledgePagination } from '@domain/knowledge/repositories/IKnowledgeRepository';
 import { KnowledgeItem } from '@domain/knowledge/models/KnowledgeItem';
+import { IKnowledgeRepository, KnowledgeFilters, KnowledgePagination } from '@domain/knowledge/repositories/IKnowledgeRepository';
+
 import { TaxKBAdapter, TaxKBError } from '../adapters/TaxKBAdapter';
+
 import { TaxKBMapper } from './mappers/TaxKBMapper';
 
 export class TaxKBKnowledgeRepository implements IKnowledgeRepository {

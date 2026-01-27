@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
 
+import { AuditEventEntity } from '../../../infrastructure/database/entities/AuditEventEntity';
 import { AuditEventRepository } from '../../../infrastructure/repositories/AuditEventRepository';
 import { CreateAuditEventRequestDTO } from '../../dto/audit/CreateAuditEventRequestDTO';
-import { AuditEventEntity } from '../../../infrastructure/database/entities/AuditEventEntity';
 
 export interface CreateAuditEventContext {
   userId?: string | null;

@@ -1,5 +1,6 @@
-import { ValueObject } from '@domain/shared/ValueObject';
 import { v4 as uuidv4 } from 'uuid';
+
+import { ValueObject } from '@domain/shared/ValueObject';
 
 interface ServiceRecordProps {
   title: string;

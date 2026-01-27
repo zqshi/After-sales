@@ -1,5 +1,10 @@
-import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
+import { z } from 'zod';
+
 import { EventBus } from '../../infrastructure/events/EventBus';
+import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
+import { nonEmptyStringSchema, uuidSchema } from '../../infrastructure/validation/CommonSchemas';
+import { Validator } from '../../infrastructure/validation/Validator';
+import { ResourceAccessControl } from '../services/ResourceAccessControl';
 import { ConversationResponseDTO } from '../dto/ConversationResponseDTO';
 
 export interface AssignAgentRequest {
@@ -7,28 +12,46 @@ export interface AssignAgentRequest {
   agentId: string;
   assignedBy?: string;
   reason?: 'manual' | 'auto' | 'reassign';
+  userId?: string;
 }
+
+const AssignAgentRequestSchema = z.object({
+  conversationId: uuidSchema.or(nonEmptyStringSchema.max(100)),
+  agentId: uuidSchema.or(nonEmptyStringSchema.max(100)),
+  assignedBy: uuidSchema.or(nonEmptyStringSchema.max(100)).optional(),
+  reason: z.enum(['manual', 'auto', 'reassign']).optional(),
+  userId: uuidSchema.or(nonEmptyStringSchema.max(100)).optional(),
+});
 
 export class AssignAgentUseCase {
   constructor(
     private readonly conversationRepository: ConversationRepository,
     private readonly eventBus: EventBus,
+    private readonly accessControl?: ResourceAccessControl,
   ) {}
 
   async execute(request: AssignAgentRequest): Promise<ConversationResponseDTO> {
-    this.validateRequest(request);
+    const validatedRequest = Validator.validate(AssignAgentRequestSchema, request);
+
+    if (validatedRequest.userId && this.accessControl) {
+      await this.accessControl.checkConversationAccess(
+        validatedRequest.userId,
+        validatedRequest.conversationId,
+        'write',
+      );
+    }
 
     const conversation = await this.conversationRepository.findById(
-      request.conversationId,
+      validatedRequest.conversationId,
     );
 
     if (!conversation) {
-      throw new Error(`Conversation not found: ${request.conversationId}`);
+      throw new Error(`Conversation not found: ${validatedRequest.conversationId}`);
     }
 
-    conversation.assignAgent(request.agentId, {
-      assignedBy: request.assignedBy,
-      reason: request.reason,
+    conversation.assignAgent(validatedRequest.agentId, {
+      assignedBy: validatedRequest.assignedBy,
+      reason: validatedRequest.reason,
     });
 
     const events = conversation.getUncommittedEvents();
@@ -38,20 +61,5 @@ export class AssignAgentUseCase {
     conversation.clearEvents();
 
     return ConversationResponseDTO.fromAggregate(conversation);
-  }
-
-  private validateRequest(request: AssignAgentRequest): void {
-    if (!request.conversationId) {
-      throw new Error('conversationId is required');
-    }
-    if (!request.agentId) {
-      throw new Error('agentId is required');
-    }
-    if (
-      request.reason &&
-      !['manual', 'auto', 'reassign'].includes(request.reason)
-    ) {
-      throw new Error('invalid reason');
-    }
   }
 }

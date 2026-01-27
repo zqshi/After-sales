@@ -1,5 +1,6 @@
-import { RoleRepository } from '../../../infrastructure/repositories/RoleRepository';
+import { PermissionKey } from '../../../config/permissions';
 import { resolveUiPermissions } from '../../../config/uiPermissions';
+import { RoleRepository } from '../../../infrastructure/repositories/RoleRepository';
 import { RoleResponseDTO } from '../../dto/permissions/RoleResponseDTO';
 
 export class ListRolesUseCase {
@@ -12,7 +13,7 @@ export class ListRolesUseCase {
       name: role.name,
       description: role.description,
       isSystem: role.isSystem,
-      uiPermissions: resolveUiPermissions(role.permissions),
+      uiPermissions: resolveUiPermissions(role.permissions as PermissionKey[]),
     }));
   }
 }

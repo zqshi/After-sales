@@ -5,8 +5,8 @@
  */
 
 import { createApp } from './app.js';
-import { AppDataSource } from './infrastructure/database/data-source.js';
 import { config } from './config/app.config.js';
+import { AppDataSource } from './infrastructure/database/data-source.js';
 
 let appInstance: Awaited<ReturnType<typeof createApp>> | null = null;
 

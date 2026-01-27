@@ -6,12 +6,16 @@ import { DeleteRequirementUseCase } from '@application/use-cases/requirement/Del
 import { ListRequirementsUseCase } from '@application/use-cases/requirement/ListRequirementsUseCase';
 import { UpdateRequirementStatusUseCase } from '@application/use-cases/requirement/UpdateRequirementStatusUseCase';
 import { RequirementListQueryDTO } from '@application/dto/requirement/RequirementListQueryDTO';
+import { EventBus } from '@infrastructure/events/EventBus';
+import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
 import { closeTestDataSource, getTestDataSource } from '../../helpers/testDatabase';
 
 describe('Requirement use cases (integration)', () => {
   let dataSource: DataSource;
   let repository: RequirementRepository;
+  let eventBus: EventBus;
+  let outboxEventBus: OutboxEventBus;
   let createUseCase: CreateRequirementUseCase;
   let listUseCase: ListRequirementsUseCase;
   let updateStatusUseCase: UpdateRequirementStatusUseCase;
@@ -19,8 +23,10 @@ describe('Requirement use cases (integration)', () => {
 
   beforeAll(async () => {
     dataSource = await getTestDataSource();
-    repository = new RequirementRepository(dataSource);
-    createUseCase = new CreateRequirementUseCase(repository);
+    outboxEventBus = new OutboxEventBus(dataSource);
+    eventBus = new EventBus();
+    repository = new RequirementRepository(dataSource, outboxEventBus);
+    createUseCase = new CreateRequirementUseCase(repository, eventBus);
     listUseCase = new ListRequirementsUseCase(repository);
     updateStatusUseCase = new UpdateRequirementStatusUseCase(repository);
     deleteUseCase = new DeleteRequirementUseCase(repository);

@@ -1,11 +1,12 @@
 import { FastifyInstance } from 'fastify';
 
 import { agentScopeConfig, AgentScopeConfig } from '@config/agentscope.config';
-import { AgentScopeDependencies } from './types';
-import { EventBridge } from './EventBridge';
 import { EventBus } from '@infrastructure/events/EventBus';
-import { MCPServer } from './MCPServer';
+
 import { AgentScopeChatClient } from './AgentScopeChatClient';
+import { EventBridge } from './EventBridge';
+import { MCPServer } from './MCPServer';
+import { AgentScopeDependencies } from './types';
 
 export class AgentScopeGateway {
   private readonly mcpServer: MCPServer;
@@ -44,7 +45,7 @@ export class AgentScopeGateway {
         circuitBreaker: {
           state: circuitState.state,
           failureCount: circuitState.failureCount,
-          enabled: this.config.circuitBreaker?.enabled ?? false,
+          enabled: true, // Circuit breaker is always enabled in AgentScopeChatClient
         },
         serviceUrl: this.config.serviceUrl,
         timestamp: new Date().toISOString(),

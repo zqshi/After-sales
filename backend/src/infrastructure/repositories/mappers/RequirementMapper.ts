@@ -23,6 +23,7 @@ export class RequirementMapper {
         updatedAt: entity.updatedAt,
       },
       entity.id,
+      entity.version,
     );
   }
 
@@ -40,6 +41,7 @@ export class RequirementMapper {
     entity.source = requirement.source.value;
     entity.createdBy = requirement.createdBy ?? null;
     entity.metadata = requirement.metadata ?? {};
+    entity.version = requirement.version;
     entity.createdAt = requirement.createdAt;
     entity.updatedAt = requirement.updatedAt;
     return entity;

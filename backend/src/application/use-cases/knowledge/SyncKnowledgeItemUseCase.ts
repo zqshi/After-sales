@@ -1,10 +1,12 @@
-import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
-import { TaxKBKnowledgeRepository } from '@infrastructure/repositories/TaxKBKnowledgeRepository';
-import { TaxKBAdapter } from '@infrastructure/adapters/TaxKBAdapter';
-import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
-import { EventBus } from '@infrastructure/events/EventBus';
 import { FaqMiningService } from '@application/services/FaqMiningService';
 import { KnowledgeAiService } from '@application/services/KnowledgeAiService';
+import { TaxKBAdapter } from '@infrastructure/adapters/TaxKBAdapter';
+import { EventBus } from '@infrastructure/events/EventBus';
+import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
+import { TaxKBKnowledgeRepository } from '@infrastructure/repositories/TaxKBKnowledgeRepository';
+
+import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
+
 
 export interface SyncKnowledgeItemRequest {
   knowledgeId: string;
@@ -38,8 +40,8 @@ export class SyncKnowledgeItemUseCase {
     const metadata = item.metadata ?? {};
     const uploadDocId =
       (typeof request.uploadDocId === 'string' && request.uploadDocId) ||
-      (typeof (metadata as Record<string, unknown>).uploadDocId === 'string'
-        ? (metadata as Record<string, unknown>).uploadDocId
+      (typeof (metadata).uploadDocId === 'string'
+        ? ((metadata).uploadDocId)
         : '');
 
     if (!uploadDocId) {
@@ -51,16 +53,16 @@ export class SyncKnowledgeItemUseCase {
       return KnowledgeItemResponseDTO.fromDomain(item);
     }
 
-    const nextMetadata = {
-      ...(metadata as Record<string, unknown>),
+    const nextMetadata: Record<string, unknown> = {
+      ...(metadata),
       taxkbDocId: uploadDocId,
       status: 'active',
       taxkbSyncedAt: new Date().toISOString(),
     };
 
     const existingSummary =
-      typeof (metadata as Record<string, unknown>).summary === 'string'
-        ? String((metadata as Record<string, unknown>).summary)
+      typeof (metadata).summary === 'string'
+        ? String((metadata).summary)
         : '';
     const shouldGenerateSummary =
       !existingSummary ||

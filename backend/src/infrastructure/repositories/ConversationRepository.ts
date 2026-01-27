@@ -1,14 +1,16 @@
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { validate as isUUID } from 'uuid';
 
-import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
 import { Conversation } from '@domain/conversation/models/Conversation';
-import { ConversationEntity } from '@infrastructure/database/entities/ConversationEntity';
-import { MessageEntity } from '@infrastructure/database/entities/MessageEntity';
-import { DomainEventEntity } from '@infrastructure/database/entities/DomainEventEntity';
-import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
-import { ConversationMapper } from './mappers/ConversationMapper';
+import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
 import { ConversationStatus, CustomerLevelStatus } from '@domain/conversation/types';
+import { ConversationEntity } from '@infrastructure/database/entities/ConversationEntity';
+import { DomainEventEntity } from '@infrastructure/database/entities/DomainEventEntity';
+import { MessageEntity } from '@infrastructure/database/entities/MessageEntity';
+import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
+
+import { ConversationMapper } from './mappers/ConversationMapper';
+
 
 export interface ConversationFilters {
   status?: ConversationStatus;

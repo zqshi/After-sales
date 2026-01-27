@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+
 import { KnowledgeController } from '../controllers/KnowledgeController';
 
 export async function knowledgeRoutes(

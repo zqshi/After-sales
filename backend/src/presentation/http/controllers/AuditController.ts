@@ -1,8 +1,8 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 
+import { CreateAuditEventRequestDTO } from '../../../application/dto/audit/CreateAuditEventRequestDTO';
 import { CreateAuditEventUseCase } from '../../../application/use-cases/audit/CreateAuditEventUseCase';
 import { GetReportSummaryUseCase } from '../../../application/use-cases/report/GetReportSummaryUseCase';
-import { CreateAuditEventRequestDTO } from '../../../application/dto/audit/CreateAuditEventRequestDTO';
 
 export class AuditController {
   constructor(

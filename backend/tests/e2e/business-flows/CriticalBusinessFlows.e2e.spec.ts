@@ -17,6 +17,7 @@ import { CustomerProfileEntity } from '@infrastructure/database/entities/Custome
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
+import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
 import { ConversationTaskCoordinator } from '@application/services/ConversationTaskCoordinator';
 import { CreateConversationUseCase } from '@application/use-cases/CreateConversationUseCase';
 import { CreateRequirementUseCase } from '@application/use-cases/requirement/CreateRequirementUseCase';
@@ -65,21 +66,22 @@ describe('E2E: Critical Business Flows', () => {
 
     // 初始化repositories
     conversationRepo = new ConversationRepository(dataSource);
-    taskRepo = new TaskRepository(dataSource);
-    requirementRepo = new RequirementRepository(dataSource);
+    const outboxEventBus = new OutboxEventBus(dataSource);
+    taskRepo = new TaskRepository(dataSource, outboxEventBus);
+    requirementRepo = new RequirementRepository(dataSource, outboxEventBus);
 
     // 初始化event bus
     eventBus = new EventBus();
 
     // 初始化use cases
-    const createConversationUseCase = new CreateConversationUseCase(conversationRepo);
-    const createRequirementUseCase = new CreateRequirementUseCase(requirementRepo);
-    const createTaskUseCase = new CreateTaskUseCase(taskRepo);
+    const createConversationUseCase = new CreateConversationUseCase(conversationRepo, eventBus);
+    const createRequirementUseCase = new CreateRequirementUseCase(requirementRepo, eventBus);
+    const createTaskUseCase = new CreateTaskUseCase(taskRepo, conversationRepo);
     const closeConversationUseCase = new CloseConversationUseCase(
       conversationRepo,
       eventBus,
     );
-    const sendMessageUseCase = new SendMessageUseCase(conversationRepo);
+    const sendMessageUseCase = new SendMessageUseCase(conversationRepo, eventBus);
 
     // 初始化AI service (使用mock)
     const aiService = {

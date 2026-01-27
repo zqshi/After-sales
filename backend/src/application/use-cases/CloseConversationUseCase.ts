@@ -2,13 +2,19 @@
  * CloseConversationUseCase - 关闭对话用例
  */
 
-import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
+import { z } from 'zod';
+
 import { EventBus } from '../../infrastructure/events/EventBus';
+import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
+import { nonEmptyStringSchema, uuidSchema } from '../../infrastructure/validation/CommonSchemas';
+import { Validator } from '../../infrastructure/validation/Validator';
+import { ResourceAccessControl } from '../services/ResourceAccessControl';
 
 export interface CloseConversationRequest {
   conversationId: string;
   closedBy: string;
   reason?: string;
+  userId?: string;
 }
 
 export interface CloseConversationResponse {
@@ -22,25 +28,33 @@ export class CloseConversationUseCase {
   constructor(
     private readonly conversationRepository: ConversationRepository,
     private readonly eventBus: EventBus,
+    private readonly accessControl?: ResourceAccessControl,
   ) {}
 
   async execute(
     request: CloseConversationRequest,
   ): Promise<CloseConversationResponse> {
-    // 1. 验证输入
-    this.validateRequest(request);
+    const validatedRequest = Validator.validate(CloseConversationRequestSchema, request);
+
+    if (validatedRequest.userId && this.accessControl) {
+      await this.accessControl.checkConversationAccess(
+        validatedRequest.userId,
+        validatedRequest.conversationId,
+        'write',
+      );
+    }
 
     // 2. 加载聚合根
     const conversation = await this.conversationRepository.findById(
-      request.conversationId,
+      validatedRequest.conversationId,
     );
 
     if (!conversation) {
-      throw new Error(`Conversation not found: ${request.conversationId}`);
+      throw new Error(`Conversation not found: ${validatedRequest.conversationId}`);
     }
 
     // 3. 执行领域逻辑
-    const resolution = request.reason || `Closed by ${request.closedBy}`;
+    const resolution = validatedRequest.reason || `Closed by ${validatedRequest.closedBy}`;
     conversation.close(resolution);
 
     // 4. 发布领域事件（先抓取，保存后事件会被清空）
@@ -63,13 +77,11 @@ export class CloseConversationUseCase {
       closedAt: conversation.closedAt?.toISOString() || '',
     };
   }
-
-  private validateRequest(request: CloseConversationRequest): void {
-    if (!request.conversationId) {
-      throw new Error('conversationId is required');
-    }
-    if (!request.closedBy) {
-      throw new Error('closedBy is required');
-    }
-  }
 }
+
+const CloseConversationRequestSchema = z.object({
+  conversationId: uuidSchema.or(nonEmptyStringSchema.max(100)),
+  closedBy: nonEmptyStringSchema.max(100),
+  reason: z.string().max(500).optional(),
+  userId: uuidSchema.or(nonEmptyStringSchema.max(100)).optional(),
+});

@@ -1,5 +1,6 @@
-import { optionalString, requireString } from './helpers';
 import { AgentScopeDependencies, MCPToolDefinition } from '../types';
+
+import { optionalString, requireString } from './helpers';
 
 const includeMessagesFlag = (value: unknown): boolean => {
   if (typeof value === 'boolean') {
@@ -136,9 +137,9 @@ export function buildConversationTools(deps: AgentScopeDependencies): MCPToolDef
           conversation: {
             id: conversation.id,
             customerId: conversation.customerId,
-            status: conversation.status.value,
-            channel: conversation.channel.value,
-            priority: conversation.priority.value,
+            status: conversation.status,
+            channel: conversation.channel,
+            priority: conversation.priority,
           },
           messages,
         };

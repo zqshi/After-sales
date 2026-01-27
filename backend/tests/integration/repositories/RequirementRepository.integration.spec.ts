@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { Requirement } from '@domain/requirement/models/Requirement';
 import { Priority } from '@domain/requirement/value-objects/Priority';
 import { RequirementSource } from '@domain/requirement/value-objects/RequirementSource';
+import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
 import { closeTestDataSource, getTestDataSource } from '../../helpers/testDatabase';
 
@@ -13,7 +14,7 @@ describe('RequirementRepository (integration)', () => {
 
   beforeAll(async () => {
     dataSource = await getTestDataSource();
-    repository = new RequirementRepository(dataSource);
+    repository = new RequirementRepository(dataSource, new OutboxEventBus(dataSource));
   });
 
   beforeEach(async () => {

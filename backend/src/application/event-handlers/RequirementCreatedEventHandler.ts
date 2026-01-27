@@ -1,5 +1,5 @@
-import { RequirementCreatedEvent } from '@domain/requirement/events/RequirementCreatedEvent';
 import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
+import { RequirementCreatedEvent } from '@domain/requirement/events/RequirementCreatedEvent';
 import { IRequirementRepository } from '@domain/requirement/repositories/IRequirementRepository';
 import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
 

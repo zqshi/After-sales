@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
+
 import { getRolePermissions, listAllPermissions } from '../../../config/permissions';
 import { listUiPermissionGroups, resolveUiPermissions } from '../../../config/uiPermissions';
 import { RoleRepository } from '../../../infrastructure/repositories/RoleRepository';

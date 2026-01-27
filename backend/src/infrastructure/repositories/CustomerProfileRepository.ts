@@ -1,8 +1,9 @@
 import { DataSource, Repository } from 'typeorm';
 
-import { ICustomerProfileRepository } from '@domain/customer/repositories/ICustomerProfileRepository';
 import { CustomerProfile } from '@domain/customer/models/CustomerProfile';
+import { ICustomerProfileRepository } from '@domain/customer/repositories/ICustomerProfileRepository';
 import { CustomerProfileEntity } from '@infrastructure/database/entities/CustomerProfileEntity';
+
 import { CustomerProfileMapper } from './mappers/CustomerProfileMapper';
 
 export class CustomerProfileRepository implements ICustomerProfileRepository {

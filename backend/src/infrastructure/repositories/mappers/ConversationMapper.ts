@@ -1,5 +1,6 @@
 import { Conversation, AgentMode } from '@domain/conversation/models/Conversation';
 import { Message, SenderType } from '@domain/conversation/models/Message';
+import { slaCalculator } from '@domain/conversation/services/CustomerLevelCalculatorService';
 import { ConversationStatus, MessagePriority, CustomerLevelStatus } from '@domain/conversation/types';
 import { Channel } from '@domain/conversation/value-objects/Channel';
 import { ConversationEntity } from '@infrastructure/database/entities/ConversationEntity';
@@ -21,6 +22,7 @@ export class ConversationMapper {
     entity.createdAt = conversation.createdAt;
     entity.updatedAt = conversation.updatedAt;
     entity.metadata = conversation.metadata || {};
+    entity.version = conversation.version;
 
     entity.messages = conversation.messages.map((message) => {
       const messageEntity = new MessageEntity();
@@ -72,6 +74,8 @@ export class ConversationMapper {
         metadata: entity.metadata ?? {},
       },
       entity.id,
+      slaCalculator,
+      entity.version,
     );
   }
 }

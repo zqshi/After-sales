@@ -1,18 +1,20 @@
+import { randomUUID } from 'crypto';
+
 import { FastifyRequest, FastifyReply } from 'fastify';
+
 import { CreateKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/CreateKnowledgeItemUseCase';
+import { DeleteKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/DeleteKnowledgeItemUseCase';
 import { GetKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/GetKnowledgeItemUseCase';
 import { ListKnowledgeItemsUseCase } from '../../../application/use-cases/knowledge/ListKnowledgeItemsUseCase';
+import { RetryKnowledgeUploadUseCase } from '../../../application/use-cases/knowledge/RetryKnowledgeUploadUseCase';
 import {
   SearchKnowledgeRequest,
   SearchKnowledgeUseCase,
 } from '../../../application/use-cases/knowledge/SearchKnowledgeUseCase';
-import { UploadDocumentUseCase } from '../../../application/use-cases/knowledge/UploadDocumentUseCase';
-import { UpdateKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/UpdateKnowledgeItemUseCase';
-import { DeleteKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/DeleteKnowledgeItemUseCase';
 import { SyncKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/SyncKnowledgeItemUseCase';
-import { RetryKnowledgeUploadUseCase } from '../../../application/use-cases/knowledge/RetryKnowledgeUploadUseCase';
+import { UpdateKnowledgeItemUseCase } from '../../../application/use-cases/knowledge/UpdateKnowledgeItemUseCase';
+import { UploadDocumentUseCase } from '../../../application/use-cases/knowledge/UploadDocumentUseCase';
 import { TaxKBAdapter, TaxKBError } from '../../../infrastructure/adapters/TaxKBAdapter';
-import { randomUUID } from 'crypto';
 
 export class KnowledgeController {
   constructor(
@@ -50,7 +52,7 @@ export class KnowledgeController {
       if (owner) {
         payload.metadata = {
           ...(payload.metadata ?? {}),
-          owner: (payload.metadata as Record<string, unknown> | undefined)?.owner || owner,
+          owner: (payload.metadata)?.owner || owner,
         };
       }
       const result = await this.createUseCase.execute(payload);
@@ -243,7 +245,7 @@ export class KnowledgeController {
       const first = bodyFiles[0];
       return {
         filename: first.filename || 'upload',
-        toBuffer: first.toBuffer.bind(first),
+        toBuffer: first.toBuffer!.bind(first), // 非空断言，因为上面已经检查过了
       };
     }
 
@@ -323,14 +325,18 @@ export class KnowledgeController {
 
   private handleError(error: unknown, reply: FastifyReply): void {
     if (error instanceof Error) {
+      const errorWithStatus = error as Error & { statusCode?: number };
       const status =
-        typeof (error as { statusCode?: number }).statusCode === 'number'
-          ? (error as { statusCode: number }).statusCode
+        typeof errorWithStatus.statusCode === 'number'
+          ? errorWithStatus.statusCode
           : this.getStatus(error.message);
+
+      const errorWithDetails = error as Error & { details?: { message?: string } };
       const message =
-        typeof (error as { details?: { message?: string } }).details?.message === 'string'
-          ? (error as { details: { message: string } }).details.message
+        typeof errorWithDetails.details?.message === 'string'
+          ? errorWithDetails.details.message
           : error.message;
+
       console.error('[KnowledgeController] request failed:', error);
       reply.code(status).send({
         success: false,

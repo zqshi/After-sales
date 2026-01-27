@@ -39,7 +39,7 @@ export class UserRepository {
   }
 
   async updateById(id: string, updates: Partial<UserEntity>): Promise<UserEntity | null> {
-    await this.repository.update({ id }, updates);
+    await this.repository.update({ id }, updates as any);
     return this.findById(id);
   }
 

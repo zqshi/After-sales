@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, VersionColumn } from 'typeorm';
 
 import { ConversationEntity } from './ConversationEntity';
 
@@ -33,6 +33,9 @@ export class TaskEntity {
 
   @Column({ name: 'quality_score', type: 'int', nullable: true })
   qualityScore!: number | null;
+
+  @VersionColumn({ name: 'version', type: 'int', default: 0 })
+  version!: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt!: Date;

@@ -5,10 +5,10 @@
  * 来隔离Knowledge Context和Customer Context的模型变化
  */
 
-import { KnowledgeAdapter } from '@domain/conversation/anti-corruption/KnowledgeAdapter';
 import { CustomerAdapter } from '@domain/conversation/anti-corruption/CustomerAdapter';
-import { IKnowledgeRepository } from '@domain/knowledge/repositories/IKnowledgeRepository';
+import { KnowledgeAdapter } from '@domain/conversation/anti-corruption/KnowledgeAdapter';
 import { ICustomerProfileRepository } from '@domain/customer/repositories/ICustomerProfileRepository';
+import { IKnowledgeRepository } from '@domain/knowledge/repositories/IKnowledgeRepository';
 
 /**
  * 示例1：在对话分配时使用CustomerAdapter

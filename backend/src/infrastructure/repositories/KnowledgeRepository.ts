@@ -1,8 +1,9 @@
 import { DataSource, Repository } from 'typeorm';
 
-import { IKnowledgeRepository, KnowledgeFilters } from '@domain/knowledge/repositories/IKnowledgeRepository';
 import { KnowledgeItem } from '@domain/knowledge/models/KnowledgeItem';
+import { IKnowledgeRepository, KnowledgeFilters } from '@domain/knowledge/repositories/IKnowledgeRepository';
 import { KnowledgeItemEntity } from '@infrastructure/database/entities/KnowledgeItemEntity';
+
 import { KnowledgeItemMapper } from './mappers/KnowledgeItemMapper';
 
 export class KnowledgeRepository implements IKnowledgeRepository {

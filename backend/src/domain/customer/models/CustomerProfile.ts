@@ -1,18 +1,19 @@
 import { AggregateRoot } from '@domain/shared/AggregateRoot';
-import { ContactInfo } from '../value-objects/ContactInfo';
-import { CustomerLevelInfo } from '../value-objects/CustomerLevelInfo';
-import { Metrics } from '../value-objects/Metrics';
-import { Insight } from '../value-objects/Insight';
-import { Interaction } from '../value-objects/Interaction';
-import { ServiceRecord } from '../value-objects/ServiceRecord';
+
+import { CommitmentProgressUpdatedEvent } from '../events/CommitmentProgressUpdatedEvent';
+import { CustomerMarkedAsVIPEvent } from '../events/CustomerMarkedAsVIPEvent';
+import { InteractionAddedEvent } from '../events/InteractionAddedEvent';
 import { ProfileRefreshedEvent } from '../events/ProfileRefreshedEvent';
 import { RiskLevelChangedEvent } from '../events/RiskLevelChangedEvent';
 import { ServiceRecordAddedEvent } from '../events/ServiceRecordAddedEvent';
-import { CommitmentProgressUpdatedEvent } from '../events/CommitmentProgressUpdatedEvent';
-import { InteractionAddedEvent } from '../events/InteractionAddedEvent';
-import { CustomerMarkedAsVIPEvent } from '../events/CustomerMarkedAsVIPEvent';
 import { HealthScoreCalculator } from '../services/HealthScoreCalculator';
 import { RiskEvaluator } from '../services/RiskEvaluator';
+import { ContactInfo } from '../value-objects/ContactInfo';
+import { CustomerLevelInfo } from '../value-objects/CustomerLevelInfo';
+import { Insight } from '../value-objects/Insight';
+import { Interaction } from '../value-objects/Interaction';
+import { Metrics } from '../value-objects/Metrics';
+import { ServiceRecord } from '../value-objects/ServiceRecord';
 
 interface Commitment {
   id: string;

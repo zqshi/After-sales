@@ -4,9 +4,9 @@
  * 自动生成API文档
  */
 
-import { FastifyInstance } from 'fastify';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
+import { FastifyInstance } from 'fastify';
 
 export async function registerSwagger(fastify: FastifyInstance): Promise<void> {
   // 注册Swagger插件

@@ -1,9 +1,10 @@
-import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
-import { CustomerProfileResponseDTO } from '../../dto/customer/CustomerProfileResponseDTO';
-import { Metrics } from '@domain/customer/value-objects/Metrics';
 import { Insight } from '@domain/customer/value-objects/Insight';
 import { Interaction } from '@domain/customer/value-objects/Interaction';
+import { Metrics } from '@domain/customer/value-objects/Metrics';
 import { ServiceRecord } from '@domain/customer/value-objects/ServiceRecord';
+import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
+
+import { CustomerProfileResponseDTO } from '../../dto/customer/CustomerProfileResponseDTO';
 
 export interface RefreshCustomerProfileRequest {
   customerId: string;

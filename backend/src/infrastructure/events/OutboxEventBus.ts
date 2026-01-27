@@ -1,5 +1,7 @@
 import { DataSource, Repository } from 'typeorm';
+
 import { DomainEvent } from '@domain/shared/DomainEvent';
+
 import { OutboxEventEntity } from '../database/entities/OutboxEventEntity';
 
 /**
@@ -30,7 +32,7 @@ export class OutboxEventBus {
     outboxEvent.aggregateId = event.aggregateId;
     outboxEvent.aggregateType = aggregateType;
     outboxEvent.eventType = event.eventType;
-    outboxEvent.eventData = event.payload;
+    outboxEvent.eventData = event.payload as Record<string, unknown>;
     outboxEvent.version = event.version;
     outboxEvent.occurredAt = event.occurredAt;
     outboxEvent.status = 'pending';
@@ -57,7 +59,7 @@ export class OutboxEventBus {
       outboxEvent.aggregateId = event.aggregateId;
       outboxEvent.aggregateType = aggregateType;
       outboxEvent.eventType = event.eventType;
-      outboxEvent.eventData = event.payload;
+      outboxEvent.eventData = event.payload as Record<string, unknown>;
       outboxEvent.version = event.version;
       outboxEvent.occurredAt = event.occurredAt;
       outboxEvent.status = 'pending';
@@ -89,7 +91,7 @@ export class OutboxEventBus {
       outboxEvent.aggregateId = event.aggregateId;
       outboxEvent.aggregateType = aggregateType;
       outboxEvent.eventType = event.eventType;
-      outboxEvent.eventData = event.payload;
+      outboxEvent.eventData = event.payload as Record<string, unknown>;
       outboxEvent.version = event.version;
       outboxEvent.occurredAt = event.occurredAt;
       outboxEvent.status = 'pending';
@@ -200,8 +202,8 @@ export class OutboxEventBus {
     await this.outboxRepository.update(eventId, {
       status: 'pending',
       retryCount: 0,
-      errorMessage: null,
-      nextRetryAt: null,
+      errorMessage: undefined,
+      nextRetryAt: undefined,
     });
   }
 

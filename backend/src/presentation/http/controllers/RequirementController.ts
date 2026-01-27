@@ -1,11 +1,14 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+
+import { CreateRequirementRequestDTO } from '../../../application/dto/requirement/CreateRequirementRequestDTO';
 import { CreateRequirementUseCase } from '../../../application/use-cases/requirement/CreateRequirementUseCase';
+import { DeleteRequirementUseCase } from '../../../application/use-cases/requirement/DeleteRequirementUseCase';
+import { GetRequirementStatisticsUseCase } from '../../../application/use-cases/requirement/GetRequirementStatisticsUseCase';
 import { GetRequirementUseCase } from '../../../application/use-cases/requirement/GetRequirementUseCase';
 import { ListRequirementsUseCase } from '../../../application/use-cases/requirement/ListRequirementsUseCase';
 import { UpdateRequirementStatusUseCase } from '../../../application/use-cases/requirement/UpdateRequirementStatusUseCase';
-import { DeleteRequirementUseCase } from '../../../application/use-cases/requirement/DeleteRequirementUseCase';
-import { GetRequirementStatisticsUseCase } from '../../../application/use-cases/requirement/GetRequirementStatisticsUseCase';
-import { CreateRequirementRequestDTO } from '../../../application/dto/requirement/CreateRequirementRequestDTO';
+import { ForbiddenError } from '../../../application/services/ResourceAccessControl';
+import { ValidationError } from '../../../infrastructure/validation/Validator';
 
 export class RequirementController {
   constructor(
@@ -38,6 +41,7 @@ export class RequirementController {
       const { id } = request.params as { id: string };
       const result = await this.getRequirementUseCase.execute({
         requirementId: id,
+        userId: this.getUserId(request),
       });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
@@ -87,6 +91,7 @@ export class RequirementController {
       const result = await this.updateRequirementStatusUseCase.execute({
         requirementId: id,
         status,
+        userId: this.getUserId(request),
       });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
@@ -103,6 +108,7 @@ export class RequirementController {
       const result = await this.updateRequirementStatusUseCase.execute({
         requirementId: id,
         status: 'ignored',
+        userId: this.getUserId(request),
       });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
@@ -130,6 +136,7 @@ export class RequirementController {
       const { id } = request.params as { id: string };
       await this.deleteRequirementUseCase.execute({
         requirementId: id,
+        userId: this.getUserId(request),
       });
       reply.code(204).send();
     } catch (error) {
@@ -138,6 +145,27 @@ export class RequirementController {
   }
 
   private handleError(error: unknown, reply: FastifyReply): void {
+    if (error instanceof ValidationError) {
+      reply.code(400).send({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: error.message,
+          details: error.errors,
+        },
+      });
+      return;
+    }
+    if (error instanceof ForbiddenError) {
+      reply.code(403).send({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: error.message,
+        },
+      });
+      return;
+    }
     if (error instanceof Error) {
       const statusCode = this.getStatusCode(error.message);
       reply.code(statusCode).send({
@@ -180,5 +208,10 @@ export class RequirementController {
       return 'INVALID_INPUT';
     }
     return 'INTERNAL_ERROR';
+  }
+
+  private getUserId(request: FastifyRequest): string | undefined {
+    const user = request.user as { sub?: string } | undefined;
+    return user?.sub;
   }
 }

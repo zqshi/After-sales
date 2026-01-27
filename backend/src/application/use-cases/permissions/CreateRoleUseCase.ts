@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto';
 
+import { resolvePermissionsFromUiKeys, resolveUiPermissions } from '../../../config/uiPermissions';
 import { RoleRepository } from '../../../infrastructure/repositories/RoleRepository';
 import { CreateRoleRequestDTO } from '../../dto/permissions/RoleRequestDTO';
 import { RoleResponseDTO } from '../../dto/permissions/RoleResponseDTO';
-import { resolvePermissionsFromUiKeys, resolveUiPermissions } from '../../../config/uiPermissions';
 
 export class CreateRoleUseCase {
   constructor(private readonly roleRepository: RoleRepository) {}
@@ -31,7 +31,7 @@ export class CreateRoleUseCase {
       name: role.name,
       description: role.description,
       isSystem: role.isSystem,
-      uiPermissions: resolveUiPermissions(role.permissions),
+      uiPermissions: resolveUiPermissions(role.permissions as import('../../../config/permissions').PermissionKey[]),
     };
   }
 }

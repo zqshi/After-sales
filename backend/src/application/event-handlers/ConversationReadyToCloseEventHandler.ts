@@ -1,6 +1,6 @@
+import { AiService } from '@application/services/AiService';
 import { ConversationReadyToCloseEvent } from '@domain/conversation/events/ConversationReadyToCloseEvent';
 import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
-import { AiService } from '@application/services/AiService';
 
 /**
  * ConversationReadyToCloseEventHandler

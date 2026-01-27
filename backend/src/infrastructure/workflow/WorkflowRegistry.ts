@@ -1,6 +1,6 @@
 import { HumanInLoopExecutor } from './executors/HumanInLoopExecutor';
-import { WorkflowEngine } from './WorkflowEngine';
 import { HumanInLoopResponse } from './types';
+import { WorkflowEngine } from './WorkflowEngine';
 
 export class WorkflowRegistry {
   private static engine?: WorkflowEngine;

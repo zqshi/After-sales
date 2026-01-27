@@ -4,9 +4,11 @@
  * 在工作流中插入人工审核点，等待人工决策后继续
  */
 
-import { BaseStepExecutor } from './BaseStepExecutor';
-import { WorkflowStep, WorkflowContext, HumanInLoopRequest, HumanInLoopResponse } from '../types';
 import { EventEmitter } from 'events';
+
+import { WorkflowStep, WorkflowContext, HumanInLoopRequest, HumanInLoopResponse } from '../types';
+
+import { BaseStepExecutor } from './BaseStepExecutor';
 
 export class HumanInLoopExecutor extends BaseStepExecutor {
   private eventEmitter: EventEmitter;

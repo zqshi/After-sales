@@ -1,5 +1,6 @@
-import { Requirement } from '../models/Requirement';
 import type { ISpecification } from '@domain/shared/Specification';
+
+import { Requirement } from '../models/Requirement';
 
 export interface RequirementPagination {
   limit: number;

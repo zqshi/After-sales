@@ -1,7 +1,8 @@
-import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
-import { TaxKBKnowledgeRepository } from '@infrastructure/repositories/TaxKBKnowledgeRepository';
-import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 import { TaxKBAdapter } from '@infrastructure/adapters/TaxKBAdapter';
+import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
+import { TaxKBKnowledgeRepository } from '@infrastructure/repositories/TaxKBKnowledgeRepository';
+
+import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
 
 export type KnowledgeSearchMode = 'keyword' | 'semantic' | 'qa';
 
@@ -75,7 +76,9 @@ export class SearchKnowledgeUseCase {
     // 限制缓存大小，超过1000条清理最旧的
     if (this.cache.size > 1000) {
       const oldestKey = this.cache.keys().next().value;
-      this.cache.delete(oldestKey);
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
     }
   }
 

@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
 import { createApp } from '../../src/app';
 import { getTestDataSource, closeTestDataSource } from '../helpers/testDatabase';
+import { OutboxEventBus } from '../../src/infrastructure/events/OutboxEventBus';
 import { TaskRepository } from '../../src/infrastructure/repositories/TaskRepository';
 import { Task } from '../../src/domain/task/models/Task';
 import { TaskPriority } from '../../src/domain/task/value-objects/TaskPriority';
@@ -21,7 +22,7 @@ describe('Task API E2E Tests', () => {
 
   beforeEach(async () => {
     await dataSource.synchronize(true);
-    repository = new TaskRepository(dataSource);
+    repository = new TaskRepository(dataSource, new OutboxEventBus(dataSource));
     const task = Task.create({
       title: 'Follow up issue',
       priority: TaskPriority.create('medium'),

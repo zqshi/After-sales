@@ -87,8 +87,8 @@ export class CustomerAdapter {
       riskLevel: profile.riskLevel,
       healthScore: profile.calculateHealthScore(),
       slaInfo: {
-        responseTime: profile.slaInfo.responseTime,
-        resolutionTime: profile.slaInfo.resolutionTime,
+        responseTime: profile.slaInfo.responseTimeTargetMinutes,
+        resolutionTime: profile.slaInfo.resolutionTimeTargetMinutes,
       },
       recentInteractionCount: profile.interactions.length,
       averageSatisfactionScore: this.calculateAverageSatisfaction(
@@ -139,10 +139,10 @@ export class CustomerAdapter {
     return profiles
       .filter((p) => p !== null)
       .map((profile) => ({
-        customerId: profile!.customerId,
-        name: profile!.name,
-        isVIP: profile!.isVIP,
-        riskLevel: profile!.riskLevel,
+        customerId: profile.customerId,
+        name: profile.name,
+        isVIP: profile.isVIP,
+        riskLevel: profile.riskLevel,
       }));
   }
 
@@ -169,11 +169,11 @@ export class CustomerAdapter {
       return false;
     }
 
-    // KA判断规则：年度合同金额 > 100万 或 签约承诺数 > 10
-    const annualRevenue = profile.metrics.annualRevenue ?? 0;
+    // KA判断规则：签约承诺数 > 10
+    // 注意：annualRevenue属性不存在于CustomerProfile中，暂时只基于承诺数量判断
     const commitmentCount = profile.commitments.length;
 
-    return annualRevenue > 1_000_000 || commitmentCount > 10;
+    return commitmentCount > 10;
   }
 
   /**
@@ -221,8 +221,8 @@ export class CustomerAdapter {
 
     const interactionCount = agentInteractions.length;
     const lastInteractionDate =
-      agentInteractions.length > 0
-        ? new Date(agentInteractions[0].occurredAt)
+      agentInteractions.length > 0 && agentInteractions[0].occurredAt instanceof Date
+        ? (agentInteractions[0].occurredAt)
         : undefined;
 
     // 计算熟悉度：基于互动次数和时效性
@@ -256,8 +256,8 @@ export class CustomerAdapter {
     }
 
     return {
-      responseTime: profile.slaInfo.responseTime,
-      resolutionTime: profile.slaInfo.resolutionTime,
+      responseTime: profile.slaInfo.responseTimeTargetMinutes,
+      resolutionTime: profile.slaInfo.resolutionTimeTargetMinutes,
     };
   }
 

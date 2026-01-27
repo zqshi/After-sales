@@ -1,8 +1,8 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
+import { AgentScopeConfig } from '@config/agentscope.config';
 import { DomainEvent } from '@domain/shared/DomainEvent';
 import { EventBus } from '@infrastructure/events/EventBus';
-import { AgentScopeConfig } from '@config/agentscope.config';
 
 import { EventFilter, defaultEventFilter } from './EventFilter';
 

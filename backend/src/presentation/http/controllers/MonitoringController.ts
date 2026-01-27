@@ -1,9 +1,9 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 
+import { CreateMonitoringAlertRequestDTO } from '../../../application/dto/monitoring/CreateMonitoringAlertRequestDTO';
 import { CreateMonitoringAlertUseCase } from '../../../application/use-cases/monitoring/CreateMonitoringAlertUseCase';
 import { ListMonitoringAlertsUseCase } from '../../../application/use-cases/monitoring/ListMonitoringAlertsUseCase';
 import { ResolveMonitoringAlertUseCase } from '../../../application/use-cases/monitoring/ResolveMonitoringAlertUseCase';
-import { CreateMonitoringAlertRequestDTO } from '../../../application/dto/monitoring/CreateMonitoringAlertRequestDTO';
 
 export class MonitoringController {
   constructor(

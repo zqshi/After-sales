@@ -1,7 +1,7 @@
 import { AppDataSource } from './infrastructure/database/data-source';
+import { EventBus } from './infrastructure/events/EventBus';
 import { OutboxEventBus } from './infrastructure/events/OutboxEventBus';
 import { OutboxProcessor } from './infrastructure/events/OutboxProcessor';
-import { EventBus } from './infrastructure/events/EventBus';
 
 /**
  * Outbox模式集成说明

@@ -1,6 +1,8 @@
-import { optionalNumber, optionalString, requireString } from './helpers';
-import { AgentScopeDependencies, MCPToolDefinition } from '../types';
 import { UpdateStatusRequestDTO } from '@application/dto/task/UpdateStatusRequestDTO';
+
+import { AgentScopeDependencies, MCPToolDefinition } from '../types';
+
+import { optionalNumber, optionalString, requireString } from './helpers';
 
 export function buildTaskTools(deps: AgentScopeDependencies): MCPToolDefinition[] {
   return [
@@ -41,10 +43,10 @@ export function buildTaskTools(deps: AgentScopeDependencies): MCPToolDefinition[
       },
       handler: async (params) => {
         const status = requireString(params.status, 'status') as UpdateStatusRequestDTO['status'];
-        return deps.updateTaskStatusUseCase.execute(
-          requireString(params.taskId, 'taskId'),
-          { status },
-        );
+        return deps.updateTaskStatusUseCase.execute({
+          taskId: requireString(params.taskId, 'taskId'),
+          status,
+        });
       },
     },
     {

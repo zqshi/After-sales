@@ -1,5 +1,5 @@
-import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 import { EventBus } from '@infrastructure/events/EventBus';
+import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 
 export interface DeleteKnowledgeItemRequest {
   knowledgeId: string;
@@ -23,7 +23,7 @@ export class DeleteKnowledgeItemUseCase {
 
     const relatedFaqs = await this.knowledgeRepository.findByFilters({ category: 'faq' });
     const linkedFaqs = relatedFaqs.filter((faq) => {
-      const metadata = faq.metadata as Record<string, unknown> | undefined;
+      const metadata = faq.metadata;
       const sourceDocIds = Array.isArray(metadata?.sourceDocIds) ? metadata?.sourceDocIds : [];
       return sourceDocIds.includes(request.knowledgeId);
     });
@@ -37,7 +37,7 @@ export class DeleteKnowledgeItemUseCase {
       }
     } else if (linkedFaqs.length) {
       for (const faq of linkedFaqs) {
-        const metadata = faq.metadata as Record<string, unknown> | undefined;
+        const metadata = faq.metadata;
         const nextMetadata = {
           ...(metadata ?? {}),
           sourceStatus: 'deleted',

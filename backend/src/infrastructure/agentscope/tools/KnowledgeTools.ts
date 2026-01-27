@@ -1,6 +1,8 @@
 import { SearchKnowledgeRequest } from '@application/use-cases/knowledge/SearchKnowledgeUseCase';
-import { optionalString, requireString } from './helpers';
+
 import { AgentScopeDependencies, MCPToolDefinition } from '../types';
+
+import { optionalString, requireString } from './helpers';
 
 const stripDataPrefix = (value: string): string => {
   const match = value.match(/^data:.*;base64,(.*)$/);

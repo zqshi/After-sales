@@ -1,7 +1,8 @@
 import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
+
+import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
 import { KnowledgeListQueryDTO } from '../../dto/knowledge/KnowledgeListQueryDTO';
 import { KnowledgeListResponseDTO } from '../../dto/knowledge/KnowledgeListResponseDTO';
-import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;

@@ -1,7 +1,8 @@
+import { PermissionKey } from '../../../config/permissions';
+import { resolvePermissionsFromUiKeys, resolveUiPermissions } from '../../../config/uiPermissions';
 import { RoleRepository } from '../../../infrastructure/repositories/RoleRepository';
 import { UpdateRoleRequestDTO } from '../../dto/permissions/RoleRequestDTO';
 import { RoleResponseDTO } from '../../dto/permissions/RoleResponseDTO';
-import { resolvePermissionsFromUiKeys, resolveUiPermissions } from '../../../config/uiPermissions';
 
 export class UpdateRoleUseCase {
   constructor(private readonly roleRepository: RoleRepository) {}
@@ -40,7 +41,7 @@ export class UpdateRoleUseCase {
       name: updated.name,
       description: updated.description,
       isSystem: updated.isSystem,
-      uiPermissions: resolveUiPermissions(updated.permissions),
+      uiPermissions: resolveUiPermissions(updated.permissions as PermissionKey[]),
     };
   }
 }

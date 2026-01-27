@@ -6,10 +6,16 @@
 
 import { Conversation } from '@domain/conversation/models/Conversation';
 import { Channel } from '@domain/conversation/value-objects/Channel';
-import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
+
 import { EventBus } from '../../infrastructure/events/EventBus';
+import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
 import { ConversationResponseDTO } from '../dto/ConversationResponseDTO';
-import { CreateConversationRequestDTO, InitialMessageSenderType } from '../dto/CreateConversationRequestDTO';
+import {
+  CreateConversationRequestDTO,
+  CreateConversationRequestSchema,
+  InitialMessageSenderType,
+} from '../dto/CreateConversationRequestDTO';
+import { Validator } from '../../infrastructure/validation/Validator';
 
 type SenderTypeMap = Record<InitialMessageSenderType, 'agent' | 'customer'>;
 
@@ -25,33 +31,33 @@ export class CreateConversationUseCase {
   ) {}
 
   async execute(request: CreateConversationRequestDTO): Promise<ConversationResponseDTO> {
-    this.validateRequest(request);
+    const validatedRequest = Validator.validate(CreateConversationRequestSchema, request);
 
-    const channel = Channel.fromString(request.channel);
-    const slaDeadline = request.slaDeadline ? new Date(request.slaDeadline) : undefined;
+    const channel = Channel.fromString(validatedRequest.channel);
+    const slaDeadline = validatedRequest.slaDeadline ? new Date(validatedRequest.slaDeadline) : undefined;
 
-    if (request.slaDeadline && slaDeadline && Number.isNaN(slaDeadline.getTime())) {
+    if (validatedRequest.slaDeadline && slaDeadline && Number.isNaN(slaDeadline.getTime())) {
       throw new Error('invalid slaDeadline');
     }
 
     const conversation = Conversation.create({
-      customerId: request.customerId,
+      customerId: validatedRequest.customerId,
       channel,
-      agentId: request.agentId,
-      priority: request.priority,
+      agentId: validatedRequest.agentId,
+      priority: validatedRequest.priority,
       slaDeadline,
-      metadata: request.metadata,
-      mode: request.mode,
+      metadata: validatedRequest.metadata,
+      mode: validatedRequest.mode,
     });
 
-    if (request.initialMessage) {
-      const senderType = SENDER_TYPE_MAP[request.initialMessage.senderType ?? 'external'];
+    if (validatedRequest.initialMessage) {
+      const senderType = SENDER_TYPE_MAP[validatedRequest.initialMessage.senderType ?? 'external'];
 
       conversation.sendMessage({
-        senderId: request.initialMessage.senderId,
+        senderId: validatedRequest.initialMessage.senderId,
         senderType,
-        content: request.initialMessage.content,
-        metadata: request.initialMessage.metadata,
+        content: validatedRequest.initialMessage.content,
+        metadata: validatedRequest.initialMessage.metadata,
       });
     }
 
@@ -64,30 +70,4 @@ export class CreateConversationUseCase {
     return ConversationResponseDTO.fromAggregate(conversation);
   }
 
-  private validateRequest(request: CreateConversationRequestDTO): void {
-    if (!request.customerId) {
-      throw new Error('customerId is required');
-    }
-    if (!request.channel) {
-      throw new Error('channel is required');
-    }
-    if (request.priority && !['low', 'normal', 'high'].includes(request.priority)) {
-      throw new Error('invalid priority');
-    }
-    if (request.mode && !['agent_auto', 'agent_supervised', 'human_first'].includes(request.mode)) {
-      throw new Error('invalid mode');
-    }
-
-    if (request.initialMessage) {
-      if (!request.initialMessage.senderId) {
-        throw new Error('initialMessage.senderId is required');
-      }
-      if (!request.initialMessage.content || request.initialMessage.content.trim() === '') {
-        throw new Error('initialMessage.content is required');
-      }
-      if (request.initialMessage.senderType && !['internal', 'external'].includes(request.initialMessage.senderType)) {
-        throw new Error('initialMessage.senderType is invalid');
-      }
-    }
-  }
 }

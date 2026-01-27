@@ -10,17 +10,19 @@
  * - custom: 自定义动作（需要注册）
  */
 
-import { BaseStepExecutor } from './BaseStepExecutor';
-import { WorkflowStep, WorkflowContext } from '../types';
-import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
-import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
-import { CreateRequirementUseCase } from '@application/use-cases/requirement/CreateRequirementUseCase';
+import { AiService } from '@application/services/AiService';
 import { CloseConversationUseCase } from '@application/use-cases/CloseConversationUseCase';
 import { SearchKnowledgeUseCase } from '@application/use-cases/knowledge/SearchKnowledgeUseCase';
+import { CreateRequirementUseCase } from '@application/use-cases/requirement/CreateRequirementUseCase';
 import { CreateReviewRequestUseCase } from '@application/use-cases/review/CreateReviewRequestUseCase';
-import { AiService } from '@application/services/AiService';
+import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
+import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
 import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
+
+import { WorkflowStep, WorkflowContext } from '../types';
+
+import { BaseStepExecutor } from './BaseStepExecutor';
 
 export interface ActionExecutorDependencies {
   sendMessageUseCase?: SendMessageUseCase;
@@ -435,9 +437,9 @@ export class ActionStepExecutor extends BaseStepExecutor {
       conversation: {
         id: conversation.id,
         customerId: conversation.customerId,
-        status: conversation.status.value,
-        channel: conversation.channel.value,
-        priority: conversation.priority.value,
+        status: conversation.status,
+        channel: conversation.channel,
+        priority: conversation.priority,
       },
       messages,
     };
@@ -721,7 +723,7 @@ export class ActionStepExecutor extends BaseStepExecutor {
       return { averages: {}, overall: 0 };
     }
     const normalized = reports
-      .filter((entry) => entry && typeof entry === 'object')
+      .filter((entry: any) => entry && typeof entry === 'object')
       .map((entry: any) => ({
         teamId: String(entry.teamId ?? 'unknown'),
         qualityScore: typeof entry.qualityScore === 'number' ? entry.qualityScore : undefined,

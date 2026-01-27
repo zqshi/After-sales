@@ -1,4 +1,5 @@
 import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
+
 import { CustomerProfileResponseDTO } from '../../dto/customer/CustomerProfileResponseDTO';
 
 export interface MarkCustomerAsVIPRequest {

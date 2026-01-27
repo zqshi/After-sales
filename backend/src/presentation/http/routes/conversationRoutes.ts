@@ -3,11 +3,14 @@
  */
 
 import { FastifyInstance } from 'fastify';
+
 import { ConversationController } from '../controllers/ConversationController';
+import { ResourceAccessMiddleware } from '../middleware/resourceAccessMiddleware';
 
 export async function conversationRoutes(
   fastify: FastifyInstance,
   controller: ConversationController,
+  accessMiddleware: ResourceAccessMiddleware,
 ): Promise<void> {
   /**
    * @swagger
@@ -157,7 +160,10 @@ export async function conversationRoutes(
    */
   fastify.post(
     '/api/conversations/:id/assign',
-    { config: { permissions: ['conversations.write'] } },
+    {
+      config: { permissions: ['conversations.write'] },
+      preHandler: [accessMiddleware.checkConversationAccess('write')],
+    },
     async (request, reply) => {
       await controller.assignAgent(request, reply);
     },
@@ -204,7 +210,10 @@ export async function conversationRoutes(
    */
   fastify.post(
     '/api/conversations/:id/messages',
-    { config: { permissions: ['conversations.write'] } },
+    {
+      config: { permissions: ['conversations.write'] },
+      preHandler: [accessMiddleware.checkConversationAccess('write')],
+    },
     async (request, reply) => {
       await controller.sendMessage(request, reply);
     },
@@ -244,7 +253,10 @@ export async function conversationRoutes(
    */
   fastify.post(
     '/api/conversations/:id/close',
-    { config: { permissions: ['conversations.write'] } },
+    {
+      config: { permissions: ['conversations.write'] },
+      preHandler: [accessMiddleware.checkConversationAccess('write')],
+    },
     async (request, reply) => {
       await controller.closeConversation(request, reply);
     },
@@ -277,7 +289,10 @@ export async function conversationRoutes(
    */
   fastify.get(
     '/api/conversations/:id',
-    { config: { permissions: ['conversations.read'] } },
+    {
+      config: { permissions: ['conversations.read'] },
+      preHandler: [accessMiddleware.checkConversationAccess('read')],
+    },
     async (request, reply) => {
       await controller.getConversation(request, reply);
     },

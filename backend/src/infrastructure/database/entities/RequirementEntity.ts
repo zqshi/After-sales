@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, VersionColumn } from 'typeorm';
 
 import { ConversationEntity } from './ConversationEntity';
 
@@ -33,6 +33,9 @@ export class RequirementEntity {
 
   @Column({ name: 'created_by', type: 'varchar', length: 50, nullable: true })
   createdBy!: string | null;
+
+  @VersionColumn({ name: 'version', type: 'int', default: 0 })
+  version!: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt!: Date;

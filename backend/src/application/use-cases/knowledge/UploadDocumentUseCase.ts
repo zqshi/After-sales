@@ -1,6 +1,6 @@
-import { EventBus } from '@infrastructure/events/EventBus';
-import { TaxKBAdapter } from '@infrastructure/adapters/TaxKBAdapter';
 import { KnowledgeItemCreatedEvent } from '@domain/knowledge/events/KnowledgeItemCreatedEvent';
+import { TaxKBAdapter } from '@infrastructure/adapters/TaxKBAdapter';
+import { EventBus } from '@infrastructure/events/EventBus';
 
 export interface UploadDocumentRequest {
   file: Buffer;

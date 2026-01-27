@@ -1,9 +1,10 @@
 import { AggregateRoot } from '@domain/shared/AggregateRoot';
-import { RequirementSource } from '../value-objects/RequirementSource';
-import { Priority } from '../value-objects/Priority';
+
 import { RequirementCreatedEvent } from '../events/RequirementCreatedEvent';
-import { RequirementStatusChangedEvent } from '../events/RequirementStatusChangedEvent';
 import { RequirementPriorityChangedEvent } from '../events/RequirementPriorityChangedEvent';
+import { RequirementStatusChangedEvent } from '../events/RequirementStatusChangedEvent';
+import { Priority } from '../value-objects/Priority';
+import { RequirementSource } from '../value-objects/RequirementSource';
 
 export type RequirementStatus = 'pending' | 'approved' | 'resolved' | 'ignored' | 'cancelled';
 
@@ -23,8 +24,8 @@ interface RequirementProps {
 }
 
 export class Requirement extends AggregateRoot<RequirementProps> {
-  private constructor(props: RequirementProps, id?: string) {
-    super(props, id);
+  private constructor(props: RequirementProps, id?: string, version?: number) {
+    super(props, id, version);
   }
 
   static create(data: {
@@ -243,7 +244,8 @@ export class Requirement extends AggregateRoot<RequirementProps> {
   static rehydrate(
     props: RequirementProps,
     id: string,
+    version?: number,
   ): Requirement {
-    return new Requirement(props, id);
+    return new Requirement(props, id, version);
   }
 }

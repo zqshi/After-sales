@@ -3,6 +3,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
+
 import { metricsCollector } from '../../../infrastructure/monitoring/MetricsCollector';
 
 export default async function metricsRoutes(fastify: FastifyInstance) {

@@ -1,6 +1,8 @@
 import { RefreshCustomerProfileRequest } from '@application/use-cases/customer/RefreshCustomerProfileUseCase';
-import { optionalArray, optionalNumber, optionalString, requireString } from './helpers';
+
 import { AgentScopeDependencies, MCPToolDefinition } from '../types';
+
+import { optionalArray, optionalNumber, optionalString, requireString } from './helpers';
 
 export function buildCustomerTools(deps: AgentScopeDependencies): MCPToolDefinition[] {
   return [

@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
+
 import { getRolePermissions, PermissionKey } from '../../../config/permissions';
 
 export async function rbacMiddleware(

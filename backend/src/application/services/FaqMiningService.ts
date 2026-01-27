@@ -1,8 +1,8 @@
-import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
+import { KnowledgeAiService } from '@application/services/KnowledgeAiService';
 import { KnowledgeItem } from '@domain/knowledge/models/KnowledgeItem';
 import { KnowledgeCategory } from '@domain/knowledge/value-objects/KnowledgeCategory';
 import { EventBus } from '@infrastructure/events/EventBus';
-import { KnowledgeAiService } from '@application/services/KnowledgeAiService';
+import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 
 type FaqDraft = {
   question: string;
@@ -31,7 +31,7 @@ export class FaqMiningService {
     const existingFaqs = await this.knowledgeRepository.findByFilters({ category: 'faq' });
     const existingQuestions = new Set(existingFaqs.map((faq) => this.normalizeText(faq.title)));
     const existingForDoc = existingFaqs.filter((faq) => {
-      const faqMeta = faq.metadata as Record<string, unknown> | undefined;
+      const faqMeta = faq.metadata;
       const sourceDocIds = Array.isArray(faqMeta?.sourceDocIds) ? faqMeta?.sourceDocIds : [];
       return sourceDocIds.includes(item.id);
     });

@@ -7,6 +7,21 @@
  * 3. 业务规则验证（规则组合）
  */
 
+import type { Requirement } from '@domain/requirement/models/Requirement';
+import type { IRequirementRepository } from '@domain/requirement/repositories/IRequirementRepository';
+import {
+  UrgentRequirementSpecification,
+  PendingRequirementSpecification,
+  CustomerInitiatedSpecification,
+  ShouldAutoCreateTaskSpecification,
+  AgentWorklistSpecification as ReqWorklistSpec,
+  RequiresImmediateAttentionSpecification,
+  OpenBugSpecification,
+  CategorySpecification,
+} from '@domain/requirement/specifications/RequirementSpecifications';
+import { ExpressionSpecification } from '@domain/shared/Specification';
+import type { Task } from '@domain/task/models/Task';
+import type { ITaskRepository } from '@domain/task/repositories/ITaskRepository';
 import {
   OverdueTaskSpecification,
   HighPriorityTaskSpecification,
@@ -18,23 +33,6 @@ import {
   BelongsToConversationSpecification,
   NeedsEscalationSpecification,
 } from '@domain/task/specifications/TaskSpecifications';
-
-import {
-  UrgentRequirementSpecification,
-  PendingRequirementSpecification,
-  CustomerInitiatedSpecification,
-  ShouldAutoCreateTaskSpecification,
-  AgentWorklistSpecification as ReqWorklistSpec,
-  RequiresImmediateAttentionSpecification,
-  OpenBugSpecification,
-  CategorySpecification,
-} from '@domain/requirement/specifications/RequirementSpecifications';
-
-import { ExpressionSpecification } from '@domain/shared/Specification';
-import type { ITaskRepository } from '@domain/task/repositories/ITaskRepository';
-import type { IRequirementRepository } from '@domain/requirement/repositories/IRequirementRepository';
-import type { Task } from '@domain/task/models/Task';
-import type { Requirement } from '@domain/requirement/models/Requirement';
 
 /**
  * ============================================

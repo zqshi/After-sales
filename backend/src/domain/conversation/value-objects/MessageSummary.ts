@@ -1,5 +1,6 @@
-import { Message } from '../models/Message';
 import { ValueObject } from '@domain/shared/ValueObject';
+
+import { Message } from '../models/Message';
 
 /**
  * MessageSummary - 消息摘要值对象

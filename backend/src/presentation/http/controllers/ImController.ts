@@ -9,32 +9,32 @@
  * 5. 组装完整响应返回前端
  */
 
+import { promises as fs } from 'fs';
+import path from 'path';
+
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { ConversationTaskCoordinator } from '@application/services/ConversationTaskCoordinator';
-import { AiService } from '@application/services/AiService';
-import { SearchKnowledgeUseCase } from '@application/use-cases/knowledge/SearchKnowledgeUseCase';
-import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
-import { CustomerProfileResponseDTO } from '@application/dto/customer/CustomerProfileResponseDTO';
-import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
-import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
-import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
+
 import { ProblemRepository } from '@infrastructure/repositories/ProblemRepository';
 import { ReviewRequestRepository } from '@infrastructure/repositories/ReviewRequestRepository';
 import { CompleteReviewRequestUseCase } from '@application/use-cases/review/CompleteReviewRequestUseCase';
 import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
 import { config } from '@config/app.config';
 import { v4 as uuidv4 } from 'uuid';
-
-import { AgentMode } from '@domain/conversation/models/Conversation';
-import { Conversation } from '@domain/conversation/models/Conversation';
+import { CustomerProfileResponseDTO } from '@application/dto/customer/CustomerProfileResponseDTO';
+import { AiService } from '@application/services/AiService';
+import { ConversationTaskCoordinator } from '@application/services/ConversationTaskCoordinator';
+import { SearchKnowledgeUseCase } from '@application/use-cases/knowledge/SearchKnowledgeUseCase';
+import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
+import { AgentMode , Conversation } from '@domain/conversation/models/Conversation';
 import { CustomerProfile } from '@domain/customer/models/CustomerProfile';
 import { ContactInfo } from '@domain/customer/value-objects/ContactInfo';
 import { CustomerLevelInfo } from '@domain/customer/value-objects/CustomerLevelInfo';
 import { Metrics } from '@domain/customer/value-objects/Metrics';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { WorkflowRegistry } from '@infrastructure/workflow/WorkflowRegistry';
+import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
+import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
 import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
+import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
+import { WorkflowRegistry } from '@infrastructure/workflow/WorkflowRegistry';
 
 interface IncomingMessageRequest {
   customerId: string;
@@ -322,7 +322,7 @@ export class ImController {
             return true;
           }
 
-          const groupMembers = (conversation.metadata as Record<string, unknown> | undefined)
+          const groupMembers = (conversation.metadata)
             ?.groupMembers;
           if (!Array.isArray(groupMembers) || groupMembers.length === 0) {
             return true;
@@ -359,12 +359,12 @@ export class ImController {
         const lastMessageTime = lastMessage?.sentAt?.toISOString();
         const lastMessageSenderType =
           lastMessage?.senderType === 'agent' ? 'agent' : lastMessage ? 'customer' : null;
-        const lastMessageMetadata = (lastMessage?.metadata || {}) as Record<string, unknown>;
-        const conversationMetadata = (conversation.metadata || {}) as Record<string, unknown>;
+        const lastMessageMetadata = (lastMessage?.metadata || {});
+        const conversationMetadata = (conversation.metadata || {});
         const groupMemberMap =
           ((lastMessageMetadata.groupMemberMap as Record<string, string> | undefined) ||
             (conversationMetadata.groupMemberMap as Record<string, string> | undefined) ||
-            {}) as Record<string, string>;
+            {});
         const metadataSenderId =
           (lastMessageMetadata.senderId as string | undefined) ||
           (lastMessageMetadata.sender_id as string | undefined);
@@ -733,7 +733,7 @@ export class ImController {
       const start = Number(offset);
       const end = start + Number(limit);
       const slice = sortedMessages.slice(start, end);
-      const conversationMetadata = (conversation.metadata || {}) as Record<string, unknown>;
+      const conversationMetadata = (conversation.metadata || {});
       const groupMemberMap = (conversationMetadata.groupMemberMap || {}) as Record<string, string>;
       const messages = await Promise.all(
         slice.map(async (message, index) => {
@@ -965,7 +965,7 @@ export class ImController {
         reviewerNote: body.reviewerNote,
       });
 
-      const suggestion = review.suggestion as Record<string, unknown>;
+      const suggestion = review.suggestion;
       const executionId = suggestion?.executionId as string | undefined;
       const stepName = suggestion?.stepName as string | undefined;
       if (executionId && stepName) {
@@ -979,11 +979,11 @@ export class ImController {
         });
       }
 
-      let tasksCreated: string[] = [];
+      const tasksCreated: string[] = [];
       if (body.status === 'approved' && body.createTasks !== false) {
-        const recommended = Array.isArray((suggestion as any)?.recommendedTasks)
+        const recommended = (Array.isArray((suggestion as any)?.recommendedTasks)
           ? suggestion.recommendedTasks
-          : [];
+          : []) as Array<{ title?: string; requirementId?: string; priority?: string }>;
         for (const task of recommended) {
           if (!task?.title) {
             continue;
@@ -993,7 +993,7 @@ export class ImController {
             type: 'support',
             conversationId: review.conversationId,
             requirementId: task.requirementId,
-            priority: task.priority || 'medium',
+            priority: (task.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
           });
           tasksCreated.push(created.id);
         }
@@ -1765,10 +1765,11 @@ export class ImController {
         data: {
           conversationId: id,
           sentiment: {
-            type: sentiment.emotion || 'neutral',
-            label: sentiment.label || this.getSentimentLabel(sentiment.emotion),
+            type: sentiment.overallSentiment || 'neutral',
+            label: this.getSentimentLabel(sentiment.overallSentiment),
             score: sentiment.score || 0.5,
             confidence: sentiment.confidence || 0.5,
+            emotions: sentiment.emotions,
           },
         },
       });
@@ -1856,7 +1857,7 @@ export class ImController {
     const latestCustomerMessage = [...conversation.messages]
       .reverse()
       .find((msg) => msg.senderType === 'customer');
-    const metadata = (latestCustomerMessage?.metadata || {}) as Record<string, unknown>;
+    const metadata = (latestCustomerMessage?.metadata || {});
     const issueProduct =
       (metadata.issueProduct as string | undefined) ||
       (metadata.issue_product as string | undefined) ||

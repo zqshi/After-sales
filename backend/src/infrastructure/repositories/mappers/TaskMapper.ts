@@ -1,6 +1,6 @@
 import { Task } from '@domain/task/models/Task';
-import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
 import { QualityScore } from '@domain/task/value-objects/QualityScore';
+import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
 import { TaskEntity } from '@infrastructure/database/entities/TaskEntity';
 
 export class TaskMapper {
@@ -34,6 +34,7 @@ export class TaskMapper {
         metadata: entity.metadata ?? {},
       },
       entity.id,
+      entity.version,
     );
   }
 
@@ -68,6 +69,7 @@ export class TaskMapper {
       requirementId: task.metadata?.requirementId,
       dueDate: dueDateIso,
     };
+    entity.version = task.version;
     entity.createdAt = task.createdAt;
     entity.updatedAt = task.updatedAt;
     return entity;

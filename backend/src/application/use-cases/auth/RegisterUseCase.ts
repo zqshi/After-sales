@@ -1,10 +1,10 @@
 import { randomUUID } from 'crypto';
 
-import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
-import { RegisterRequestDTO } from '../../dto/auth/RegisterRequestDTO';
-import { hashPassword } from '../../../infrastructure/security/passwordHasher';
-import { UserResponseDTO } from '../../dto/auth/UserResponseDTO';
 import { config } from '../../../config/app.config';
+import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
+import { hashPassword } from '../../../infrastructure/security/passwordHasher';
+import { RegisterRequestDTO } from '../../dto/auth/RegisterRequestDTO';
+import { UserResponseDTO } from '../../dto/auth/UserResponseDTO';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^1[3-9]\d{9}$/;

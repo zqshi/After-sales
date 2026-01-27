@@ -1,8 +1,10 @@
+import { TaxKBAdapter } from '@infrastructure/adapters/TaxKBAdapter';
+import { EventBus } from '@infrastructure/events/EventBus';
 import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 import { TaxKBKnowledgeRepository } from '@infrastructure/repositories/TaxKBKnowledgeRepository';
-import { TaxKBAdapter } from '@infrastructure/adapters/TaxKBAdapter';
+
 import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
-import { EventBus } from '@infrastructure/events/EventBus';
+
 
 export interface RetryKnowledgeUploadRequest {
   knowledgeId: string;
@@ -32,16 +34,16 @@ export class RetryKnowledgeUploadUseCase {
 
     const metadata = item.metadata ?? {};
     const uploadDocId =
-      typeof (metadata as Record<string, unknown>).uploadDocId === 'string'
-        ? (metadata as Record<string, unknown>).uploadDocId
+      typeof (metadata).uploadDocId === 'string'
+        ? ((metadata).uploadDocId)
         : '';
     const fileName =
-      (typeof (metadata as Record<string, unknown>).fileName === 'string'
-        ? (metadata as Record<string, unknown>).fileName
+      (typeof (metadata).fileName === 'string'
+        ? ((metadata).fileName)
         : '') || item.title;
     const fileHash =
-      typeof (metadata as Record<string, unknown>).fileHash === 'string'
-        ? (metadata as Record<string, unknown>).fileHash
+      typeof (metadata).fileHash === 'string'
+        ? ((metadata).fileHash)
         : '';
 
     let taxkbItem = null;
@@ -55,7 +57,7 @@ export class RetryKnowledgeUploadUseCase {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'TaxKB request failed';
       const nextMetadata = {
-        ...(metadata as Record<string, unknown>),
+        ...(metadata),
         status: 'retry',
         uploadPending: false,
         uploadError: message,
@@ -71,14 +73,14 @@ export class RetryKnowledgeUploadUseCase {
       return KnowledgeItemResponseDTO.fromDomain(item);
     }
 
-    const taxkbStatus = (taxkbItem.metadata as Record<string, unknown> | undefined)?.status;
+    const taxkbStatus = (taxkbItem.metadata)?.status;
     const nextStatus =
       typeof taxkbStatus === 'string' && ['active', 'archived', 'deprecated'].includes(taxkbStatus)
         ? taxkbStatus
         : 'processing';
 
     const nextMetadata = {
-      ...(metadata as Record<string, unknown>),
+      ...(metadata),
       uploadDocId: taxkbItem.id,
       taxkbDocId: taxkbItem.id,
       status: nextStatus,

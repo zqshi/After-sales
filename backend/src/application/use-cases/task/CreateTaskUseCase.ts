@@ -1,9 +1,12 @@
-import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
-import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
-import { CreateTaskRequestDTO } from '../../dto/task/CreateTaskRequestDTO';
-import { TaskResponseDTO } from '../../dto/task/TaskResponseDTO';
 import { Task } from '@domain/task/models/Task';
 import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
+import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
+import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
+
+import { CreateTaskRequestDTO, CreateTaskRequestSchema } from '../../dto/CreateTaskRequestDTO';
+import { TaskResponseDTO } from '../../dto/task/TaskResponseDTO';
+import { Validator } from '../../../infrastructure/validation/Validator';
+
 
 export class CreateTaskUseCase {
   constructor(
@@ -12,34 +15,32 @@ export class CreateTaskUseCase {
   ) {}
 
   async execute(request: CreateTaskRequestDTO): Promise<TaskResponseDTO> {
-    if (!request.title) {
-      throw new Error('title is required');
-    }
+    const validatedRequest = Validator.validate(CreateTaskRequestSchema, request);
 
-    const priority = request.priority
-      ? TaskPriority.create(request.priority)
+    const priority = validatedRequest.priority
+      ? TaskPriority.create(validatedRequest.priority)
       : TaskPriority.create('medium');
 
-    const dueDate = request.dueDate ? new Date(request.dueDate) : undefined;
+    const dueDate = validatedRequest.dueDate ? new Date(validatedRequest.dueDate) : undefined;
 
     // 如果有conversationId但没有assigneeId，从Conversation获取agentId
-    let assigneeId = request.assigneeId;
-    if (request.conversationId && !assigneeId) {
-      const conversation = await this.conversationRepository.findById(request.conversationId);
+    let assigneeId = validatedRequest.assigneeId;
+    if (validatedRequest.conversationId && !assigneeId) {
+      const conversation = await this.conversationRepository.findById(validatedRequest.conversationId);
       if (conversation) {
-        assigneeId = conversation.getAgentId();
+        assigneeId = conversation.agentId;
       }
     }
 
     const task = Task.create({
-      title: request.title,
-      type: request.type,
+      title: validatedRequest.title,
+      type: validatedRequest.type,
       assigneeId,
-      conversationId: request.conversationId,
-      requirementId: request.requirementId,
+      conversationId: validatedRequest.conversationId,
+      requirementId: validatedRequest.requirementId,
       priority,
       dueDate,
-      metadata: request.metadata,
+      metadata: validatedRequest.metadata,
     });
 
     await this.taskRepository.save(task);

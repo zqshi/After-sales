@@ -1,9 +1,9 @@
 import { CustomerProfile } from '@domain/customer/models/CustomerProfile';
 import { ContactInfo } from '@domain/customer/value-objects/ContactInfo';
 import { CustomerLevelInfo } from '@domain/customer/value-objects/CustomerLevelInfo';
-import { Metrics } from '@domain/customer/value-objects/Metrics';
 import { Insight } from '@domain/customer/value-objects/Insight';
 import { Interaction } from '@domain/customer/value-objects/Interaction';
+import { Metrics } from '@domain/customer/value-objects/Metrics';
 import { ServiceRecord } from '@domain/customer/value-objects/ServiceRecord';
 import { CustomerProfileEntity } from '@infrastructure/database/entities/CustomerProfileEntity';
 

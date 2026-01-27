@@ -1,11 +1,16 @@
 import { Requirement } from '@domain/requirement/models/Requirement';
-import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
 import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
-import { CreateRequirementRequestDTO } from '../../dto/requirement/CreateRequirementRequestDTO';
-import { RequirementResponseDTO } from '../../dto/requirement/RequirementResponseDTO';
 import { Priority } from '@domain/requirement/value-objects/Priority';
 import { RequirementSource } from '@domain/requirement/value-objects/RequirementSource';
 import { EventBus } from '@infrastructure/events/EventBus';
+import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
+
+import {
+  CreateRequirementRequestDTO,
+  CreateRequirementRequestSchema,
+} from '../../dto/requirement/CreateRequirementRequestDTO';
+import { RequirementResponseDTO } from '../../dto/requirement/RequirementResponseDTO';
+import { Validator } from '../../../infrastructure/validation/Validator';
 
 export class CreateRequirementUseCase {
   private detector: RequirementDetectorService;
@@ -18,28 +23,28 @@ export class CreateRequirementUseCase {
   }
 
   async execute(request: CreateRequirementRequestDTO): Promise<RequirementResponseDTO> {
-    this.validate(request);
+    const validatedRequest = Validator.validate(CreateRequirementRequestSchema, request);
 
-    const priority = request.priority
-      ? Priority.create(request.priority)
+    const priority = validatedRequest.priority
+      ? Priority.create(validatedRequest.priority)
       : Priority.create('medium');
 
-    const source = request.source
-      ? RequirementSource.create(request.source)
-      : request.description
-        ? RequirementSource.create(this.detector.detect(request.description).source)
+    const source = validatedRequest.source
+      ? RequirementSource.create(validatedRequest.source)
+      : validatedRequest.description
+        ? RequirementSource.create(this.detector.detect(validatedRequest.description).source)
         : RequirementSource.create('manual');
 
     const requirement = Requirement.create({
-      customerId: request.customerId,
-      conversationId: request.conversationId,
-      title: request.title,
-      description: request.description,
-      category: request.category,
+      customerId: validatedRequest.customerId,
+      conversationId: validatedRequest.conversationId,
+      title: validatedRequest.title,
+      description: validatedRequest.description,
+      category: validatedRequest.category,
       priority,
       source,
-      createdBy: request.createdBy,
-      metadata: request.metadata,
+      createdBy: validatedRequest.createdBy,
+      metadata: validatedRequest.metadata,
     });
 
     // 获取未提交的事件
@@ -57,15 +62,4 @@ export class CreateRequirementUseCase {
     return RequirementResponseDTO.fromDomain(requirement);
   }
 
-  private validate(request: CreateRequirementRequestDTO): void {
-    if (!request.customerId) {
-      throw new Error('customerId is required');
-    }
-    if (!request.title) {
-      throw new Error('title is required');
-    }
-    if (!request.category) {
-      throw new Error('category is required');
-    }
-  }
 }

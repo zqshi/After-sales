@@ -1,6 +1,8 @@
 import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
-import { optionalString, requireString } from './helpers';
+
 import { AgentScopeDependencies, MCPToolDefinition } from '../types';
+
+import { optionalString, requireString } from './helpers';
 
 const detector = new RequirementDetectorService();
 

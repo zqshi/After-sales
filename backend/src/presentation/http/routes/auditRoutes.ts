@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+
 import { AuditController } from '../controllers/AuditController';
 
 export async function auditRoutes(

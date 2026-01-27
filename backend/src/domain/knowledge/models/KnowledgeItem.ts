@@ -1,8 +1,9 @@
 import { AggregateRoot } from '@domain/shared/AggregateRoot';
-import { KnowledgeCategory } from '../value-objects/KnowledgeCategory';
+
 import { KnowledgeItemCreatedEvent } from '../events/KnowledgeItemCreatedEvent';
-import { KnowledgeItemUpdatedEvent } from '../events/KnowledgeItemUpdatedEvent';
 import { KnowledgeItemDeletedEvent } from '../events/KnowledgeItemDeletedEvent';
+import { KnowledgeItemUpdatedEvent } from '../events/KnowledgeItemUpdatedEvent';
+import { KnowledgeCategory } from '../value-objects/KnowledgeCategory';
 
 interface KnowledgeItemProps {
   title: string;

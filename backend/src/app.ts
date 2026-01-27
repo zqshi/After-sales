@@ -4,18 +4,9 @@
  * 创建和配置Fastify应用实例
  */
 
-import fastify, { FastifyInstance } from 'fastify';
-import { DataSource } from 'typeorm';
-import jwt from '@fastify/jwt';
 import helmet from '@fastify/helmet';
-import { ConversationController } from './presentation/http/controllers/ConversationController';
-import { conversationRoutes } from './presentation/http/routes/conversationRoutes';
-import { ImController } from './presentation/http/controllers/ImController';
-import { imRoutes } from './presentation/http/routes/imRoutes';
-import { CreateConversationUseCase } from './application/use-cases/CreateConversationUseCase';
-import { ListConversationsUseCase } from './application/use-cases/ListConversationsUseCase';
-import { AssignAgentUseCase } from './application/use-cases/AssignAgentUseCase';
-import { SendMessageUseCase } from './application/use-cases/SendMessageUseCase';
+import jwt from '@fastify/jwt';
+
 import { CloseConversationUseCase } from './application/use-cases/CloseConversationUseCase';
 import { AssociateRequirementWithConversationUseCase } from './application/use-cases/requirement/AssociateRequirementWithConversationUseCase';
 import { GetConversationUseCase } from './application/use-cases/GetConversationUseCase';
@@ -53,9 +44,9 @@ import { UpdateTaskStatusUseCase } from './application/use-cases/task/UpdateTask
 import { CompleteTaskUseCase } from './application/use-cases/task/CompleteTaskUseCase';
 import { TaskRepository } from './infrastructure/repositories/TaskRepository';
 import multipart from '@fastify/multipart';
+import fastify, { FastifyInstance } from 'fastify';
+import { DataSource } from 'typeorm';
 import { KnowledgeController } from './presentation/http/controllers/KnowledgeController';
-import { AiController } from './presentation/http/controllers/AiController';
-import { knowledgeRoutes } from './presentation/http/routes/knowledgeRoutes';
 import { aiRoutes } from './presentation/http/routes/aiRoutes';
 import { KnowledgeRepository } from './infrastructure/repositories/KnowledgeRepository';
 import { TaxKBAdapter } from './infrastructure/adapters/TaxKBAdapter';
@@ -81,6 +72,7 @@ import { ConversationReadyToCloseEventHandler } from './application/event-handle
 import { RequirementCreatedEventHandler } from './application/event-handlers/RequirementCreatedEventHandler';
 import { ProblemResolvedEventHandler } from './application/event-handlers/ProblemResolvedEventHandler';
 import { ConversationTaskCoordinator } from './application/services/ConversationTaskCoordinator';
+import { ResourceAccessControl } from './application/services/ResourceAccessControl';
 import { metricsMiddleware, metricsResponseHook } from './presentation/http/middleware/metricsMiddleware';
 import metricsRoutes from './presentation/http/routes/metricsRoutes';
 import { authRoutes } from './presentation/http/routes/authRoutes';
@@ -91,6 +83,7 @@ import { GetCurrentUserUseCase } from './application/use-cases/auth/GetCurrentUs
 import { UserRepository } from './infrastructure/repositories/UserRepository';
 import { RoleRepository } from './infrastructure/repositories/RoleRepository';
 import { authMiddleware } from './presentation/http/middleware/authMiddleware';
+import { ResourceAccessMiddleware } from './presentation/http/middleware/resourceAccessMiddleware';
 import { config } from './config/app.config';
 import { AuditEventRepository } from './infrastructure/repositories/AuditEventRepository';
 import { CreateAuditEventUseCase } from './application/use-cases/audit/CreateAuditEventUseCase';
@@ -117,18 +110,28 @@ import { CreateMemberUseCase } from './application/use-cases/permissions/CreateM
 import { UpdateMemberUseCase } from './application/use-cases/permissions/UpdateMemberUseCase';
 import { DeleteMemberUseCase } from './application/use-cases/permissions/DeleteMemberUseCase';
 import { RolePermissionService } from './application/services/RolePermissionService';
+import { AssignAgentUseCase } from './application/use-cases/AssignAgentUseCase';
+import { CreateConversationUseCase } from './application/use-cases/CreateConversationUseCase';
+import { ListConversationsUseCase } from './application/use-cases/ListConversationsUseCase';
 import { CreateProblemUseCase } from './application/use-cases/problem/CreateProblemUseCase';
-import { WorkflowEngine } from './infrastructure/workflow/WorkflowEngine';
-import { ActionStepExecutor } from './infrastructure/workflow/executors/ActionStepExecutor';
-import { HumanInLoopExecutor } from './infrastructure/workflow/executors/HumanInLoopExecutor';
 import { WorkflowRegistry } from './infrastructure/workflow/WorkflowRegistry';
 import { QualityReportRepository } from './infrastructure/repositories/QualityReportRepository';
 import { SurveyRepository } from './infrastructure/repositories/SurveyRepository';
 import { UpdateProblemStatusUseCase } from './application/use-cases/problem/UpdateProblemStatusUseCase';
 import { CreateReviewRequestUseCase } from './application/use-cases/review/CreateReviewRequestUseCase';
 import { CompleteReviewRequestUseCase } from './application/use-cases/review/CompleteReviewRequestUseCase';
+import { SendMessageUseCase } from './application/use-cases/SendMessageUseCase';
 import { OutboxEventBus } from './infrastructure/events/OutboxEventBus';
 import { OutboxProcessor } from './infrastructure/events/OutboxProcessor';
+import { ActionStepExecutor } from './infrastructure/workflow/executors/ActionStepExecutor';
+import { HumanInLoopExecutor } from './infrastructure/workflow/executors/HumanInLoopExecutor';
+import { WorkflowEngine } from './infrastructure/workflow/WorkflowEngine';
+import { AiController } from './presentation/http/controllers/AiController';
+import { ConversationController } from './presentation/http/controllers/ConversationController';
+import { ImController } from './presentation/http/controllers/ImController';
+import { conversationRoutes } from './presentation/http/routes/conversationRoutes';
+import { imRoutes } from './presentation/http/routes/imRoutes';
+import { knowledgeRoutes } from './presentation/http/routes/knowledgeRoutes';
 
 export async function createApp(
   dataSource: DataSource,
@@ -184,6 +187,12 @@ export async function createApp(
   const monitoringAlertRepository = new MonitoringAlertRepository(dataSource);
   const taxkbAdapter = new TaxKBAdapter();
   const taxkbKnowledgeRepository = new TaxKBKnowledgeRepository(taxkbAdapter);
+  const accessControl = new ResourceAccessControl(
+    conversationRepository,
+    taskRepository,
+    requirementRepository,
+  );
+  const accessMiddleware = new ResourceAccessMiddleware(accessControl);
 
   const rolePermissionService = new RolePermissionService(roleRepository);
   await rolePermissionService.refresh();
@@ -199,6 +208,7 @@ export async function createApp(
   const assignAgentUseCase = new AssignAgentUseCase(
     conversationRepository,
     eventBus,
+    accessControl,
   );
 
   // 创建Use Cases
@@ -209,12 +219,14 @@ export async function createApp(
   const closeConversationUseCase = new CloseConversationUseCase(
     conversationRepository,
     eventBus,
+    accessControl,
   );
   const associateRequirementWithConversationUseCase = new AssociateRequirementWithConversationUseCase(
     requirementRepository,
   );
   const getConversationUseCase = new GetConversationUseCase(
     conversationRepository,
+    accessControl,
   );
 
   const getCustomerProfileUseCase = new GetCustomerProfileUseCase(
@@ -248,25 +260,28 @@ export async function createApp(
   const completeReviewRequestUseCase = new CompleteReviewRequestUseCase(reviewRequestRepository);
   const getRequirementUseCase = new GetRequirementUseCase(
     requirementRepository,
+    accessControl,
   );
   const listRequirementsUseCase = new ListRequirementsUseCase(
     requirementRepository,
   );
   const updateRequirementStatusUseCase = new UpdateRequirementStatusUseCase(
     requirementRepository,
+    accessControl,
   );
   const deleteRequirementUseCase = new DeleteRequirementUseCase(
     requirementRepository,
+    accessControl,
   );
   const getRequirementStatisticsUseCase = new GetRequirementStatisticsUseCase(
     requirementRepository,
   );
-  const createTaskUseCase = new CreateTaskUseCase(taskRepository);
-  const getTaskUseCase = new GetTaskUseCase(taskRepository);
+  const createTaskUseCase = new CreateTaskUseCase(taskRepository, conversationRepository);
+  const getTaskUseCase = new GetTaskUseCase(taskRepository, accessControl);
   const listTasksUseCase = new ListTasksUseCase(taskRepository);
-  const assignTaskUseCase = new AssignTaskUseCase(taskRepository);
-  const updateTaskStatusUseCase = new UpdateTaskStatusUseCase(taskRepository);
-  const completeTaskUseCase = new CompleteTaskUseCase(taskRepository, eventBus);
+  const assignTaskUseCase = new AssignTaskUseCase(taskRepository, accessControl);
+  const updateTaskStatusUseCase = new UpdateTaskStatusUseCase(taskRepository, accessControl);
+  const completeTaskUseCase = new CompleteTaskUseCase(taskRepository, eventBus, accessControl);
   const createKnowledgeItemUseCase = new CreateKnowledgeItemUseCase(
     knowledgeRepository,
     eventBus,
@@ -578,14 +593,14 @@ export async function createApp(
     await permissionRoutes(apiApp, permissionController);
     await auditRoutes(apiApp, auditController);
     await monitoringRoutes(apiApp, monitoringController);
-    await conversationRoutes(apiApp, conversationController);
+    await conversationRoutes(apiApp, conversationController, accessMiddleware);
     await customerRoutes(
       apiApp,
       customerProfileController,
       customerActionController,
     );
-    await requirementRoutes(apiApp, requirementController);
-    await taskRoutes(apiApp, taskController);
+    await requirementRoutes(apiApp, requirementController, accessMiddleware);
+    await taskRoutes(apiApp, taskController, accessMiddleware);
     await knowledgeRoutes(apiApp, knowledgeController);
     await aiRoutes(apiApp, aiController);
     await imRoutes(apiApp, imController); // IM消息接入路由

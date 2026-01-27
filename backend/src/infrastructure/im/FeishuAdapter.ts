@@ -41,11 +41,15 @@ export class FeishuAdapter extends BaseIMAdapter {
       throw new Error(`获取飞书access_token失败: ${data.msg}`);
     }
 
+    if (!data.tenant_access_token) {
+      throw new Error('获取飞书access_token失败: token为空');
+    }
+
     this.accessToken = data.tenant_access_token;
     // token有效期2小时，提前5分钟刷新
     this.tokenExpireTime = Date.now() + (data.expire - 300) * 1000;
 
-    return this.accessToken;
+    return this.accessToken!; // 非空断言，因为上面已经检查过了
   }
 
   /**

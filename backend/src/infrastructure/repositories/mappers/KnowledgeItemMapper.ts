@@ -1,6 +1,6 @@
 import { KnowledgeItem } from '@domain/knowledge/models/KnowledgeItem';
-import { KnowledgeItemEntity } from '@infrastructure/database/entities/KnowledgeItemEntity';
 import { KnowledgeCategory } from '@domain/knowledge/value-objects/KnowledgeCategory';
+import { KnowledgeItemEntity } from '@infrastructure/database/entities/KnowledgeItemEntity';
 
 export class KnowledgeItemMapper {
   static toDomain(entity: KnowledgeItemEntity): KnowledgeItem {

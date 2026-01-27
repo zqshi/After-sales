@@ -1,7 +1,8 @@
-import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
-import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
 import { KnowledgeCategory } from '@domain/knowledge/value-objects/KnowledgeCategory';
 import { EventBus } from '@infrastructure/events/EventBus';
+import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
+
+import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
 
 export interface UpdateKnowledgeItemRequest {
   knowledgeId: string;

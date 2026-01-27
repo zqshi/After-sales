@@ -4,8 +4,9 @@
  * 支持同时执行多个步骤，提高效率
  */
 
-import { BaseStepExecutor } from './BaseStepExecutor';
 import { WorkflowStep, WorkflowContext } from '../types';
+
+import { BaseStepExecutor } from './BaseStepExecutor';
 
 export class ParallelStepExecutor extends BaseStepExecutor {
   private maxParallelSteps: number;

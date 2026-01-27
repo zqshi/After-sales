@@ -1,15 +1,15 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 
-import { ListRolesUseCase } from '../../../application/use-cases/permissions/ListRolesUseCase';
+import { CreateMemberRequestDTO, UpdateMemberRequestDTO } from '../../../application/dto/permissions/MemberRequestDTO';
+import { CreateRoleRequestDTO, UpdateRoleRequestDTO } from '../../../application/dto/permissions/RoleRequestDTO';
+import { CreateMemberUseCase } from '../../../application/use-cases/permissions/CreateMemberUseCase';
 import { CreateRoleUseCase } from '../../../application/use-cases/permissions/CreateRoleUseCase';
-import { UpdateRoleUseCase } from '../../../application/use-cases/permissions/UpdateRoleUseCase';
+import { DeleteMemberUseCase } from '../../../application/use-cases/permissions/DeleteMemberUseCase';
 import { DeleteRoleUseCase } from '../../../application/use-cases/permissions/DeleteRoleUseCase';
 import { ListMembersUseCase } from '../../../application/use-cases/permissions/ListMembersUseCase';
-import { CreateMemberUseCase } from '../../../application/use-cases/permissions/CreateMemberUseCase';
+import { ListRolesUseCase } from '../../../application/use-cases/permissions/ListRolesUseCase';
 import { UpdateMemberUseCase } from '../../../application/use-cases/permissions/UpdateMemberUseCase';
-import { DeleteMemberUseCase } from '../../../application/use-cases/permissions/DeleteMemberUseCase';
-import { CreateRoleRequestDTO, UpdateRoleRequestDTO } from '../../../application/dto/permissions/RoleRequestDTO';
-import { CreateMemberRequestDTO, UpdateMemberRequestDTO } from '../../../application/dto/permissions/MemberRequestDTO';
+import { UpdateRoleUseCase } from '../../../application/use-cases/permissions/UpdateRoleUseCase';
 
 export class PermissionController {
   constructor(

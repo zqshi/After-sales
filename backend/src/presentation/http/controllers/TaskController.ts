@@ -1,11 +1,14 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+
+import { CreateTaskRequestDTO } from '../../../application/dto/task/CreateTaskRequestDTO';
+import { AssignTaskUseCase } from '../../../application/use-cases/task/AssignTaskUseCase';
+import { CompleteTaskUseCase } from '../../../application/use-cases/task/CompleteTaskUseCase';
 import { CreateTaskUseCase } from '../../../application/use-cases/task/CreateTaskUseCase';
 import { GetTaskUseCase } from '../../../application/use-cases/task/GetTaskUseCase';
 import { ListTasksUseCase } from '../../../application/use-cases/task/ListTasksUseCase';
-import { AssignTaskUseCase } from '../../../application/use-cases/task/AssignTaskUseCase';
 import { UpdateTaskStatusUseCase } from '../../../application/use-cases/task/UpdateTaskStatusUseCase';
-import { CompleteTaskUseCase } from '../../../application/use-cases/task/CompleteTaskUseCase';
-import { CreateTaskRequestDTO } from '../../../application/dto/task/CreateTaskRequestDTO';
+import { ForbiddenError } from '../../../application/services/ResourceAccessControl';
+import { ValidationError } from '../../../infrastructure/validation/Validator';
 
 export class TaskController {
   constructor(
@@ -38,6 +41,7 @@ export class TaskController {
       const { id } = request.params as { id: string };
       const result = await this.getTaskUseCase.execute({
         taskId: id,
+        userId: this.getUserId(request),
       });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
@@ -85,6 +89,7 @@ export class TaskController {
       const result = await this.assignTaskUseCase.execute({
         taskId: id,
         assigneeId,
+        userId: this.getUserId(request),
       });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
@@ -99,7 +104,11 @@ export class TaskController {
     try {
       const { id } = request.params as { id: string };
       const body = request.body as { status: 'pending' | 'in_progress' | 'completed' | 'cancelled' };
-      const result = await this.updateTaskStatusUseCase.execute(id, body);
+      const result = await this.updateTaskStatusUseCase.execute({
+        taskId: id,
+        status: body.status,
+        userId: this.getUserId(request),
+      });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
@@ -119,7 +128,11 @@ export class TaskController {
           satisfaction: number;
         };
       };
-      const result = await this.completeTaskUseCase.execute(id, { qualityScore: body.qualityScore });
+      const result = await this.completeTaskUseCase.execute({
+        taskId: id,
+        qualityScore: body.qualityScore,
+        userId: this.getUserId(request),
+      });
       reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
@@ -143,13 +156,21 @@ export class TaskController {
       }
 
       if (action === 'cancel') {
-        const result = await this.updateTaskStatusUseCase.execute(id, { status: 'cancelled' });
+        const result = await this.updateTaskStatusUseCase.execute({
+          taskId: id,
+          status: 'cancelled',
+          userId: this.getUserId(request),
+        });
         reply.code(200).send({ success: true, data: result });
         return;
       }
 
       if (action === 'execute') {
-        const result = await this.updateTaskStatusUseCase.execute(id, { status: 'in_progress' });
+        const result = await this.updateTaskStatusUseCase.execute({
+          taskId: id,
+          status: 'in_progress',
+          userId: this.getUserId(request),
+        });
         reply.code(200).send({ success: true, data: result });
         return;
       }
@@ -164,6 +185,27 @@ export class TaskController {
   }
 
   private handleError(error: unknown, reply: FastifyReply): void {
+    if (error instanceof ValidationError) {
+      reply.code(400).send({
+        success: false,
+        error: {
+          message: error.message,
+          code: 'VALIDATION_ERROR',
+          details: error.errors,
+        },
+      });
+      return;
+    }
+    if (error instanceof ForbiddenError) {
+      reply.code(403).send({
+        success: false,
+        error: {
+          message: error.message,
+          code: 'FORBIDDEN',
+        },
+      });
+      return;
+    }
     if (error instanceof Error) {
       const statusCode = this.getStatusCode(error.message);
       reply.code(statusCode).send({
@@ -200,5 +242,10 @@ export class TaskController {
       return 'INVALID_INPUT';
     }
     return 'INTERNAL_ERROR';
+  }
+
+  private getUserId(request: FastifyRequest): string | undefined {
+    const user = request.user as { sub?: string } | undefined;
+    return user?.sub;
   }
 }

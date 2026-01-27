@@ -1,7 +1,8 @@
-import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
-import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
-import { TaxKBKnowledgeRepository } from '@infrastructure/repositories/TaxKBKnowledgeRepository';
 import { TaxKBAdapter } from '@infrastructure/adapters/TaxKBAdapter';
+import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
+import { TaxKBKnowledgeRepository } from '@infrastructure/repositories/TaxKBKnowledgeRepository';
+
+import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
 
 export interface GetKnowledgeItemRequest {
   knowledgeId: string;

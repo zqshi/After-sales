@@ -1,8 +1,9 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { AddServiceRecordUseCase } from '../../../application/use-cases/customer/AddServiceRecordUseCase';
-import { UpdateCommitmentProgressUseCase } from '../../../application/use-cases/customer/UpdateCommitmentProgressUseCase';
+
 import { AddInteractionUseCase } from '../../../application/use-cases/customer/AddInteractionUseCase';
+import { AddServiceRecordUseCase } from '../../../application/use-cases/customer/AddServiceRecordUseCase';
 import { MarkCustomerAsVIPUseCase } from '../../../application/use-cases/customer/MarkCustomerAsVIPUseCase';
+import { UpdateCommitmentProgressUseCase } from '../../../application/use-cases/customer/UpdateCommitmentProgressUseCase';
 
 export class CustomerActionController {
   constructor(

@@ -203,7 +203,7 @@ export class WorkflowState {
     return {
       executionId: this.context.executionId,
       workflowName: this.context.workflowName,
-      status: this.status,
+      status: this.status as 'completed' | 'failed' | 'timeout' | 'cancelled',
       startedAt: this.startedAt,
       completedAt,
       duration,

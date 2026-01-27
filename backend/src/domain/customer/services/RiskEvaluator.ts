@@ -1,5 +1,5 @@
-import { Metrics } from '../value-objects/Metrics';
 import { Interaction } from '../value-objects/Interaction';
+import { Metrics } from '../value-objects/Metrics';
 
 export interface RiskScoreOptions {
   metrics: Metrics;

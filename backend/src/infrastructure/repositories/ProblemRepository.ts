@@ -1,11 +1,12 @@
 import { DataSource, Repository } from 'typeorm';
 
-import { IProblemRepository, ProblemQueryFilters } from '@domain/problem/repositories/IProblemRepository';
 import { Problem } from '@domain/problem/models/Problem';
+import { IProblemRepository, ProblemQueryFilters } from '@domain/problem/repositories/IProblemRepository';
 import { ProblemStatus } from '@domain/problem/types';
-import { ProblemEntity } from '@infrastructure/database/entities/ProblemEntity';
 import { DomainEventEntity } from '@infrastructure/database/entities/DomainEventEntity';
+import { ProblemEntity } from '@infrastructure/database/entities/ProblemEntity';
 import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
+
 import { ProblemMapper } from './mappers/ProblemMapper';
 
 export class ProblemRepository implements IProblemRepository {

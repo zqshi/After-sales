@@ -1,8 +1,8 @@
 import { config } from '@config/app.config';
-import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 import { KnowledgeItem } from '@domain/knowledge/models/KnowledgeItem';
 import { KnowledgeRecommender } from '@domain/knowledge/services/KnowledgeRecommender';
 import { LLMClient } from '@infrastructure/ai/LLMClient';
+import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 
 type AiIssue = { type: string; severity: string; description: string };
 type AiTimelineEntry = { messageId: string; sentiment: string; score: number; timestamp: string };
@@ -490,10 +490,10 @@ export class AiService {
     const llmClient = this.llmClient;
     if (llmClient && llmClient.isEnabled()) {
       try {
-        const prompt = [
+        const prompt: Array<{ role: 'system' | 'user'; content: string }> = [
           {
             role: 'system' as const,
-            content: `你是客服质检助手。判断客户消息是否表示“问题已解决”或“问题未解决/复开”，返回JSON：
+            content: `你是客服质检助手。判断客户消息是否表示"问题已解决"或"问题未解决/复开"，返回JSON：
 {
   "resolved": true/false,
   "reopened": true/false,
@@ -510,7 +510,7 @@ export class AiService {
 
         if (conversationHistory && conversationHistory.length > 0) {
           prompt.push({
-            role: 'system',
+            role: 'system' as const,
             content: `对话历史：\n${conversationHistory
               .map((msg) => `${msg.role}: ${msg.content}`)
               .join('\n')}`,
@@ -518,7 +518,7 @@ export class AiService {
         }
 
         prompt.push({
-          role: 'user',
+          role: 'user' as const,
           content: `客户消息：\n"${content}"`,
         });
 
@@ -613,7 +613,7 @@ export class AiService {
 
     let sentiment: 'positive' | 'neutral' | 'negative' = 'neutral';
     let score = 0.5;
-    let confidence = 0.6; // 关键词匹配置信度较低
+    const confidence = 0.6; // 关键词匹配置信度较低
     let emotions: string[] = [];
 
     if (hasProblemSolved) {

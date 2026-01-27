@@ -8,10 +8,11 @@
  * 4. 更新Gauge类型的指标
  */
 
-import { metricsCollector } from './MetricsCollector';
-import { TaskRepository } from '../../domain/task/repositories/TaskRepository';
 import { ConversationRepository } from '../../domain/conversation/repositories/ConversationRepository';
 import { RequirementRepository } from '../../domain/requirement/repositories/RequirementRepository';
+import { TaskRepository } from '../../domain/task/repositories/TaskRepository';
+
+import { metricsCollector } from './MetricsCollector';
 
 export class MetricsScheduler {
   private taskRepository: TaskRepository;

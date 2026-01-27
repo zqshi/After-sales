@@ -3,6 +3,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
+
 import { ImController } from '../controllers/ImController';
 
 export async function imRoutes(

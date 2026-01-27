@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, VersionColumn } from 'typeorm';
 
 import { MessageEntity } from './MessageEntity';
 
@@ -30,6 +30,9 @@ export class ConversationEntity {
 
   @Column({ type: 'varchar', length: 20, default: 'agent_auto', nullable: true })
   mode!: string | null;
+
+  @VersionColumn({ name: 'version', type: 'int', default: 0 })
+  version!: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt!: Date;

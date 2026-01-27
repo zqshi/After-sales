@@ -1,6 +1,7 @@
-import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
-import { CustomerProfileResponseDTO } from '../../dto/customer/CustomerProfileResponseDTO';
 import { Interaction } from '@domain/customer/value-objects/Interaction';
+import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
+
+import { CustomerProfileResponseDTO } from '../../dto/customer/CustomerProfileResponseDTO';
 
 export interface AddInteractionRequest {
   customerId: string;

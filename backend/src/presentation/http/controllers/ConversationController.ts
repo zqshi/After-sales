@@ -5,18 +5,21 @@
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { CreateConversationUseCase } from '../../../application/use-cases/CreateConversationUseCase';
-import { ListConversationsUseCase } from '../../../application/use-cases/ListConversationsUseCase';
-import { AssignAgentUseCase } from '../../../application/use-cases/AssignAgentUseCase';
-import { SendMessageUseCase } from '../../../application/use-cases/SendMessageUseCase';
-import { CloseConversationUseCase } from '../../../application/use-cases/CloseConversationUseCase';
-import { GetConversationUseCase } from '../../../application/use-cases/GetConversationUseCase';
+
 import {
   ConversationListQueryDTO,
   ConversationListStatus,
   ConversationCustomerLevelStatus,
 } from '../../../application/dto/ConversationListQueryDTO';
 import { CreateConversationRequestDTO } from '../../../application/dto/CreateConversationRequestDTO';
+import { AssignAgentUseCase } from '../../../application/use-cases/AssignAgentUseCase';
+import { CloseConversationUseCase } from '../../../application/use-cases/CloseConversationUseCase';
+import { CreateConversationUseCase } from '../../../application/use-cases/CreateConversationUseCase';
+import { GetConversationUseCase } from '../../../application/use-cases/GetConversationUseCase';
+import { ListConversationsUseCase } from '../../../application/use-cases/ListConversationsUseCase';
+import { SendMessageUseCase } from '../../../application/use-cases/SendMessageUseCase';
+import { ForbiddenError } from '../../../application/services/ResourceAccessControl';
+import { ValidationError } from '../../../infrastructure/validation/Validator';
 
 export class ConversationController {
   constructor(
@@ -109,6 +112,7 @@ export class ConversationController {
         agentId,
         assignedBy,
         reason,
+        userId: this.getUserId(request),
       });
 
       reply.code(200).send({
@@ -171,6 +175,7 @@ export class ConversationController {
         conversationId,
         closedBy,
         reason,
+        userId: this.getUserId(request),
       });
 
       reply.code(200).send({
@@ -198,6 +203,7 @@ export class ConversationController {
       const result = await this.getConversationUseCase.execute({
         conversationId,
         includeMessages,
+        userId: this.getUserId(request),
       });
 
       reply.code(200).send({
@@ -222,6 +228,27 @@ export class ConversationController {
    * 错误处理
    */
   private handleError(error: unknown, reply: FastifyReply): void {
+    if (error instanceof ValidationError) {
+      reply.code(400).send({
+        success: false,
+        error: {
+          message: error.message,
+          code: 'VALIDATION_ERROR',
+          details: error.errors,
+        },
+      });
+      return;
+    }
+    if (error instanceof ForbiddenError) {
+      reply.code(403).send({
+        success: false,
+        error: {
+          message: error.message,
+          code: 'FORBIDDEN',
+        },
+      });
+      return;
+    }
     if (error instanceof Error) {
       const statusCode = this.getStatusCode(error.message);
       reply.code(statusCode).send({
@@ -263,5 +290,10 @@ export class ConversationController {
       return 'INVALID_INPUT';
     }
     return 'INTERNAL_ERROR';
+  }
+
+  private getUserId(request: FastifyRequest): string | undefined {
+    const user = request.user as { sub?: string } | undefined;
+    return user?.sub;
   }
 }

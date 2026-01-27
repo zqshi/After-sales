@@ -1,11 +1,12 @@
 import { AggregateRoot } from '@domain/shared/AggregateRoot';
-import { TaskCreatedEvent } from '../events/TaskCreatedEvent';
-import { TaskStartedEvent } from '../events/TaskStartedEvent';
-import { TaskCompletedEvent } from '../events/TaskCompletedEvent';
+
 import { TaskCancelledEvent } from '../events/TaskCancelledEvent';
+import { TaskCompletedEvent } from '../events/TaskCompletedEvent';
+import { TaskCreatedEvent } from '../events/TaskCreatedEvent';
 import { TaskReassignedEvent } from '../events/TaskReassignedEvent';
-import { TaskPriority } from '../value-objects/TaskPriority';
+import { TaskStartedEvent } from '../events/TaskStartedEvent';
 import { QualityScore } from '../value-objects/QualityScore';
+import { TaskPriority } from '../value-objects/TaskPriority';
 
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -27,8 +28,8 @@ interface TaskProps {
 }
 
 export class Task extends AggregateRoot<TaskProps> {
-  private constructor(props: TaskProps, id?: string) {
-    super(props, id);
+  private constructor(props: TaskProps, id?: string, version?: number) {
+    super(props, id, version);
   }
 
   static create(data: {
@@ -357,7 +358,7 @@ export class Task extends AggregateRoot<TaskProps> {
     return Math.round(remainingMs / (1000 * 60)); // 转换为分钟（可能为负）
   }
 
-  static rehydrate(props: TaskProps, id: string): Task {
-    return new Task(props, id);
+  static rehydrate(props: TaskProps, id: string, version?: number): Task {
+    return new Task(props, id, version);
   }
 }

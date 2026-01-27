@@ -1,6 +1,6 @@
 import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
-import { LoginRequestDTO } from '../../dto/auth/LoginRequestDTO';
 import { verifyPassword } from '../../../infrastructure/security/passwordHasher';
+import { LoginRequestDTO } from '../../dto/auth/LoginRequestDTO';
 import { UserResponseDTO } from '../../dto/auth/UserResponseDTO';
 
 export class LoginUseCase {

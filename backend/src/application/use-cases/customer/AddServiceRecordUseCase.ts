@@ -1,6 +1,7 @@
-import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
-import { CustomerProfileResponseDTO } from '../../dto/customer/CustomerProfileResponseDTO';
 import { ServiceRecord } from '@domain/customer/value-objects/ServiceRecord';
+import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
+
+import { CustomerProfileResponseDTO } from '../../dto/customer/CustomerProfileResponseDTO';
 
 export interface AddServiceRecordRequest {
   customerId: string;

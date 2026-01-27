@@ -1,6 +1,7 @@
-import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+
+import dotenv from 'dotenv';
 
 const resolveEnvPath = (): string | undefined => {
   const explicit = process.env.DOTENV_CONFIG_PATH;

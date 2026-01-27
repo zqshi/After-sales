@@ -1,13 +1,16 @@
 import { AggregateRoot } from '@domain/shared/AggregateRoot';
-import { ConversationCreatedEvent } from '../events/ConversationCreatedEvent';
-import { ConversationClosedEvent } from '../events/ConversationClosedEvent';
+
 import { ConversationAssignedEvent } from '../events/ConversationAssignedEvent';
-import { MessageSentEvent } from '../events/MessageSentEvent';
+import { ConversationClosedEvent } from '../events/ConversationClosedEvent';
+import { ConversationCreatedEvent } from '../events/ConversationCreatedEvent';
 import { CustomerLevelViolatedEvent } from '../events/CustomerLevelViolatedEvent';
-import { Message } from './Message';
-import { Channel } from '../value-objects/Channel';
-import { ConversationStatus, MessagePriority, CustomerLevelStatus } from '../types';
+import { MessageSentEvent } from '../events/MessageSentEvent';
 import { CustomerLevelCalculatorService, slaCalculator } from '../services/CustomerLevelCalculatorService';
+import { ConversationStatus, MessagePriority, CustomerLevelStatus } from '../types';
+import { Channel } from '../value-objects/Channel';
+
+import { Message } from './Message';
+
 
 export type AgentMode = 'agent_auto' | 'agent_supervised' | 'human_first';
 
@@ -30,8 +33,13 @@ interface ConversationProps {
 export class Conversation extends AggregateRoot<ConversationProps> {
   private readonly slaService: CustomerLevelCalculatorService;
 
-  private constructor(props: ConversationProps, slaService: CustomerLevelCalculatorService, id?: string) {
-    super(props, id);
+  private constructor(
+    props: ConversationProps,
+    slaService: CustomerLevelCalculatorService,
+    id?: string,
+    version?: number,
+  ) {
+    super(props, id, version);
     this.slaService = slaService;
   }
 
@@ -332,7 +340,8 @@ export class Conversation extends AggregateRoot<ConversationProps> {
     props: ConversationProps,
     id: string,
     slaService: CustomerLevelCalculatorService = slaCalculator,
+    version?: number,
   ): Conversation {
-    return new Conversation(props, slaService, id);
+    return new Conversation(props, slaService, id, version);
   }
 }

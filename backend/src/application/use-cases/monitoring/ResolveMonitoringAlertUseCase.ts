@@ -1,5 +1,5 @@
-import { MonitoringAlertRepository } from '../../../infrastructure/repositories/MonitoringAlertRepository';
 import { MonitoringAlertEntity } from '../../../infrastructure/database/entities/MonitoringAlertEntity';
+import { MonitoringAlertRepository } from '../../../infrastructure/repositories/MonitoringAlertRepository';
 
 export class ResolveMonitoringAlertUseCase {
   constructor(private readonly monitoringAlertRepository: MonitoringAlertRepository) {}

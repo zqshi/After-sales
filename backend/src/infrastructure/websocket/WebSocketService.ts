@@ -9,8 +9,8 @@
  * 5. 心跳保活
  */
 
-import { FastifyInstance } from 'fastify';
 import websocket from '@fastify/websocket';
+import { FastifyInstance } from 'fastify';
 import { WebSocket } from 'ws';
 
 export interface ReviewNotification {
@@ -119,7 +119,7 @@ export class WebSocketService {
    */
   private startHeartbeat(userId: string): void {
     const connInfo = this.connections.get(userId);
-    if (!connInfo) return;
+    if (!connInfo) {return;}
 
     connInfo.heartbeatTimer = setInterval(() => {
       try {

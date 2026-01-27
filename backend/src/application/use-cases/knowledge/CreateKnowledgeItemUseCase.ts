@@ -1,9 +1,11 @@
-import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 import { KnowledgeItem } from '@domain/knowledge/models/KnowledgeItem';
 import { KnowledgeCategory } from '@domain/knowledge/value-objects/KnowledgeCategory';
+import { EventBus } from '@infrastructure/events/EventBus';
+import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
+
 import { CreateKnowledgeItemRequestDTO } from '../../dto/knowledge/CreateKnowledgeItemRequestDTO';
 import { KnowledgeItemResponseDTO } from '../../dto/knowledge/KnowledgeItemResponseDTO';
-import { EventBus } from '@infrastructure/events/EventBus';
+
 
 export class CreateKnowledgeItemUseCase {
   constructor(

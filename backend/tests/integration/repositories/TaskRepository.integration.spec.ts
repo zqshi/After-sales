@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 
 import { Task } from '@domain/task/models/Task';
 import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
+import { OutboxEventBus } from '@infrastructure/events/OutboxEventBus';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { closeTestDataSource, getTestDataSource } from '../../helpers/testDatabase';
 
@@ -12,7 +13,7 @@ describe('TaskRepository (integration)', () => {
 
   beforeAll(async () => {
     dataSource = await getTestDataSource();
-    repository = new TaskRepository(dataSource);
+    repository = new TaskRepository(dataSource, new OutboxEventBus(dataSource));
   });
 
   beforeEach(async () => {
