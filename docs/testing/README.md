@@ -11,11 +11,11 @@
 | 文档 | 状态 | 描述 | 优先级 |
 |------|------|------|--------|
 | `TEST_STRATEGY.md` | ✅已完成 | 测试策略(单元/集成/E2E) | P0 |
-| `TEST_CASES.md` | 🚧待创建 | 测试用例库 | P0 |
-| `PERFORMANCE_TEST.md` | 🚧待创建 | 性能测试方案 | P1 |
-| `SECURITY_TEST.md` | 🚧待创建 | 安全测试方案 | P1 |
-| `TEST_DATA.md` | 🚧待创建 | 测试数据准备 | P1 |
-| `BUG_REPORT_TEMPLATE.md` | 🚧待创建 | Bug报告模板 | P2 |
+| `TEST_CASES.md` | ✅已完成 | 测试用例库 | P0 |
+| `PERFORMANCE_TEST.md` | ✅已完成 | 性能测试方案 | P1 |
+| `SECURITY_TEST.md` | ✅已完成 | 安全测试方案 | P1 |
+| `TEST_DATA.md` | ✅已完成 | 测试数据准备 | P1 |
+| `BUG_REPORT_TEMPLATE.md` | ✅已完成 | Bug报告模板 | P2 |
 
 ---
 
