@@ -1159,9 +1159,9 @@ valid_results = [r for r in results if not isinstance(r, Exception)]
 
 ### 8.2 相关文档
 
-- [PHASE_1_AGENTS_IMPLEMENTATION.md](./PHASE_1_AGENTS_IMPLEMENTATION.md) - Agent实施详情
-- [PHASE_2_QUALITY_INSPECTION.md](./PHASE_2_QUALITY_INSPECTION.md) - 质检异步化实施
-- [API_REFERENCE.md](./API_REFERENCE.md) - AgentScope API文档
+- [PHASE_1_AGENTS_IMPLEMENTATION.md](../implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) - Agent实施详情
+- [PHASE_2_QUALITY_INSPECTION.md](../implementation/PHASE_2_QUALITY_INSPECTION.md) - 质检异步化实施
+- [API_REFERENCE.md](../api/API_REFERENCE.md) - AgentScope API文档
 
 ---
 

@@ -14,9 +14,9 @@
 | 你是... | 推荐阅读顺序 |
 |---------|-------------|
 | **新产品经理** | 产品概述 → 路线图 → 功能PRD → 混合模块PRD |
-| **新开发工程师** | 产品概述 → Agent PRD → 非功能需求 → 增量PRD |
+| **新开发工程师** | 产品概述 → Agent PRD → 非功能需求 → 路线图 |
 | **架构师** | 产品概述 → Agent PRD → 混合模块 → 非功能需求 |
-| **测试工程师** | 功能PRD验收标准 → 增量PRD → 非功能需求 |
+| **测试工程师** | 功能PRD验收标准 → 路线图 → 非功能需求 |
 
 ---
 
@@ -27,7 +27,6 @@ prd/
 ├── README.md                           # 📍 本文件(PRD导航)
 ├── PRODUCT_ANALYSIS_REPORT.md          # 产品分析报告(v1.2)
 ├── BUSINESS_FLOW_DESIGN.md             # 业务流程设计
-├── DIALOGUE_MODE_SPECIFICATION.md      # 对话模式规格说明
 │
 ├── 1-roadmap/                          # 🗺️ 产品路线图
 │   └── ITERATIONS_ROADMAP.md           # 迭代路线图(v0.5/v0.8/v1.0)
@@ -57,11 +56,6 @@ prd/
 │   └── 5-nonfunctional/                # 非功能需求
 │       └── Non-Functional-Requirements.md  # ✅ 性能/安全/可扩展性(~1100行)
 │
-├── 3-incremental/                      # 📈 增量PRD(版本演进)
-│   ├── PRD-v0.5-Incremental.md         # ✅ v0.5增量需求(MVP)
-│   ├── PRD-v0.8-Incremental.md         # ✅ v0.8增量需求(智能增强)
-│   └── PRD-v1.0-Incremental.md         # ✅ v1.0增量需求(企业级)
-│
 ├── 4-templates/                        # 📝 PRD模板
 │   ├── Agent_PRD_Template.md           # ✅ Agent PRD模板(11章)
 │   ├── Feature_PRD_Template.md         # ✅ Feature PRD模板(8章)
@@ -85,14 +79,6 @@ prd/
 | **4-hybrid-modules** | 4 | ✅ 100% | ~5,100行 | 完成 |
 | **5-nonfunctional** | 1 | ✅ 100% | ~1,100行 | 完成 |
 | **合计** | **14** | **✅ 100%** | **~14,750行** | **全部完成** |
-
-### 3-incremental增量PRD
-
-| 版本 | 文档 | 完成度 | 行数 | 状态 |
-|------|------|--------|------|------|
-| **v0.5** | PRD-v0.5-Incremental.md | ✅ 100% | ~1,200行 | 完成 |
-| **v0.8** | PRD-v0.8-Incremental.md | ✅ 100% | ~1,500行 | 完成 |
-| **v1.0** | PRD-v1.0-Incremental.md | ✅ 100% | ~1,800行 | 完成 |
 
 ---
 
@@ -342,56 +328,6 @@ Part 3: 人机协作边界
 
 ---
 
-### 6️⃣ 增量PRD (3-incremental)
-
-**说明**: 按版本拆分的增量需求，便于敏捷开发
-
-#### v0.5 MVP (~1,200行)
-```yaml
-核心功能:
-  - 基础对话管理
-  - 简单客户管理
-  - 知识库CRUD
-  - Orchestrator + AssistantAgent
-
-目标:
-  - 2个月交付
-  - 验证核心假设
-  - 支持100并发用户
-```
-
-#### v0.8 智能增强 (~1,500行)
-```yaml
-新增功能:
-  - EngineerAgent故障诊断
-  - InspectorAgent质检
-  - 任务管理
-  - 自定义报表
-  - 语义检索
-
-目标:
-  - 效率提升50%
-  - 质量提升15%
-  - 支持500并发用户
-```
-
-#### v1.0 企业级 (~1,800行)
-```yaml
-新增功能:
-  - 多租户SaaS
-  - 高可用架构
-  - 完整BI看板
-  - 移动端支持
-  - 开放API
-
-目标:
-  - 可用性99.95%
-  - 支持1000+并发用户
-  - 通过等保三级认证
-```
-
----
-
 ## 📝 PRD编写规范
 
 ### 1. 文档格式
@@ -463,7 +399,7 @@ Hybrid PRD:
 
 ### 业务文档
 - [业务流程设计](./BUSINESS_FLOW_DESIGN.md)
-- [对话模式规格](./DIALOGUE_MODE_SPECIFICATION.md)
+- [对话模式规格](./2-baseline/4-hybrid-modules/Conversation-Mode-PRD.md)
 - [产品分析报告](./PRODUCT_ANALYSIS_REPORT.md)
 
 ---

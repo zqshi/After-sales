@@ -28,17 +28,17 @@
 ```
 docs/
 ├── README.md                           # 📍 本文件(文档中心导航)
+├── QUICK_START.md                      # 🚀 5分钟快速开始
 │
 ├── 📋 PRD文档 (prd/)                    # 产品需求文档
 │   ├── README.md                       # PRD导航(必读)
 │   ├── 1-roadmap/                      # 产品路线图
-│   ├── 2-baseline/                     # 基线PRD(14个文档,~14,750行)
+│   ├── 2-baseline/                     # 基线PRD
 │   │   ├── 1-overview/                 # 产品概述
-│   │   ├── 2-features/                 # 功能PRD(4个)
-│   │   ├── 3-agents/                   # Agent PRD(4个)
-│   │   ├── 4-hybrid-modules/           # 混合模块PRD(4个)
+│   │   ├── 2-features/                 # 功能PRD
+│   │   ├── 3-agents/                   # Agent PRD
+│   │   ├── 4-hybrid-modules/           # 混合模块PRD
 │   │   └── 5-nonfunctional/            # 非功能需求
-│   ├── 3-incremental/                  # 增量PRD(v0.5/v0.8/v1.0)
 │   ├── 4-templates/                    # PRD模板
 │   └── 5-guides/                       # PRD编写指南
 │
@@ -57,7 +57,6 @@ docs/
 │   └── PHASE_2_QUALITY_INSPECTION.md           # Phase 2: 质检异步化
 │
 ├── 📚 使用指南 (guides/)                # 快速入门指南
-│   ├── QUICK_START.md                  # 5分钟快速开始
 │   └── STARTUP_GUIDE.md                # 完整启动指南(30分钟)
 │
 ├── 📦 开发文档 (development/)          # 开发集成指南
@@ -85,8 +84,7 @@ docs/
 │
 ├── 📄 项目报告 (根目录)                 # 项目交付与执行报告
 │   ├── DELIVERY_REPORT.md              # 项目交付报告
-│   ├── EXECUTION_REPORT_20260126_FINAL.md  # 执行报告(2026-01-26)
-│   └── QUICK_START.md                  # 快速开始指南
+│   └── EXECUTION_REPORT_20260126_FINAL.md  # 执行报告(2026-01-26)
 ```
 
 ---
@@ -119,7 +117,6 @@ docs/
 5. [混合模块PRD](prd/2-baseline/4-hybrid-modules/) - Agent与功能协作
 
 **参考文档**:
-- [增量PRD](prd/3-incremental/) - 版本演进规划
 - [产品路线图](prd/1-roadmap/ITERATIONS_ROADMAP.md) - 迭代计划
 - [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) - 业务流程
 
@@ -131,13 +128,12 @@ docs/
 1. ⭐ [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) - 产品全面分析
 2. ⭐ [PRD目录](prd/README.md) - PRD文档导航
 3. ⭐ [产品概述](prd/2-baseline/1-overview/Product-Overview.md) - 快速了解产品
-4. [功能PRD](prd/2-baseline/2-features/) - 4个核心功能详细设计
-5. [对话模式规格](prd/DIALOGUE_MODE_SPECIFICATION.md) - 对话模式设计
+4. [功能PRD](prd/2-baseline/2-features/) - 核心功能详细设计
+5. [对话模式规格](prd/2-baseline/4-hybrid-modules/Conversation-Mode-PRD.md) - 对话模式设计
 
 **参考文档**:
 - [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) - 业务流程
 - [混合模块PRD](prd/2-baseline/4-hybrid-modules/) - 复杂功能设计
-- [增量PRD](prd/3-incremental/) - 版本演进
 
 ---
 
@@ -207,12 +203,11 @@ docs/
 |------|------|--------|--------|
 | [PRD目录](prd/README.md) | PRD文档导航(必读) | P0 | ✅ 100% |
 | [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) | 产品全面分析 | P0 | ✅ 100% |
-| [基线PRD](prd/2-baseline/) | 14个模块化PRD文档 | P0 | ✅ 100% |
-| [增量PRD](prd/3-incremental/) | v0.5/v0.8/v1.0版本演进 | P0 | ✅ 100% |
+| [基线PRD](prd/2-baseline/) | 模块化PRD文档 | P0 | ✅ 100% |
 | [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) | 业务流程图 | P1 | ✅ 100% |
-| [对话模式规格](prd/DIALOGUE_MODE_SPECIFICATION.md) | 对话模式详细说明 | P1 | ✅ 100% |
+| [对话模式规格](prd/2-baseline/4-hybrid-modules/Conversation-Mode-PRD.md) | 对话模式详细说明 | P1 | ✅ 100% |
 
-**统计**: PRD文档共17个文件，总计约**18,000+行**，覆盖产品、功能、Agent、混合模块、非功能需求5大类
+**统计**: PRD文档覆盖产品、功能、Agent、混合模块、非功能需求等类别
 
 ---
 

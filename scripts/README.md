@@ -162,9 +162,9 @@ chmod +x scripts/setup-docker-mirror.sh
 
 ## 📚 相关文档
 
-- [Docker 部署指南](../docs/DOCKER_GUIDE.md)
-- [快速启动指南](../QUICK_START.md)
-- [生产就绪状态](../PRODUCTION_READINESS_STATUS.md)
+- [部署文档索引](../docs/deployment/README.md)
+- [快速开始](../docs/QUICK_START.md)
+- [生产就绪检查](../docs/PRODUCTION_AUDIT.md)
 
 ---
 

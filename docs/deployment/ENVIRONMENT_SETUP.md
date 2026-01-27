@@ -1287,8 +1287,8 @@ kubectl logs agent-<pod-id> -n after-sales-dev
 ## 📞 相关文档
 
 - [部署指南](./DEPLOYMENT_GUIDE.md) - 完整部署流程
-- [数据库迁移](./DATABASE_MIGRATION.md) - TypeORM迁移
-- [CI/CD流水线](./CI_CD_PIPELINE.md) - 自动化部署
+- 数据库迁移（待补充，见[部署文档索引](./README.md)）
+- CI/CD流水线（待补充，见[部署文档索引](./README.md)）
 - [故障排查指南](../operations/TROUBLESHOOTING_GUIDE.md) - 常见问题解决
 
 ---

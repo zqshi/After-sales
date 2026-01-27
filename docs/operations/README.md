@@ -205,7 +205,7 @@
 
 - [非功能需求PRD](../prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md) - 可用性、性能要求
 - [部署文档](../deployment/) - 部署相关
-- [监控告警配置](../deployment/MONITORING_SETUP.md) - 监控配置(待创建)
+- [监控告警配置](./MONITORING_SETUP.md) - 监控配置
 
 ---
 

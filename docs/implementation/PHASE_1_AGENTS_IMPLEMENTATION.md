@@ -1113,9 +1113,9 @@ InspectorAgent执行质检
 
 ## 📚 九、相关文档
 
-- [AGENT_ARCHITECTURE_DESIGN.md](./AGENT_ARCHITECTURE_DESIGN.md) - 架构设计文档
-- [PHASE_2_QUALITY_INSPECTION.md](./PHASE_2_QUALITY_INSPECTION.md) - Phase 2实施报告
-- [API_REFERENCE.md](./API_REFERENCE.md) - AgentScope API文档
+- [AGENT_ARCHITECTURE_DESIGN.md](../architecture/AGENT_ARCHITECTURE_DESIGN.md) - 架构设计文档
+- [PHASE_2_QUALITY_INSPECTION.md](../implementation/PHASE_2_QUALITY_INSPECTION.md) - Phase 2实施报告
+- [API_REFERENCE.md](../api/API_REFERENCE.md) - AgentScope API文档
 
 ---
 

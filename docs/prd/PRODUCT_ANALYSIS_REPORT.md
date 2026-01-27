@@ -1263,7 +1263,7 @@ v2.0: 架构重构，生产级部署，商业化推广
 - [报表中心PRD](./2-baseline/2-features/2.4-Report-Center-PRD.md)
 - [需求检测PRD](./2-baseline/2-features/2.5-Requirement-Detection-PRD.md)
 - [质检系统PRD](./2-baseline/2-features/2.6-Quality-Inspection-PRD.md)
-- [工具箱PRD](./2-baseline/2-features/2.7-Toolbox-PRD.md)
+- [工具箱PRD](./2-baseline/2-features/2.7-Toolbox-PRD（参考）.md)
 - [UI布局PRD](./2-baseline/2-features/2.8-UI-Layout-PRD.md)
 
 ---

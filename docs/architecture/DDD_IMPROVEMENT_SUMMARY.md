@@ -1052,7 +1052,7 @@ backend/src/
 
 /根目录/
 ├── DDD_IMPROVEMENT_SUMMARY.md ✅
-└── QUICK_START.md ✅
+└── docs/QUICK_START.md ✅
 ```
 
 ### 修改文件（8个）

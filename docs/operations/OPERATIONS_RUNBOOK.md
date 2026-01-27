@@ -432,7 +432,7 @@ kubectl delete pod redis-0 -n after-sales-prod
 
 - [部署指南](../deployment/DEPLOYMENT_GUIDE.md) - 部署流程
 - [故障排查指南](./TROUBLESHOOTING_GUIDE.md) - 常见问题排查
-- [监控告警配置](../deployment/MONITORING_SETUP.md) - 监控配置
+- [监控告警配置](./MONITORING_SETUP.md) - 监控配置
 
 ---
 

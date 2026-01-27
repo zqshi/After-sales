@@ -179,7 +179,7 @@
 
 ### 文档文件
 
-1. `QUICK_START.md` - 快速启动指南
+1. `docs/QUICK_START.md` - 快速启动指南
 2. `DEPLOYMENT_CHECKLIST.md` - 部署检查清单
 3. `INTEGRATION_GUIDE.md` - 功能集成指南
 4. `DELIVERY_REPORT.md` - 项目交付报告（本文件）
@@ -349,7 +349,7 @@
 
 ### 文档索引
 
-- **QUICK_START.md** - 快速启动指南
+- **docs/QUICK_START.md** - 快速启动指南
 - **BUSINESS_MODEL_CORRECTION.md** - 业务模式修正说明（必读！）
 - **INTEGRATION_GUIDE.md** - 功能集成指南
 - **DEPLOYMENT_CHECKLIST.md** - 部署检查清单
