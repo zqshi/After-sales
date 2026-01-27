@@ -49,35 +49,36 @@
 
 ## 2. 单元测试
 
-### 2.1 Backend单元测试 (Jest + NestJS)
+### 2.1 Backend单元测试 (Vitest + Fastify)
 
 ```typescript
-// conversation.service.spec.ts
-describe('ConversationService', () => {
+// conversation.usecase.spec.ts
+import { describe, it, expect, vi } from 'vitest';
+
+describe('GetConversationUseCase', () => {
   it('应该返回单个对话', async () => {
-    const mockConversation = {
-      id: '1',
-      customerId: '123',
-      status: 'active',
+    const repo = {
+      findById: vi.fn().mockResolvedValue({ id: '1', customerId: '123', status: 'active' }),
     };
+    const useCase = new GetConversationUseCase(repo as any);
 
-    mockRepository.findOne.mockResolvedValue(mockConversation);
-    const result = await service.findOne('1');
+    const result = await useCase.execute({ id: '1' }, { userId: 'u1' });
 
-    expect(result).toEqual(mockConversation);
+    expect(result.id).toBe('1');
   });
 });
 ```
 
-### 2.2 Frontend单元测试 (Jest + React Testing Library)
+### 2.2 Frontend单元测试 (Vitest + JSDOM)
 
 ```typescript
-// ConversationList.test.tsx
-it('应该渲染对话列表', async () => {
-  render(<ConversationList />, { wrapper });
+// conversation-list.test.ts
+import { describe, it, expect } from 'vitest';
 
-  await waitFor(() => {
-    expect(screen.getByText('张三')).toBeInTheDocument();
+describe('ConversationList', () => {
+  it('应该渲染对话列表', () => {
+    document.body.innerHTML = '<ul id=\"list\"><li>张三</li></ul>';
+    expect(document.querySelector('#list')?.textContent).toContain('张三');
   });
 });
 ```
@@ -103,16 +104,16 @@ async def test_intent_recognition_fault(orchestrator):
 ### 3.1 API集成测试
 
 ```typescript
-// conversation.e2e-spec.ts
-describe('GET /conversations', () => {
-  it('应该返回对话列表', () => {
-    return request(app.getHttpServer())
-      .get('/conversations')
-      .set('Authorization', `Bearer ${authToken}`)
-      .expect(200)
-      .expect((res) => {
-        expect(Array.isArray(res.body.data)).toBe(true);
-      });
+// conversation.integration.spec.ts
+describe('GET /api/v1/conversations', () => {
+  it('应该返回对话列表', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/conversations',
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
+
+    expect(response.statusCode).toBe(200);
   });
 });
 ```

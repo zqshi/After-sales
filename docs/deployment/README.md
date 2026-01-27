@@ -12,9 +12,9 @@
 |------|------|------|--------|
 | `DEPLOYMENT_GUIDE.md` | ⚠️需对齐 | 部署指南(Docker/K8s) | P0 |
 | `ENVIRONMENT_SETUP.md` | ⚠️需对齐 | 环境配置(dev/staging/prod) | P0 |
-| `DATABASE_MIGRATION.md` | 🚧待创建 | 数据库迁移指南 | P0 |
-| `CI_CD_PIPELINE.md` | 🚧待创建 | CI/CD流水线配置 | P1 |
-| `MONITORING_SETUP.md` | 🚧待创建 | 监控告警配置 | P1 |
+| `DATABASE_MIGRATION.md` | ✅已完成 | 数据库迁移指南 | P0 |
+| `CI_CD_PIPELINE.md` | ✅已完成 | CI/CD流水线配置 | P1 |
+| `MONITORING_SETUP.md` | ✅已完成 | 监控告警配置 | P1 |
 | `BACKUP_RECOVERY.md` | 🚧待创建 | 备份与恢复流程 | P1 |
 
 ---

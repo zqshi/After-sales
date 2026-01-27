@@ -221,7 +221,7 @@ SENTRY_DSN=
 
 ```bash
 cd agentscope-service
-cp .env.example .env
+# 本仓库不提供 .env.example，请按下方示例手动创建 .env
 ```
 
 **编辑`.env`**:
@@ -233,7 +233,7 @@ DEEPSEEK_MODEL=deepseek-chat
 
 # 后端服务配置
 NODE_BACKEND_URL=http://localhost:8080
-BACKEND_EVENT_BRIDGE_PATH=/api/events/agent
+BACKEND_EVENT_BRIDGE_PATH=/agentscope/events
 BACKEND_EVENT_BRIDGE_TIMEOUT=10
 
 # 服务配置

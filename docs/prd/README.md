@@ -92,7 +92,7 @@ prd/
 - 产品定位: 智能售后工作台(AI + 人工协同)
 - 目标用户: 客服、团队经理、质检专员
 - 核心价值: 效率提升50% + 质量提升15% + 成本节省30%
-- 技术架构: AgentScope Multi-Agent + NestJS + PostgreSQL
+- 技术架构: AgentScope Multi-Agent + Fastify + PostgreSQL
 - 核心功能: 对话管理、客户管理、知识库、质检、任务、报表
 
 ---

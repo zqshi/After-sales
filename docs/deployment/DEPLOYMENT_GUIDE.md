@@ -1357,8 +1357,8 @@ curl -v https://api.after-sales.example.com
 ## 📞 相关文档
 
 - [环境配置文档](./ENVIRONMENT_SETUP.md) - 各环境配置详情
-- 数据库迁移文档（待补充，见[部署文档索引](./README.md)）
-- CI/CD流水线文档（待补充，见[部署文档索引](./README.md)）
+- [数据库迁移文档](./DATABASE_MIGRATION.md) - TypeORM迁移指南
+- [CI/CD流水线文档](./CI_CD_PIPELINE.md) - 自动化部署
 - [监控告警文档](../operations/MONITORING_SETUP.md) - Prometheus配置
 - [运维手册](../operations/OPERATIONS_RUNBOOK.md) - 日常运维
 

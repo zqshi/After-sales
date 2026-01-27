@@ -1,6 +1,6 @@
 # 🚀 快速开始指南
 
-本指南帮助你在5分钟内启动项目并验证所有功能。
+本指南帮助你在5分钟内启动项目并验证所有功能（本地开发模式）。
 
 ---
 
@@ -40,11 +40,12 @@ cp .env.example .env
 
 ```bash
 # 方式1：使用自动化脚本（推荐）
-chmod +x scripts/setup-test-db.sh
-./scripts/setup-test-db.sh
+chmod +x backend/scripts/setup-test-db.sh
+backend/scripts/setup-test-db.sh
 
 # 方式2：手动创建
 createdb aftersales
+cd backend
 npm run migration:run
 ```
 
@@ -134,7 +135,7 @@ curl -X POST http://localhost:8080/api/v1/api/tasks \
 
 按照 `INTEGRATION_GUIDE.md` 将新功能集成到主应用：
 
-1. 在 `src/app.ts` 中注册WebSocket服务
+1. 在 `backend/src/app.ts` 中注册WebSocket服务
 2. 初始化IM服务管理器
 3. 配置任务智能分配
 4. 注册Swagger文档
@@ -154,9 +155,9 @@ npm run test:coverage
 
 ### 查看文档
 
-- `DEPLOYMENT_CHECKLIST.md` - 完整的部署检查清单
-- `INTEGRATION_GUIDE.md` - 详细的功能集成指南
-- `DELIVERY_REPORT.md` - 项目交付报告
+- `docs/deployment/DEPLOYMENT_CHECKLIST.md` - 完整的部署检查清单
+- `docs/development/INTEGRATION_GUIDE.md` - 详细的功能集成指南
+- `docs/DELIVERY_REPORT.md` - 项目交付报告
 
 ---
 
