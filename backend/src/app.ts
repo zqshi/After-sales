@@ -34,6 +34,7 @@ import { GetRequirementStatisticsUseCase } from './application/use-cases/require
 import { RequirementRepository } from './infrastructure/repositories/RequirementRepository';
 import { ProblemRepository } from './infrastructure/repositories/ProblemRepository';
 import { ReviewRequestRepository } from './infrastructure/repositories/ReviewRequestRepository';
+import { ReviewRequestStream } from './infrastructure/reviews/ReviewRequestStream';
 import { TaskController } from './presentation/http/controllers/TaskController';
 import { taskRoutes } from './presentation/http/routes/taskRoutes';
 import { CreateTaskUseCase } from './application/use-cases/task/CreateTaskUseCase';
@@ -536,6 +537,7 @@ export async function createApp(
     requirementRepository,
   );
   const problemResolvedEventHandler = new ProblemResolvedEventHandler(qualityReportRepository);
+  const reviewRequestStream = ReviewRequestStream.getInstance();
 
   // 订阅事件
   eventBus.subscribe('TaskCompleted', (event) => taskCompletedEventHandler.handle(event as any));
@@ -548,6 +550,18 @@ export async function createApp(
   eventBus.subscribe('ProblemResolved', (event) =>
     problemResolvedEventHandler.handle(event as any),
   );
+  eventBus.subscribe('AgentReviewRequested', (event) => {
+    const payload = (event as any).payload;
+    reviewRequestStream.emitRequested({
+      reviewId: payload.reviewId,
+      conversationId: payload.conversationId,
+      suggestion: payload.suggestion,
+      confidence: payload.confidence,
+      createdAt: payload.createdAt instanceof Date
+        ? payload.createdAt.toISOString()
+        : payload.createdAt,
+    });
+  });
   eventBus.subscribe('ConversationClosed', (event) =>
     conversationTaskCoordinator.onConversationClosed(event as any),
   );

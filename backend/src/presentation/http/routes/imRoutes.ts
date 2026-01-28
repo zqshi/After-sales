@@ -215,6 +215,44 @@ export async function imRoutes(
     await controller.getConversationProblems(request, reply);
   });
 
+  /**
+   * @swagger
+   * /api/im/conversations/{id}/status:
+   *   patch:
+   *     tags:
+   *       - IM
+   *     summary: 更新IM会话状态
+   *     description: |
+   *       更新IM会话状态（IM渠道不允许设置为 closed）。
+   *       IM 沟通不关闭，对话内可存在多个问题生命周期。
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - status
+   *             properties:
+   *               status:
+   *                 type: string
+   *                 description: 会话状态
+   *     responses:
+   *       200:
+   *         description: 更新成功
+   *       400:
+   *         description: IM渠道不允许关闭
+   *       404:
+   *         description: 会话不存在
+   *       500:
+   *         description: 服务器内部错误
+   */
   fastify.patch('/im/conversations/:id/status', {
     config: { permissions: ['im.write'] },
   }, async (request, reply) => {

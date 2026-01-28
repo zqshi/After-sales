@@ -5,13 +5,13 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: ['./tests/setup.ts'],
+    setupFiles: ['../tests/backend/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
-        'tests/',
+        '../tests/backend/',
         '**/*.spec.ts',
         '**/*.test.ts',
         '**/dist/**',
@@ -25,7 +25,7 @@ export default defineConfig({
         statements: 80,
       },
     },
-    include: ['tests/**/*.spec.ts'],
+    include: ['../tests/backend/**/*.spec.ts'],
     pool: 'forks',
     poolOptions: {
       forks: {

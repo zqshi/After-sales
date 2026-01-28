@@ -391,6 +391,16 @@ class InspectorAgent(ReActAgent):
         Returns:
             质检报告
         """
+        try:
+            report = await self.mcp_client.call_tool(
+                "inspectConversation",
+                conversationId=conversation_id,
+            )
+            if isinstance(report, dict) and report:
+                return report
+        except Exception:
+            pass
+
         # 1. 获取对话历史
         history = await self.get_conversation_history(conversation_id)
 
@@ -455,3 +465,32 @@ class InspectorAgent(ReActAgent):
         )
 
         return report
+
+    async def generate_report(self, inspection_data: dict[str, Any]) -> dict[str, Any]:
+        """
+        生成质检报告（调用MCP工具）
+
+        Args:
+            inspection_data: 质检数据
+
+        Returns:
+            报告内容
+        """
+        return await self.mcp_client.call_tool(
+            "generateQualityReport",
+            inspection=inspection_data,
+        )
+
+    def should_create_follow_up_task(self, inspection_result: dict[str, Any]) -> bool:
+        """
+        判断是否需要创建跟进任务
+
+        规则：
+        - 质量评分低于0.7
+        - 情感改善为负
+        - 存在问题项
+        """
+        quality_score = float(inspection_result.get("quality_score", 1.0))
+        sentiment_improvement = float(inspection_result.get("sentiment_improvement", 0.0))
+        issues = inspection_result.get("issues") or []
+        return quality_score < 0.7 or sentiment_improvement < 0 or len(issues) > 0

@@ -19,7 +19,7 @@
 | **产品经理** | [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) → [PRD目录](prd/README.md) | 30分钟 |
 | **开发工程师** | [快速开始](QUICK_START.md) → [启动指南](guides/STARTUP_GUIDE.md) → [架构设计](architecture/AGENT_ARCHITECTURE_DESIGN.md) | 1小时 |
 | **架构师** | [产品概述](prd/2-baseline/1-overview/Product-Overview.md) → [架构设计](architecture/AGENT_ARCHITECTURE_DESIGN.md) → [ADR文档](architecture/decision-records/) | 2小时 |
-| **测试工程师** | [启动指南](guides/STARTUP_GUIDE.md) → [测试文档](testing/) → [PRD验收标准](prd/README.md) | 1小时 |
+| **测试工程师** | [启动指南](guides/STARTUP_GUIDE.md) → [测试文档](testing/README.md) → [PRD验收标准](prd/README.md) | 1小时 |
 
 ---
 
@@ -72,7 +72,7 @@ docs/
 │   └── ENVIRONMENT_SETUP.md            # 环境配置指南
 │
 ├── 🧪 测试文档 (testing/)               # 测试策略
-│   └── README.md                       # 测试文档索引(待补充)
+│   └── README.md                       # 测试文档索引
 │
 ├── 🔧 运维文档 (operations/)            # 运维手册
 │   ├── README.md                       # 运维文档索引
@@ -141,7 +141,7 @@ docs/
 
 **必读文档**:
 1. ⭐ [启动指南](guides/STARTUP_GUIDE.md) - 如何运行项目
-2. ⭐ [测试文档目录](testing/README.md) - 测试策略与规范
+2. ⭐ [测试文档目录](testing/README.md) - 测试策略与规范（含自动化落地说明）
 3. [功能PRD验收标准](prd/2-baseline/2-features/) - 各功能验收要求
 4. [非功能需求](prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md) - 性能、安全验收
 5. [API参考](api/API_REFERENCE.md) - API测试参考
@@ -149,6 +149,7 @@ docs/
 **参考文档**:
 - [Agent PRD验收标准](prd/2-baseline/3-agents/) - Agent功能验收
 - [业务流程](prd/BUSINESS_FLOW_DESIGN.md) - E2E测试场景
+ - [项目测试目录](../tests/README.md) - 实际用例与执行入口
 
 ---
 
@@ -219,7 +220,7 @@ docs/
 | [部署指南](deployment/DEPLOYMENT_GUIDE.md) | 详细部署步骤 | P0 | ✅ 已完成 |
 | [部署检查清单](deployment/DEPLOYMENT_CHECKLIST.md) | 部署前检查项 | P0 | ✅ 已完成 |
 | [环境配置](deployment/ENVIRONMENT_SETUP.md) | 环境变量配置 | P0 | ✅ 已完成 |
-| [测试文档目录](testing/README.md) | 测试策略、用例、性能测试 | P0 | 🚧 待补充 |
+| [测试文档目录](testing/README.md) | 测试策略、用例、性能测试 | P0 | ✅ 已落地 |
 | [运维文档目录](operations/README.md) | 运维手册、故障排查 | P0 | ✅ 已完成 |
 | [故障排查指南](operations/TROUBLESHOOTING_GUIDE.md) | 常见问题排查 | P0 | ✅ 已完成 |
 | [监控配置](operations/MONITORING_SETUP.md) | 监控系统配置 | P1 | ✅ 已完成 |
@@ -260,7 +261,7 @@ docs/
 - v1.0目标: API P95 <200ms, 1000+并发用户, 99.95%可用性
 
 ### Q: 项目有哪些技术债务？
-**A**: 查看 [部署文档](deployment/README.md)、[测试文档](testing/README.md)、[运维文档](operations/README.md) 中的待补充清单
+**A**: 查看 [部署文档](deployment/README.md)、[测试文档](testing/README.md)、[运维文档](operations/README.md) 中的检查清单
 
 ---
 
@@ -282,6 +283,7 @@ docs/
 - 运维文档 (6个)
 - 开发文档 (1个)
 - 项目报告 (3个)
+- 测试文档索引 (1个)
 
 #### 🚧 待补充 (3个文档)
 - 测试策略 (TEST_STRATEGY.md)
@@ -302,6 +304,7 @@ docs/
    - 产品需求 → `prd/`
    - 部署运维 → `deployment/`
    - 测试文档 → `testing/`
+   - 测试用例与自动化 → `../tests/`
    - 运维手册 → `operations/`
 
 2. **使用清晰的文件名**:

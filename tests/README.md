@@ -1,6 +1,6 @@
 # After-Sales 测试指南
 
-**测试框架**: Vitest (Backend单元测试) + Bash Scripts (集成测试)
+**测试框架**: Vitest (Backend单元测试) + Playwright (Frontend E2E) + Bash Scripts (集成测试)
 **测试覆盖率目标**: 80%
 **最后更新**: 2025-12-27
 
@@ -21,7 +21,7 @@
 
 ### 1. 集成测试（Integration Tests）
 
-**位置**: `tests/integration/`
+**位置**: `tests/system/`
 
 **目的**: 测试多个服务间的集成流程
 
@@ -30,14 +30,14 @@
 
 **运行方式**:
 ```bash
-./tests/integration/test-quality-inspection.sh
+./tests/system/test-quality-inspection.sh
 ```
 
 ---
 
 ### 2. 单元测试（Unit Tests）
 
-**位置**: `backend/tests/unit/`
+**位置**: `tests/backend/unit/`
 
 **目的**: 测试单个类/函数的逻辑
 
@@ -53,11 +53,18 @@ npm test
 
 ### 3. E2E测试（End-to-End Tests）
 
-**位置**: `tests/e2e/`
+**位置**: `tests/frontend/e2e/`
 
 **目的**: 测试完整的用户流程
 
-**状态**: ⏳ 待实现（Phase 3）
+**状态**: ✅ 已实现（核心业务流程）
+
+**运行方式**:
+```bash
+E2E_BASE_URL=http://localhost:3002 E2E_NO_WEB_SERVER=true npm run test:e2e -- --workers=1
+```
+
+**结果输出**: `tests/test-results/`
 
 ---
 
@@ -87,13 +94,13 @@ redis-cli ping
 
 ```bash
 # 运行集成测试
-./tests/integration/test-quality-inspection.sh
+./tests/system/test-quality-inspection.sh
 
 # 运行Backend单元测试（待补充）
 cd backend && npm test
 
-# 运行Frontend测试（待补充）
-npm test
+# 运行Frontend E2E测试
+E2E_BASE_URL=http://localhost:3002 E2E_NO_WEB_SERVER=true npm run test:e2e -- --workers=1
 ```
 
 ---
@@ -134,10 +141,10 @@ npm test
 **运行**:
 ```bash
 # 默认使用 demo 账号登录（AUTH_EMAIL / AUTH_PASSWORD 可覆盖）
-./tests/integration/test-quality-inspection.sh
+./tests/system/test-quality-inspection.sh
 
 # 或显式传入 Token
-BACKEND_TOKEN=xxx ./tests/integration/test-quality-inspection.sh
+BACKEND_TOKEN=xxx ./tests/system/test-quality-inspection.sh
 ```
 
 **预期输出**:
@@ -203,7 +210,7 @@ Step 6: 验证质检报告
 
 ```bash
 #!/bin/bash
-# tests/integration/test-your-feature.sh
+# tests/system/test-your-feature.sh
 
 set -e
 
@@ -224,7 +231,7 @@ echo -e "${GREEN}测试通过${NC}"
 
 **添加执行权限**:
 ```bash
-chmod +x tests/integration/test-your-feature.sh
+chmod +x tests/system/test-your-feature.sh
 ```
 
 ---
@@ -258,7 +265,7 @@ npm run test:coverage
 
 **测试示例**:
 ```typescript
-// backend/tests/unit/domain/Conversation.test.ts
+// tests/backend/unit/domain/Conversation.test.ts
 import { describe, it, expect } from 'vitest';
 import { Conversation } from '@/domain/aggregates/Conversation';
 
@@ -497,7 +504,7 @@ jobs:
       - name: Run Integration tests
         run: |
           docker-compose up -d
-          ./tests/integration/test-quality-inspection.sh
+          ./tests/system/test-quality-inspection.sh
 ```
 
 ---
@@ -517,9 +524,13 @@ jobs:
 - [ ] MCP工具测试
 
 **E2E测试**:
-- [ ] 完整对话流程测试
-- [ ] 质检流程测试
-- [ ] 多场景测试
+- [x] 登录/鉴权流程
+- [x] Dock 与 Workspace 导航
+- [x] 权限入口控制
+- [x] 对话列表/筛选/消息发送
+- [x] 知识库文档/FAQ 渲染
+- [ ] 质检流程联动可视化
+- [ ] 报表/任务/需求全流程
 
 **压力测试**:
 - [ ] 1000并发对话测试

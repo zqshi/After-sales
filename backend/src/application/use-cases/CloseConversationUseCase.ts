@@ -53,6 +53,10 @@ export class CloseConversationUseCase {
       throw new Error(`Conversation not found: ${validatedRequest.conversationId}`);
     }
 
+    if (['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
+      throw new Error('IM渠道不支持关闭对话操作，请使用问题生命周期管理');
+    }
+
     // 3. 执行领域逻辑
     const resolution = validatedRequest.reason || `Closed by ${validatedRequest.closedBy}`;
     conversation.close(resolution);

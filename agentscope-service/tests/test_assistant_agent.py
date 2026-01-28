@@ -123,6 +123,7 @@ class TestAnalyzeSentiment:
         msg = Msg(
             name="user",
             content="你们系统怎么这么烂！",
+            role="user",
             metadata={"conversationId": "conv-123"},
         )
         expected_result = {
@@ -155,6 +156,7 @@ class TestAnalyzeSentiment:
         msg = Msg(
             name="user",
             content="测试消息",
+            role="user",
             metadata={"conversationId": "conv-123"},
         )
         mock_mcp_client.call_tool.side_effect = Exception("MCP调用失败")
@@ -174,7 +176,7 @@ class TestAnalyzeSentiment:
         mock_mcp_client: BackendMCPClient,
     ) -> None:
         """测试没有conversationId时使用msg.id"""
-        msg = Msg(name="user", content="测试", metadata={})
+        msg = Msg(name="user", content="测试", role="user", metadata={})
         msg.id = "msg-456"
         mock_mcp_client.call_tool.return_value = {"sentiment": "neutral"}
 
@@ -309,6 +311,7 @@ class TestPrefetchContext:
         msg = Msg(
             name="user",
             content="测试消息",
+            role="user",
             metadata={"customerId": "cust-123"},
         )
 
@@ -337,6 +340,7 @@ class TestPrefetchContext:
         msg = Msg(
             name="user",
             content="测试消息",
+            role="user",
             metadata={"customerId": "cust-123"},
         )
 

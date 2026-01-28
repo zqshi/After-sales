@@ -77,12 +77,24 @@ export class Task extends AggregateRoot<TaskProps> {
     return this.props.title;
   }
 
+  get type(): string | undefined {
+    return this.props.type;
+  }
+
   get status(): TaskStatus {
     return this.props.status;
   }
 
   get assigneeId(): string | undefined {
     return this.props.assigneeId;
+  }
+
+  get conversationId(): string | undefined {
+    return this.props.conversationId;
+  }
+
+  get requirementId(): string | undefined {
+    return this.props.requirementId;
   }
 
   get priority(): TaskPriority {

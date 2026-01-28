@@ -50,6 +50,31 @@ import { EventSubscriptionManager } from './application/eventHandlers/EventSubsc
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+    if (!window.config?.authToken) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${window.config.apiBaseUrl}/api/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${window.config.authToken}`,
+        },
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'unauthorized');
+      }
+      localStorage.setItem('authUser', JSON.stringify(result.data));
+      window.config.userId = result.data.id || null;
+      window.config.userRole = result.data.role || null;
+    } catch (_error) {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authUser');
+      window.location.href = 'index.html';
+      return;
+    }
+
     console.log('[Main] ========== 应用启动 ==========');
 
     // 1. 初始化DI容器（必须在其他初始化之前完成）

@@ -20,10 +20,10 @@ export class TaskResponseDTO {
     const dto = new TaskResponseDTO();
     dto.id = task.id;
     dto.title = task.title;
-    dto.type = task.metadata?.type as string | undefined;
+    dto.type = task.type;
     dto.assigneeId = task.assigneeId;
-    dto.conversationId = task.metadata?.conversationId as string | undefined;
-    dto.requirementId = task.metadata?.requirementId as string | undefined;
+    dto.conversationId = task.conversationId;
+    dto.requirementId = task.requirementId;
     dto.status = task.status;
     dto.priority = task.priority.value;
     dto.dueDate = task.dueDate?.toISOString();

@@ -178,7 +178,7 @@ class OrchestratorAgent:
         # 投诉关键词
         complaint_keywords = [
             "投诉", "不满意", "差评", "要求退款", "退款",
-            "质量差", "服务差", "欺骗"
+            "质量差", "服务差", "太差", "服务太差", "欺骗"
         ]
 
         # 检查故障场景
@@ -388,6 +388,7 @@ class OrchestratorAgent:
             min_confidence = 0.0
 
         # 生成聚合消息
+        metadata = original_msg.metadata or {}
         return Msg(
             name="Orchestrator",
             content=final_reply,
@@ -397,8 +398,8 @@ class OrchestratorAgent:
                 "confidence": min_confidence,
                 "mode": "agent_auto",
                 "execution_mode": "parallel",
-                "conversation_id": original_msg.metadata.get("conversationId"),
-                "customer_id": original_msg.metadata.get("customerId")
+                "conversation_id": metadata.get("conversationId"),
+                "customer_id": metadata.get("customerId")
             }
         )
 

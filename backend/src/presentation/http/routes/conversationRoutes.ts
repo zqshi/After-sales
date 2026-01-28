@@ -226,6 +226,8 @@ export async function conversationRoutes(
    *     tags:
    *       - Conversations
    *     summary: 关闭对话
+   *     description: |
+   *       非IM渠道可关闭对话。IM渠道（企微/飞书/钉钉）不允许关闭，会返回 400。
    *     parameters:
    *       - name: id
    *         in: path
@@ -248,6 +250,8 @@ export async function conversationRoutes(
    *     responses:
    *       200:
    *         description: 对话关闭成功
+   *       400:
+   *         description: IM渠道不支持关闭对话
    *       404:
    *         description: 对话不存在
    */

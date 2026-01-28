@@ -468,7 +468,7 @@ export class ConversationTaskCoordinator {
       // 1. 获取对话历史
       const conversation = await this.conversationRepository.findById(conversationId);
       const conversationHistory = conversation?.messages?.map((msg: any) => ({
-        role: msg.senderType === 'external' ? 'customer' : 'agent',
+        role: msg.senderType === 'customer' ? 'customer' : 'agent',
         content: msg.content,
       })) || [];
 

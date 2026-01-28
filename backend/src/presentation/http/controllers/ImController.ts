@@ -35,6 +35,7 @@ import { CustomerProfileRepository } from '@infrastructure/repositories/Customer
 import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { WorkflowRegistry } from '@infrastructure/workflow/WorkflowRegistry';
+import { ReviewRequestStream } from '@infrastructure/reviews/ReviewRequestStream';
 
 interface IncomingMessageRequest {
   customerId: string;
@@ -92,16 +93,18 @@ export class ImController {
 
       // 3. 分析单条消息的情绪（支持多轮对话上下文）
       let conversationHistory: Array<{ role: string; content: string }> = [];
+      let conversationForResponse: Conversation | null = null;
       try {
         // 获取对话历史用于情绪趋势分析
         const conversation = await this.conversationRepository.findById(
           processingResult.conversationId,
         );
+        conversationForResponse = conversation;
         if (conversation?.messages) {
           conversationHistory = conversation.messages
             .slice(-5) // 只取最近5条
             .map((msg: any) => ({
-              role: msg.senderType === 'external' ? 'customer' : 'agent',
+              role: msg.senderType === 'customer' ? 'customer' : 'agent',
               content: msg.content,
             }));
         }
@@ -206,12 +209,16 @@ export class ImController {
       }
 
       // 6. 组装完整响应
+      const lastMessage =
+        conversationForResponse?.messages
+          ?.slice()
+          .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime())[0] || null;
       const response = {
         success: true,
         data: {
           conversationId: processingResult.conversationId,
           message: {
-            id: uuidv4(),
+            id: lastMessage?.id || uuidv4(),
             content: body.content,
             sentiment: {
               emotion: sentiment.overallSentiment,
@@ -1027,7 +1034,25 @@ export class ImController {
     try {
       const engine = WorkflowRegistry.getWorkflowEngine();
       if (!engine) {
-        reply.code(200).send({ success: true, data: { pending: [] } });
+        const pendingReviews = await this.reviewRequestRepository.findByFilters(
+          { status: 'pending' },
+          { limit: 50, offset: 0 },
+        );
+        reply.code(200).send({
+          success: true,
+          data: {
+            pending: pendingReviews.map((review) => ({
+              reviewId: review.id,
+              conversationId: review.conversationId,
+              status: review.status,
+              suggestion: review.suggestion,
+              confidence: review.confidence,
+              createdAt: review.createdAt.toISOString(),
+              updatedAt: review.updatedAt.toISOString(),
+              resolvedAt: review.resolvedAt?.toISOString(),
+            })),
+          },
+        });
         return;
       }
       const pending = engine.getPendingHumanReviews();
@@ -1062,10 +1087,7 @@ export class ImController {
     reply: FastifyReply,
   ): Promise<void> {
     const engine = WorkflowRegistry.getWorkflowEngine();
-    if (!engine) {
-      reply.code(204).send();
-      return;
-    }
+    const reviewStream = ReviewRequestStream.getInstance();
 
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache');
@@ -1088,7 +1110,23 @@ export class ImController {
       });
     };
 
-    engine.on('human_review_requested', listener);
+    if (engine) {
+      engine.on('human_review_requested', listener);
+    }
+
+    const reviewListener = (event: any) => {
+      sendEvent({
+        reviewId: event.reviewId,
+        conversationId: event.conversationId,
+        suggestion: event.suggestion,
+        confidence: event.confidence,
+        createdAt: event.createdAt instanceof Date
+          ? event.createdAt.toISOString()
+          : event.createdAt,
+      });
+    };
+
+    reviewStream.onRequested(reviewListener);
 
     const keepAlive = setInterval(() => {
       reply.raw.write(`event: ping\ndata: {}\n\n`);
@@ -1096,6 +1134,10 @@ export class ImController {
 
     request.raw.on('close', () => {
       clearInterval(keepAlive);
+      reviewStream.offRequested(reviewListener);
+      if (engine) {
+        (engine as any).off?.('human_review_requested', listener);
+      }
       reply.raw.end();
     });
   }
@@ -1162,6 +1204,13 @@ export class ImController {
         return reply.code(404).send({
           success: false,
           error: '会话不存在',
+        });
+      }
+
+      if (body.status === 'closed' && ['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
+        return reply.code(400).send({
+          success: false,
+          error: 'IM渠道不支持关闭会话，请使用问题生命周期管理',
         });
       }
 

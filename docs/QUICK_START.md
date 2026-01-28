@@ -143,14 +143,22 @@ curl -X POST http://localhost:8080/api/v1/api/tasks \
 ### 运行测试
 
 ```bash
-# 单元测试
+# Backend 单元测试
+cd backend
 npm run test:unit
 
-# 集成测试
+# Backend 集成测试
 npm run test:integration
 
-# 测试覆盖率
+# Backend 覆盖率
 npm run test:coverage
+
+# 系统集成测试
+cd ..
+./tests/system/test-quality-inspection.sh
+
+# 前端 E2E 测试
+E2E_BASE_URL=http://localhost:3002 E2E_NO_WEB_SERVER=true npm run test:e2e -- --workers=1
 ```
 
 ### 查看文档

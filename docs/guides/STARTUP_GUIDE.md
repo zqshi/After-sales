@@ -517,7 +517,7 @@ open http://localhost:3000
 
 **端到端质检流程测试**:
 ```bash
-./test-quality-inspection.sh
+./tests/system/test-quality-inspection.sh
 ```
 
 **预期输出**:
@@ -667,7 +667,7 @@ cd backend && npm run migration:run && cd ..
 # Terminal 3: npm run dev
 
 # 5. 开发完成后运行测试
-./test-quality-inspection.sh
+./tests/system/test-quality-inspection.sh
 ```
 
 ---
@@ -894,7 +894,7 @@ npm run migration:revert       # 回滚迁移
 
 # 测试
 npm test                       # 运行测试
-./test-quality-inspection.sh   # 质检流程测试
+./tests/system/test-quality-inspection.sh   # 质检流程测试
 
 # 构建
 npm run build                  # 构建所有

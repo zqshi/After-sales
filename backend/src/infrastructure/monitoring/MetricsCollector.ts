@@ -171,156 +171,166 @@ export class MetricsCollector {
   private dbQueryDuration: Histogram<string>;
 
   constructor() {
+    const getOrCreate = <T extends Counter<string> | Histogram<string> | Gauge<string> | Summary<string>>(
+      name: string,
+      factory: () => T,
+    ): T => {
+      const existing = register.getSingleMetric(name) as T | undefined;
+      return existing ?? factory();
+    };
+
     // 初始化Agent指标
-    this.agentCalls = new Counter({
+    this.agentCalls = getOrCreate('agent_calls_total', () => new Counter({
       name: 'agent_calls_total',
       help: 'Total number of agent calls',
       labelNames: ['agent_name', 'status'],
-    });
+    }));
 
-    this.agentDuration = new Histogram({
+    this.agentDuration = getOrCreate('agent_duration_seconds', () => new Histogram({
       name: 'agent_duration_seconds',
       help: 'Agent response duration in seconds',
       labelNames: ['agent_name'],
       buckets: [0.1, 0.5, 1, 2, 5, 10],
-    });
+    }));
 
-    this.agentSuccessRate = new Summary({
+    this.agentSuccessRate = getOrCreate('agent_success_rate', () => new Summary({
       name: 'agent_success_rate',
       help: 'Agent call success rate',
       labelNames: ['agent_name'],
       percentiles: [0.5, 0.9, 0.95, 0.99],
-    });
+    }));
 
-    this.agentConfidence = new Histogram({
+    this.agentConfidence = getOrCreate('agent_confidence', () => new Histogram({
       name: 'agent_confidence',
       help: 'Agent confidence score distribution',
       labelNames: ['agent_name'],
       buckets: [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1.0],
-    });
+    }));
 
     // 初始化工作流指标
-    this.workflowExecutions = new Counter({
+    this.workflowExecutions = getOrCreate('workflow_executions_total', () => new Counter({
       name: 'workflow_executions_total',
       help: 'Total workflow executions',
       labelNames: ['workflow_name', 'status'],
-    });
+    }));
 
-    this.workflowDuration = new Histogram({
+    this.workflowDuration = getOrCreate('workflow_duration_seconds', () => new Histogram({
       name: 'workflow_duration_seconds',
       help: 'Workflow execution duration in seconds',
       labelNames: ['workflow_name'],
       buckets: [1, 5, 10, 30, 60, 120],
-    });
+    }));
 
-    this.workflowSteps = new Counter({
+    this.workflowSteps = getOrCreate('workflow_steps_total', () => new Counter({
       name: 'workflow_steps_total',
       help: 'Total workflow steps executed',
       labelNames: ['workflow_name', 'step_name', 'status'],
-    });
+    }));
 
-    this.humanReviews = new Counter({
+    this.humanReviews = getOrCreate('workflow_human_reviews_total', () => new Counter({
       name: 'workflow_human_reviews_total',
       help: 'Total human reviews in workflows',
       labelNames: ['workflow_name', 'action'],
-    });
+    }));
 
     // 初始化Task指标
-    this.tasksByStatus = new Gauge({
+    this.tasksByStatus = getOrCreate('tasks_by_status', () => new Gauge({
       name: 'tasks_by_status',
       help: 'Number of tasks by status',
       labelNames: ['status'],
-    });
+    }));
 
-    this.taskCreated = new Counter({
+    this.taskCreated = getOrCreate('tasks_created_total', () => new Counter({
       name: 'tasks_created_total',
       help: 'Total tasks created',
       labelNames: ['priority'],
-    });
+    }));
 
-    this.taskCompletionTime = new Histogram({
+    this.taskCompletionTime = getOrCreate('task_completion_time_hours', () => new Histogram({
       name: 'task_completion_time_hours',
       help: 'Task completion time in hours',
       labelNames: ['priority'],
       buckets: [1, 4, 8, 24, 72, 168],
-    });
+    }));
 
-    this.taskQualityScore = new Histogram({
+    this.taskQualityScore = getOrCreate('task_quality_score', () => new Histogram({
       name: 'task_quality_score',
       help: 'Task quality score distribution',
       labelNames: ['assignee'],
       buckets: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    });
+    }));
 
     // 初始化Conversation指标
-    this.conversationsByStatus = new Gauge({
+    this.conversationsByStatus = getOrCreate('conversations_by_status', () => new Gauge({
       name: 'conversations_by_status',
       help: 'Number of conversations by status',
       labelNames: ['status'],
-    });
+    }));
 
-    this.conversationCreated = new Counter({
+    this.conversationCreated = getOrCreate('conversations_created_total', () => new Counter({
       name: 'conversations_created_total',
       help: 'Total conversations created',
       labelNames: ['channel'],
-    });
+    }));
 
-    this.conversationDuration = new Histogram({
+    this.conversationDuration = getOrCreate('conversation_duration_minutes', () => new Histogram({
       name: 'conversation_duration_minutes',
       help: 'Conversation duration in minutes',
       labelNames: ['channel'],
       buckets: [5, 15, 30, 60, 240, 1440],
-    });
+    }));
 
-    this.slaViolations = new Counter({
+    this.slaViolations = getOrCreate('sla_violations_total', () => new Counter({
       name: 'sla_violations_total',
       help: 'Total 客户等级 violations',
       labelNames: ['severity'],
-    });
+    }));
 
-    this.customerSatisfaction = new Histogram({
+    this.customerSatisfaction = getOrCreate('customer_satisfaction_score', () => new Histogram({
       name: 'customer_satisfaction_score',
       help: 'Customer satisfaction score distribution',
       labelNames: ['channel'],
       buckets: [1, 2, 3, 4, 5],
-    });
+    }));
 
     // 初始化Requirement指标
-    this.requirementCreated = new Counter({
+    this.requirementCreated = getOrCreate('requirements_created_total', () => new Counter({
       name: 'requirements_created_total',
       help: 'Total requirements created',
       labelNames: ['category', 'priority'],
-    });
+    }));
 
-    this.requirementsByStatus = new Gauge({
+    this.requirementsByStatus = getOrCreate('requirements_by_status', () => new Gauge({
       name: 'requirements_by_status',
       help: 'Number of requirements by status',
       labelNames: ['status'],
-    });
+    }));
 
     // 初始化系统指标
-    this.httpRequests = new Counter({
+    this.httpRequests = getOrCreate('http_requests_total', () => new Counter({
       name: 'http_requests_total',
       help: 'Total HTTP requests',
       labelNames: ['method', 'route', 'status_code'],
-    });
+    }));
 
-    this.httpDuration = new Histogram({
+    this.httpDuration = getOrCreate('http_request_duration_seconds', () => new Histogram({
       name: 'http_request_duration_seconds',
       help: 'HTTP request duration in seconds',
       labelNames: ['method', 'route'],
       buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
-    });
+    }));
 
-    this.dbQueryDuration = new Histogram({
+    this.dbQueryDuration = getOrCreate('db_query_duration_seconds', () => new Histogram({
       name: 'db_query_duration_seconds',
       help: 'Database query duration in seconds',
       labelNames: ['operation'],
       buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1],
-    });
+    }));
 
     // 收集Node.js默认指标（CPU、内存、GC等）
-    collectDefaultMetrics({ register });
+    if (!register.getSingleMetric('process_cpu_user_seconds_total')) {
+      collectDefaultMetrics({ register });
+    }
 
     console.log('[MetricsCollector] Initialized with Prometheus metrics');
   }
