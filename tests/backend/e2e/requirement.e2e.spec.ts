@@ -9,17 +9,22 @@ import { Requirement } from '../../src/domain/requirement/models/Requirement';
 import { Priority } from '../../src/domain/requirement/value-objects/Priority';
 import { RequirementSource } from '../../src/domain/requirement/value-objects/RequirementSource';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
+const API_PREFIX = '/api/v1/api';
 
 describeWithDb('Requirement API E2E Tests', () => {
   let app: FastifyInstance;
+  let authHeaders: Record<string, string>;
   let dataSource: DataSource;
   let repository: RequirementRepository;
   let requirementId: string;
 
+  const withAuth = (options: Parameters<FastifyInstance['inject']>[0]) => app.inject({ ...options, headers: authHeaders });
   beforeAll(async () => {
     dataSource = await getTestDataSource();
     app = await createApp(dataSource);
     await app.ready();
+    const token = app.jwt.sign({ sub: 'AGENT-REQ-001', role: 'admin' });
+    authHeaders = { Authorization: `Bearer ${token}` };
   });
 
   beforeEach(async () => {
@@ -32,6 +37,7 @@ describeWithDb('Requirement API E2E Tests', () => {
       category: 'access',
       priority: Priority.create('medium'),
       source: RequirementSource.create('manual'),
+      createdBy: 'AGENT-REQ-001',
     });
 
     await repository.save(requirement);
@@ -44,9 +50,9 @@ describeWithDb('Requirement API E2E Tests', () => {
   });
 
   it('should create requirement via API', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: '/api/requirements',
+      url: `${API_PREFIX}/requirements`,
       payload: {
         customerId: 'CUST-REQ-002',
         title: 'Add dark mode',
@@ -62,9 +68,9 @@ describeWithDb('Requirement API E2E Tests', () => {
   });
 
   it('should list requirements with filters', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'GET',
-      url: `/api/requirements?customerId=CUST-REQ-001&page=1&limit=5`,
+      url: `${API_PREFIX}/requirements?customerId=CUST-REQ-001&page=1&limit=5`,
     });
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
@@ -73,9 +79,9 @@ describeWithDb('Requirement API E2E Tests', () => {
   });
 
   it('should update status', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'PATCH',
-      url: `/api/requirements/${requirementId}/status`,
+      url: `${API_PREFIX}/requirements/${requirementId}/status`,
       payload: {
         status: 'approved',
       },
@@ -87,9 +93,9 @@ describeWithDb('Requirement API E2E Tests', () => {
   });
 
   it('should delete requirement', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'DELETE',
-      url: `/api/requirements/${requirementId}`,
+      url: `${API_PREFIX}/requirements/${requirementId}`,
     });
 
     expect(response.statusCode).toBe(204);

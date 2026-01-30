@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFile } from 'fs/promises';
 import path from 'path';
 
-const fixtureRoot = path.resolve(process.cwd(), 'tests', 'wecom');
+const fixtureRoot = path.resolve(process.cwd(), '..', 'tests', 'wecom');
 
 type GroupChatList = {
   errcode: number;

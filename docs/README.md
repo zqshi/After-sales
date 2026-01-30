@@ -4,7 +4,7 @@
 **技术栈**: AgentScope + Fastify + PostgreSQL + Redis
 **架构模式**: Multi-Agent + DDD + Event-Driven
 **文档版本**: v2.0
-**最后更新**: 2025-12-30
+**最后更新**: 2026-01-30
 
 ---
 
@@ -16,7 +16,7 @@
 
 | 角色 | 推荐路径 | 预计时间 |
 |-----|---------|---------|
-| **产品经理** | [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) → [PRD目录](prd/README.md) | 30分钟 |
+| **产品经理** | [产品分析报告(归档)](_archived/prd/PRODUCT_ANALYSIS_REPORT.md) → [PRD目录](prd/README.md) | 30分钟 |
 | **开发工程师** | [快速开始](QUICK_START.md) → [启动指南](guides/STARTUP_GUIDE.md) → [架构设计](architecture/AGENT_ARCHITECTURE_DESIGN.md) | 1小时 |
 | **架构师** | [产品概述](prd/2-baseline/1-overview/Product-Overview.md) → [架构设计](architecture/AGENT_ARCHITECTURE_DESIGN.md) → [ADR文档](architecture/decision-records/) | 2小时 |
 | **测试工程师** | [启动指南](guides/STARTUP_GUIDE.md) → [测试文档](testing/README.md) → [PRD验收标准](prd/README.md) | 1小时 |
@@ -32,6 +32,8 @@ docs/
 │
 ├── 📋 PRD文档 (prd/)                    # 产品需求文档
 │   ├── README.md                       # PRD导航(必读)
+│   ├── UNIMPLEMENTED_FEATURES_PLAN.md  # 未实现功能清单与落地计划
+│   ├── UNIMPLEMENTED_FEATURES_TASKS.md # 未实现功能落地任务卡
 │   ├── 1-roadmap/                      # 产品路线图
 │   ├── 2-baseline/                     # 基线PRD
 │   │   ├── 1-overview/                 # 产品概述
@@ -52,9 +54,9 @@ docs/
 ├── 🔌 API文档 (api/)                    # API参考文档
 │   └── API_REFERENCE.md                # AgentScope API参考
 │
-├── 📝 实施记录 (implementation/)        # 实施历程文档
-│   ├── PHASE_1_AGENTS_IMPLEMENTATION.md        # Phase 1: Agent实施
-│   └── PHASE_2_QUALITY_INSPECTION.md           # Phase 2: 质检异步化
+├── 📝 实施记录 (_archived/implementation/)        # 归档：实施历程文档
+│   ├── _archived/implementation/PHASE_1_AGENTS_IMPLEMENTATION.md  # 归档：Phase 1实施报告
+│   └── _archived/implementation/PHASE_2_QUALITY_INSPECTION.md     # 归档：Phase 2实施报告
 │
 ├── 📚 使用指南 (guides/)                # 快速入门指南
 │   └── STARTUP_GUIDE.md                # 完整启动指南(30分钟)
@@ -101,7 +103,7 @@ docs/
 5. [Agent PRD](prd/2-baseline/3-agents/) - 了解各Agent职责
 
 **参考文档**:
-- [Phase 1实施记录](implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) - Agent实现细节
+- [Phase 1实施记录(归档)](_archived/implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) - 历史实现细节
 - [功能PRD](prd/2-baseline/2-features/) - 各功能模块详细设计
 - [非功能需求](prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md) - 性能、安全等要求
 
@@ -125,7 +127,7 @@ docs/
 ### 🎨 产品经理
 
 **必读文档**:
-1. ⭐ [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) - 产品全面分析
+1. ⭐ [产品分析报告(归档)](_archived/prd/PRODUCT_ANALYSIS_REPORT.md) - 历史分析
 2. ⭐ [PRD目录](prd/README.md) - PRD文档导航
 3. ⭐ [产品概述](prd/2-baseline/1-overview/Product-Overview.md) - 快速了解产品
 4. [功能PRD](prd/2-baseline/2-features/) - 核心功能详细设计
@@ -185,8 +187,8 @@ docs/
 | [启动指南](guides/STARTUP_GUIDE.md) | 完整启动指南(30分钟) | ⭐⭐ | P0 |
 | [快速开始](QUICK_START.md) | 快速开始(5分钟) | ⭐ | P0 |
 | [集成指南](development/INTEGRATION_GUIDE.md) | 系统集成开发指南 | ⭐⭐ | P1 |
-| [Phase 1实施](implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) | 3个Agent实现详情 | ⭐⭐⭐ | P1 |
-| [Phase 2实施](implementation/PHASE_2_QUALITY_INSPECTION.md) | 质检异步化实现 | ⭐⭐⭐ | P1 |
+| [Phase 1实施(归档)](_archived/implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) | 3个Agent实现详情 | ⭐⭐ | 历史 |
+| [Phase 2实施(归档)](_archived/implementation/PHASE_2_QUALITY_INSPECTION.md) | 质检异步化实现 | ⭐⭐ | 历史 |
 
 ---
 
@@ -203,7 +205,7 @@ docs/
 | 文档 | 描述 | 优先级 | 完成度 |
 |------|------|--------|--------|
 | [PRD目录](prd/README.md) | PRD文档导航(必读) | P0 | ✅ 100% |
-| [产品分析报告](prd/PRODUCT_ANALYSIS_REPORT.md) | 产品全面分析 | P0 | ✅ 100% |
+| [产品分析报告(归档)](_archived/prd/PRODUCT_ANALYSIS_REPORT.md) | 历史产品分析 | P2 | 归档 |
 | [基线PRD](prd/2-baseline/) | 模块化PRD文档 | P0 | ✅ 100% |
 | [业务流程设计](prd/BUSINESS_FLOW_DESIGN.md) | 业务流程图 | P1 | ✅ 100% |
 | [对话模式规格](prd/2-baseline/4-hybrid-modules/Conversation-Mode-PRD.md) | 对话模式详细说明 | P1 | ✅ 100% |
@@ -254,7 +256,7 @@ docs/
 **A**: 阅读 [分析与质检PRD](prd/2-baseline/4-hybrid-modules/Analytics-QA-PRD.md)，包含五维度评分、违规检测、异议复审等
 
 ### Q: 如何添加新的Agent？
-**A**: 参考 [Agent PRD模板](prd/4-templates/Agent_PRD_Template.md) 和 [Phase 1实施](implementation/PHASE_1_AGENTS_IMPLEMENTATION.md)
+**A**: 参考 [Agent PRD模板](prd/4-templates/Agent_PRD_Template.md) 和 [Phase 1实施(归档)](_archived/implementation/PHASE_1_AGENTS_IMPLEMENTATION.md)
 
 ### Q: 性能要求是什么？
 **A**: 阅读 [非功能需求 - 第5.1章](prd/2-baseline/5-nonfunctional/Non-Functional-Requirements.md)
@@ -299,7 +301,7 @@ docs/
 1. **选择正确的目录**:
    - 架构设计 → `architecture/`
    - API文档 → `api/`
-   - 实施记录 → `implementation/`
+   - 实施记录 → `_archived/implementation/`
    - 使用指南 → `guides/`
    - 产品需求 → `prd/`
    - 部署运维 → `deployment/`
@@ -396,5 +398,5 @@ docs/
 ---
 
 **文档维护者**: 架构团队 + 产品团队
-**最后审查**: 2026-01-27
+**最后审查**: 2026-01-30
 **下次审查**: 2026-02-27

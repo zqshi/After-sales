@@ -5,6 +5,7 @@ import { CreateKnowledgeItemUseCase } from '@application/use-cases/knowledge/Cre
 import { DeleteKnowledgeItemUseCase } from '@application/use-cases/knowledge/DeleteKnowledgeItemUseCase';
 import { ListKnowledgeItemsUseCase } from '@application/use-cases/knowledge/ListKnowledgeItemsUseCase';
 import { UpdateKnowledgeItemUseCase } from '@application/use-cases/knowledge/UpdateKnowledgeItemUseCase';
+import { EventBus } from '@infrastructure/events/EventBus';
 import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
 import { KnowledgeListQueryDTO } from '@application/dto/knowledge/KnowledgeListQueryDTO';
 import { closeTestDataSource, getTestDataSource } from '../../helpers/testDatabase';
@@ -17,14 +18,16 @@ describeWithDb('Knowledge use cases (integration)', () => {
   let listUseCase: ListKnowledgeItemsUseCase;
   let updateUseCase: UpdateKnowledgeItemUseCase;
   let deleteUseCase: DeleteKnowledgeItemUseCase;
+  let eventBus: EventBus;
 
   beforeAll(async () => {
     dataSource = await getTestDataSource();
     repository = new KnowledgeRepository(dataSource);
-    createUseCase = new CreateKnowledgeItemUseCase(repository);
+    eventBus = new EventBus();
+    createUseCase = new CreateKnowledgeItemUseCase(repository, eventBus);
     listUseCase = new ListKnowledgeItemsUseCase(repository);
-    updateUseCase = new UpdateKnowledgeItemUseCase(repository);
-    deleteUseCase = new DeleteKnowledgeItemUseCase(repository);
+    updateUseCase = new UpdateKnowledgeItemUseCase(repository, eventBus);
+    deleteUseCase = new DeleteKnowledgeItemUseCase(repository, eventBus);
   });
 
   beforeEach(async () => {

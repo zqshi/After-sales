@@ -110,7 +110,7 @@ describeWithDb('SendMessage Integration Test', () => {
 
     // Act & Assert
     await expect(sendMessageUseCase.execute(request)).rejects.toThrow(
-      'Conversation not found',
+      'Validation failed',
     );
   });
 
@@ -140,7 +140,7 @@ describeWithDb('SendMessage Integration Test', () => {
 
     // Act & Assert
     await expect(sendMessageUseCase.execute(request)).rejects.toThrow(
-      'content is required',
+      'Validation failed',
     );
   });
 

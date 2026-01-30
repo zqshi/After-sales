@@ -230,8 +230,8 @@ EngineerAgent(10s) ┘
 ## 相关文档
 
 - [AGENT_ARCHITECTURE_DESIGN.md](../AGENT_ARCHITECTURE_DESIGN.md) - 完整架构设计与技术实现细节
-- [PHASE_1_AGENTS_IMPLEMENTATION.md](../../implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) - Phase 1实施报告
-- [PHASE_2_QUALITY_INSPECTION.md](../../implementation/PHASE_2_QUALITY_INSPECTION.md) - Phase 2实施报告
+- [PHASE_1_AGENTS_IMPLEMENTATION.md](../../_archived/implementation/PHASE_1_AGENTS_IMPLEMENTATION.md) - Phase 1实施报告(归档)
+- [PHASE_2_QUALITY_INSPECTION.md](../../_archived/implementation/PHASE_2_QUALITY_INSPECTION.md) - Phase 2实施报告(归档)
 
 ---
 

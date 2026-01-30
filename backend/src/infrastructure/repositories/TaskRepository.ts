@@ -1,4 +1,4 @@
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, OptimisticLockVersionMismatchError } from 'typeorm';
 
 import type { ISpecification } from '@domain/shared/Specification';
 import { Task } from '@domain/task/models/Task';
@@ -27,6 +27,13 @@ export class TaskRepository implements ITaskRepository {
     try {
       // 1. 保存实体
       const entity = TaskMapper.toEntity(task);
+      const existing = await queryRunner.manager.getRepository(TaskEntity).findOne({
+        where: { id: entity.id },
+        select: ['id', 'version'],
+      });
+      if (existing && existing.version !== entity.version) {
+        throw new OptimisticLockVersionMismatchError('Task', entity.version, existing.version);
+      }
       await queryRunner.manager.save(entity);
 
       // 2. 获取未提交的领域事件
@@ -55,6 +62,7 @@ export class TaskRepository implements ITaskRepository {
 
       // 5. 清空事件
       task.clearEvents();
+      (task as any)._version = entity.version;
 
       // 6. 提交事务
       await queryRunner.commitTransaction();

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { DataSource, OptimisticLockVersionMismatchError } from 'typeorm';
+import { DataSource, OptimisticLockVersionMismatchError } from '../../../../backend/node_modules/typeorm/index.js';
 
 import { Conversation } from '@domain/conversation/models/Conversation';
 import { Channel } from '@domain/conversation/value-objects/Channel';
@@ -34,6 +34,7 @@ describeWithDb('Optimistic locking (integration)', () => {
     const conversation = Conversation.create({
       customerId: 'cust-optimistic-1',
       channel: Channel.fromString('chat'),
+      agentId: 'agent-1',
     });
 
     await conversationRepository.save(conversation);
@@ -53,7 +54,7 @@ describeWithDb('Optimistic locking (integration)', () => {
     await conversationRepository.save(first);
 
     second.sendMessage({
-      senderId: 'agent-2',
+      senderId: 'agent-1',
       senderType: 'agent',
       content: 'Stale update',
     });

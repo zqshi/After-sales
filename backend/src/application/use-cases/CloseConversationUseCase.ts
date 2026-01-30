@@ -7,7 +7,8 @@ import { z } from 'zod';
 import { EventBus } from '../../infrastructure/events/EventBus';
 import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
 import { nonEmptyStringSchema, uuidSchema } from '../../infrastructure/validation/CommonSchemas';
-import { Validator } from '../../infrastructure/validation/Validator';
+import { ValidationError, Validator } from '../../infrastructure/validation/Validator';
+import { isImChannel } from '@domain/conversation/constants';
 import { ResourceAccessControl } from '../services/ResourceAccessControl';
 
 export interface CloseConversationRequest {
@@ -53,8 +54,10 @@ export class CloseConversationUseCase {
       throw new Error(`Conversation not found: ${validatedRequest.conversationId}`);
     }
 
-    if (['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
-      throw new Error('IM渠道不支持关闭对话操作，请使用问题生命周期管理');
+    if (isImChannel(conversation.channel.value)) {
+      throw new ValidationError('IM渠道不支持关闭对话操作，请使用问题生命周期管理', [
+        { field: 'conversationId', message: 'IM渠道不允许关闭对话' },
+      ]);
     }
 
     // 3. 执行领域逻辑

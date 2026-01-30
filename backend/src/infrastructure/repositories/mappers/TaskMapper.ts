@@ -42,8 +42,9 @@ export class TaskMapper {
     const entity = new TaskEntity();
     entity.id = task.id;
     const conversationId =
-      typeof task.metadata?.conversationId === 'string' ? task.metadata.conversationId : null;
-    entity.conversationId = conversationId;
+      task.conversationId ??
+      (typeof task.metadata?.conversationId === 'string' ? task.metadata.conversationId : null);
+    entity.conversationId = conversationId ?? null;
     entity.title = task.title;
     const description =
       typeof task.metadata?.description === 'string' ? task.metadata.description : null;
@@ -63,10 +64,13 @@ export class TaskMapper {
         : typeof dueDateValue === 'string'
         ? dueDateValue
         : undefined;
+    const requirementId =
+      task.requirementId ??
+      (typeof task.metadata?.requirementId === 'string' ? task.metadata.requirementId : undefined);
     entity.metadata = {
       ...task.metadata,
       type: task.metadata?.type,
-      requirementId: task.metadata?.requirementId,
+      requirementId,
       dueDate: dueDateIso,
     };
     entity.version = task.version;

@@ -1,6 +1,7 @@
 import { AgentScopeDependencies, MCPToolDefinition } from '../types';
 
 import { optionalString, requireString } from './helpers';
+import { isImChannel } from '@domain/conversation/constants';
 
 const includeMessagesFlag = (value: unknown): boolean => {
   if (typeof value === 'boolean') {
@@ -158,7 +159,7 @@ export function buildConversationTools(deps: AgentScopeDependencies): MCPToolDef
 
         // 检查是否为IM渠道
         const conversation = await deps.conversationRepository.findById(conversationId);
-        if (conversation && ['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
+        if (conversation && isImChannel(conversation.channel.value)) {
           return {
             success: false,
             error: 'IM渠道不支持关闭对话操作。IM对话永久存在，通过问题生命周期管理来驱动业务流程。',

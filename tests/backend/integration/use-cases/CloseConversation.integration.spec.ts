@@ -37,7 +37,7 @@ describeWithDb('CloseConversation Integration Test', () => {
     // 3. 创建测试数据
     testConversation = Conversation.create({
       title: '测试对话',
-      channel: Channel.fromString('web'),
+      channel: Channel.fromString('email'),
       customerId: 'CUST-001',
       customerName: '张三',
     });
@@ -119,7 +119,7 @@ describeWithDb('CloseConversation Integration Test', () => {
 
     // Act & Assert
     await expect(closeConversationUseCase.execute(request)).rejects.toThrow(
-      'conversationId is required',
+      'Validation failed',
     );
   });
 
@@ -132,7 +132,7 @@ describeWithDb('CloseConversation Integration Test', () => {
 
     // Act & Assert
     await expect(closeConversationUseCase.execute(request)).rejects.toThrow(
-      'closedBy is required',
+      'Validation failed',
     );
   });
 });

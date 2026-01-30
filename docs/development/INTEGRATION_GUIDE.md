@@ -449,7 +449,7 @@ ws.onmessage = (event) => {
 
 ```bash
 # 使用curl测试
-curl -X POST http://localhost:8080/api/v1/im/test-send \
+curl -X POST http://localhost:8080/api/v1/api/im/test-send \
   -H "Content-Type: application/json" \
   -d '{
     "channel": "feishu",

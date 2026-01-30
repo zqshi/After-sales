@@ -317,26 +317,6 @@ class EngineerAgent(ReActAgent):
         except Exception as e:
             return []
 
-    async def diagnose_problem(
-        self,
-        description: str,
-        context: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
-        """
-        诊断问题（调用MCP工具）
-
-        Args:
-            description: 问题描述
-            context: 诊断上下文
-
-        Returns:
-            诊断结果
-        """
-        payload = {"description": description}
-        if context:
-            payload["context"] = context
-        return await self.mcp_client.call_tool("diagnoseProblem", **payload)
-
     async def search_similar_tickets(self, issue_desc: str) -> list[dict[str, Any]]:
         """
         检索历史类似工单

@@ -96,7 +96,7 @@ export const config = {
   workflow: {
     enabled: process.env.WORKFLOW_ENGINE_ENABLED
       ? process.env.WORKFLOW_ENGINE_ENABLED === 'true'
-      : true,
+      : false,
     mode: (process.env.WORKFLOW_ENGINE_MODE || 'full') as 'analysis_only' | 'full',
     workflowsDir: process.env.WORKFLOWS_DIR || path.resolve(process.cwd(), 'workflows'),
     defaultTimeout: parseInt(process.env.WORKFLOW_DEFAULT_TIMEOUT || '10000', 10),

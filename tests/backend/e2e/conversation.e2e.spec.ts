@@ -13,18 +13,23 @@ import { Conversation } from '../../src/domain/conversation/models/Conversation'
 import { Channel } from '../../src/domain/conversation/value-objects/Channel';
 import { ConversationRepository } from '../../src/infrastructure/repositories/ConversationRepository';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
+const API_PREFIX = '/api/v1/api';
 
 describeWithDb('Conversation API E2E Tests', () => {
   let app: FastifyInstance;
+  let authHeaders: Record<string, string>;
   let dataSource: DataSource;
   let conversationRepository: ConversationRepository;
   let testConversationId: string;
 
+  const withAuth = (options: Parameters<FastifyInstance['inject']>[0]) => app.inject({ ...options, headers: authHeaders });
   beforeAll(async () => {
     // 创建测试应用
     dataSource = await getTestDataSource();
     app = await createApp(dataSource);
     await app.ready();
+    const token = app.jwt.sign({ sub: 'AGENT-E2E-001', role: 'admin' });
+    authHeaders = { Authorization: `Bearer ${token}` };
   });
 
   beforeEach(async () => {
@@ -35,7 +40,7 @@ describeWithDb('Conversation API E2E Tests', () => {
     conversationRepository = new ConversationRepository(dataSource);
     const conversation = Conversation.create({
       customerId: 'CUST-E2E-001',
-      channel: Channel.fromString('web'),
+      channel: Channel.fromString('email'),
       agentId: 'AGENT-E2E-001',
       metadata: {
         title: 'E2E测试对话',
@@ -61,9 +66,9 @@ describeWithDb('Conversation API E2E Tests', () => {
       };
 
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'POST',
-        url: `/api/conversations/${testConversationId}/messages`,
+        url: `${API_PREFIX}/conversations/${testConversationId}/messages`,
         payload,
       });
 
@@ -84,9 +89,9 @@ describeWithDb('Conversation API E2E Tests', () => {
       };
 
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'POST',
-        url: '/api/conversations/NON-EXISTENT-ID/messages',
+        url: `${API_PREFIX}/conversations/NON-EXISTENT-ID/messages`,
         payload,
       });
 
@@ -94,7 +99,7 @@ describeWithDb('Conversation API E2E Tests', () => {
       expect(response.statusCode).toBe(404);
       const body = JSON.parse(response.body);
       expect(body.success).toBe(false);
-      expect(body.error.code).toBe('NOT_FOUND');
+      expect(body.error).toContain('Conversation not found');
     });
 
     it('当请求参数缺失时应该返回400错误', async () => {
@@ -106,9 +111,9 @@ describeWithDb('Conversation API E2E Tests', () => {
       };
 
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'POST',
-        url: `/api/conversations/${testConversationId}/messages`,
+        url: `${API_PREFIX}/conversations/${testConversationId}/messages`,
         payload,
       });
 
@@ -128,9 +133,9 @@ describeWithDb('Conversation API E2E Tests', () => {
       };
 
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'POST',
-        url: `/api/conversations/${testConversationId}/messages`,
+        url: `${API_PREFIX}/conversations/${testConversationId}/messages`,
         payload,
       });
 
@@ -150,9 +155,9 @@ describeWithDb('Conversation API E2E Tests', () => {
       };
 
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'POST',
-        url: `/api/conversations/${testConversationId}/close`,
+        url: `${API_PREFIX}/conversations/${testConversationId}/close`,
         payload,
       });
 
@@ -165,6 +170,28 @@ describeWithDb('Conversation API E2E Tests', () => {
       expect(body.data.closedAt).toBeDefined();
     });
 
+    it('IM渠道对话不允许关闭', async () => {
+      const imConversation = Conversation.create({
+        customerId: 'CUST-E2E-IM-001',
+        channel: Channel.fromString('web'),
+        agentId: 'AGENT-E2E-001',
+      });
+      await conversationRepository.save(imConversation);
+
+      const response = await withAuth({
+        method: 'POST',
+        url: `${API_PREFIX}/conversations/${imConversation.id}/close`,
+        payload: {
+          closedBy: 'AGENT-E2E-001',
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(false);
+      expect(body.error.message).toContain('IM渠道不支持关闭对话');
+    });
+
     it('当对话不存在时应该返回404错误', async () => {
       // Arrange
       const payload = {
@@ -173,9 +200,9 @@ describeWithDb('Conversation API E2E Tests', () => {
       };
 
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'POST',
-        url: '/api/conversations/NON-EXISTENT-ID/close',
+        url: `${API_PREFIX}/conversations/NON-EXISTENT-ID/close`,
         payload,
       });
 
@@ -183,7 +210,7 @@ describeWithDb('Conversation API E2E Tests', () => {
       expect(response.statusCode).toBe(404);
       const body = JSON.parse(response.body);
       expect(body.success).toBe(false);
-      expect(body.error.code).toBe('NOT_FOUND');
+      expect(body.error).toContain('Conversation not found');
     });
 
     it('当closedBy缺失时应该返回400错误', async () => {
@@ -194,9 +221,9 @@ describeWithDb('Conversation API E2E Tests', () => {
       };
 
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'POST',
-        url: `/api/conversations/${testConversationId}/close`,
+        url: `${API_PREFIX}/conversations/${testConversationId}/close`,
         payload,
       });
 
@@ -228,9 +255,9 @@ describeWithDb('Conversation API E2E Tests', () => {
 
     it('应该成功获取对话详情并返回200状态码', async () => {
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'GET',
-        url: `/api/conversations/${testConversationId}`,
+        url: `${API_PREFIX}/conversations/${testConversationId}`,
       });
 
       // Assert
@@ -245,9 +272,9 @@ describeWithDb('Conversation API E2E Tests', () => {
 
     it('应该支持includeMessages=false参数', async () => {
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'GET',
-        url: `/api/conversations/${testConversationId}?includeMessages=false`,
+        url: `${API_PREFIX}/conversations/${testConversationId}?includeMessages=false`,
       });
 
       // Assert
@@ -259,9 +286,9 @@ describeWithDb('Conversation API E2E Tests', () => {
 
     it('应该返回完整的客户等级信息', async () => {
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'GET',
-        url: `/api/conversations/${testConversationId}`,
+        url: `${API_PREFIX}/conversations/${testConversationId}`,
       });
 
       // Assert
@@ -276,16 +303,16 @@ describeWithDb('Conversation API E2E Tests', () => {
 
     it('当对话不存在时应该返回404错误', async () => {
       // Act
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'GET',
-        url: '/api/conversations/NON-EXISTENT-ID',
+        url: `${API_PREFIX}/conversations/NON-EXISTENT-ID`,
       });
 
       // Assert
       expect(response.statusCode).toBe(404);
       const body = JSON.parse(response.body);
       expect(body.success).toBe(false);
-      expect(body.error.code).toBe('NOT_FOUND');
+      expect(body.error).toContain('Conversation not found');
     });
   });
 
@@ -301,9 +328,9 @@ describeWithDb('Conversation API E2E Tests', () => {
         },
       };
 
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'POST',
-        url: '/api/conversations',
+        url: `${API_PREFIX}/conversations`,
         payload,
       });
 
@@ -318,9 +345,9 @@ describeWithDb('Conversation API E2E Tests', () => {
 
   describe('GET /api/conversations', () => {
     it('should return paginated conversation lists', async () => {
-      const response = await app.inject({
+      const response = await withAuth({
         method: 'GET',
-        url: '/api/conversations?customerId=CUST-E2E-001&page=1&limit=5',
+        url: `${API_PREFIX}/conversations?customerId=CUST-E2E-001&page=1&limit=5`,
       });
 
       expect(response.statusCode).toBe(200);
@@ -336,9 +363,9 @@ describeWithDb('Conversation API E2E Tests', () => {
   describe('完整业务流程测试', () => {
     it('应该支持完整的对话生命周期：创建->发送消息->关闭', async () => {
       // 1. 发送第一条消息
-      let response = await app.inject({
+      let response = await withAuth({
         method: 'POST',
-        url: `/api/conversations/${testConversationId}/messages`,
+        url: `${API_PREFIX}/conversations/${testConversationId}/messages`,
         payload: {
           senderId: 'CUST-E2E-001',
           senderType: 'external',
@@ -348,9 +375,9 @@ describeWithDb('Conversation API E2E Tests', () => {
       expect(response.statusCode).toBe(201);
 
       // 2. 发送客服回复
-      response = await app.inject({
+      response = await withAuth({
         method: 'POST',
-        url: `/api/conversations/${testConversationId}/messages`,
+        url: `${API_PREFIX}/conversations/${testConversationId}/messages`,
         payload: {
           senderId: 'AGENT-E2E-001',
           senderType: 'internal',
@@ -360,18 +387,18 @@ describeWithDb('Conversation API E2E Tests', () => {
       expect(response.statusCode).toBe(201);
 
       // 3. 获取对话详情
-      response = await app.inject({
+      response = await withAuth({
         method: 'GET',
-        url: `/api/conversations/${testConversationId}`,
+        url: `${API_PREFIX}/conversations/${testConversationId}`,
       });
       expect(response.statusCode).toBe(200);
       let body = JSON.parse(response.body);
       expect(body.data.messages).toHaveLength(2);
 
       // 4. 关闭对话
-      response = await app.inject({
+      response = await withAuth({
         method: 'POST',
-        url: `/api/conversations/${testConversationId}/close`,
+        url: `${API_PREFIX}/conversations/${testConversationId}/close`,
         payload: {
           closedBy: 'AGENT-E2E-001',
           reason: '问题已解决',
@@ -380,9 +407,9 @@ describeWithDb('Conversation API E2E Tests', () => {
       expect(response.statusCode).toBe(200);
 
       // 5. 验证对话已关闭
-      response = await app.inject({
+      response = await withAuth({
         method: 'GET',
-        url: `/api/conversations/${testConversationId}`,
+        url: `${API_PREFIX}/conversations/${testConversationId}`,
       });
       body = JSON.parse(response.body);
       expect(body.data.status).toBe('closed');

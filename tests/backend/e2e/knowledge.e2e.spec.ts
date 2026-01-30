@@ -7,17 +7,22 @@ import { KnowledgeItem } from '../../src/domain/knowledge/models/KnowledgeItem';
 import { KnowledgeCategory } from '../../src/domain/knowledge/value-objects/KnowledgeCategory';
 import { KnowledgeRepository } from '../../src/infrastructure/repositories/KnowledgeRepository';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
+const API_PREFIX = '/api/v1/api';
 
 describeWithDb('Knowledge API E2E Tests', () => {
   let app: FastifyInstance;
+  let authHeaders: Record<string, string>;
   let dataSource: DataSource;
   let repository: KnowledgeRepository;
   let knowledgeId: string;
 
+  const withAuth = (options: Parameters<FastifyInstance['inject']>[0]) => app.inject({ ...options, headers: authHeaders });
   beforeAll(async () => {
     dataSource = await getTestDataSource();
     app = await createApp(dataSource);
     await app.ready();
+    const token = app.jwt.sign({ sub: 'ADMIN-USER', role: 'admin' });
+    authHeaders = { Authorization: `Bearer ${token}` };
   });
 
   beforeEach(async () => {
@@ -40,9 +45,9 @@ describeWithDb('Knowledge API E2E Tests', () => {
   });
 
   it('creates knowledge item', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: '/api/knowledge',
+      url: `${API_PREFIX}/knowledge`,
       payload: {
         title: 'Guide to billing',
         content: 'Billing steps',
@@ -57,9 +62,9 @@ describeWithDb('Knowledge API E2E Tests', () => {
   });
 
   it('lists knowledge items', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'GET',
-      url: '/api/knowledge?page=1&limit=5',
+      url: `${API_PREFIX}/knowledge?page=1&limit=5`,
     });
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
@@ -67,9 +72,9 @@ describeWithDb('Knowledge API E2E Tests', () => {
   });
 
   it('updates knowledge item', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'PATCH',
-      url: `/api/knowledge/${knowledgeId}`,
+      url: `${API_PREFIX}/knowledge/${knowledgeId}`,
       payload: { title: 'Updated FAQ' },
     });
     expect(response.statusCode).toBe(200);
@@ -78,9 +83,9 @@ describeWithDb('Knowledge API E2E Tests', () => {
   });
 
   it('deletes knowledge item', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'DELETE',
-      url: `/api/knowledge/${knowledgeId}`,
+      url: `${API_PREFIX}/knowledge/${knowledgeId}`,
     });
     expect(response.statusCode).toBe(204);
   });

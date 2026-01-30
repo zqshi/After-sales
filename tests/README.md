@@ -2,7 +2,7 @@
 
 **测试框架**: Vitest (Backend单元测试) + Playwright (Frontend E2E) + Bash Scripts (集成测试)
 **测试覆盖率目标**: 80%
-**最后更新**: 2025-12-27
+**最后更新**: 2026-01-30
 
 ---
 
@@ -41,7 +41,7 @@
 
 **目的**: 测试单个类/函数的逻辑
 
-**状态**: ⏳ 待补充（Phase 3）
+**状态**: ✅ 已实现（部分覆盖）
 
 **运行方式**:
 ```bash
@@ -96,7 +96,7 @@ redis-cli ping
 # 运行集成测试
 ./tests/system/test-quality-inspection.sh
 
-# 运行Backend单元测试（待补充）
+# 运行Backend单元测试
 cd backend && npm test
 
 # 运行Frontend E2E测试
@@ -109,7 +109,7 @@ E2E_BASE_URL=http://localhost:3002 E2E_NO_WEB_SERVER=true npm run test:e2e -- --
 
 ### test-quality-inspection.sh
 
-**测试目标**: 验证对话关闭后自动触发质检的完整流程
+**测试目标**: 验证**非IM对话**关闭后自动触发质检的完整流程
 
 **测试步骤**:
 
@@ -125,13 +125,13 @@ E2E_BASE_URL=http://localhost:3002 E2E_NO_WEB_SERVER=true npm run test:e2e -- --
    - 发送4条消息（2条用户 + 2条客服）
    - 模拟低质量对话场景
 
-4. **关闭对话（触发质检）**
+4. **关闭对话（触发质检，非IM渠道）**
    - POST `/api/conversations/:id/close`
    - 验证关闭延迟<500ms
 
 5. **等待质检完成**
    - 轮询质检报告（最多30秒）
-   - GET `/api/quality-reports/:id`
+   - GET `/api/v1/quality/:conversationId/reports`
 
 6. **验证质检报告**
    - 检查报告结构完整性
@@ -238,7 +238,7 @@ chmod +x tests/system/test-your-feature.sh
 
 ## 单元测试
 
-**状态**: ⏳ 待补充（Phase 3）
+**状态**: ✅ 已实现（部分覆盖）
 
 ### Backend单元测试（Vitest）
 
@@ -254,7 +254,7 @@ cd backend
 npm test
 
 # 运行单个测试文件
-npm test tests/unit/domain/Conversation.test.ts
+npm test tests/backend/unit/domain/conversation/Conversation.spec.ts
 
 # 运行并监听变化
 npm test -- --watch
@@ -265,9 +265,9 @@ npm run test:coverage
 
 **测试示例**:
 ```typescript
-// tests/backend/unit/domain/Conversation.test.ts
+// tests/backend/unit/domain/conversation/Conversation.spec.ts
 import { describe, it, expect } from 'vitest';
-import { Conversation } from '@/domain/aggregates/Conversation';
+import { Conversation } from '@/domain/conversation/models/Conversation';
 
 describe('Conversation', () => {
   it('should create a new conversation', () => {
@@ -509,33 +509,9 @@ jobs:
 
 ---
 
-## 待补充的测试
+## 覆盖矩阵与缺口
 
-### Phase 3计划
-
-**单元测试**:
-- [ ] Domain层测试（Conversation, Customer, Task...）
-- [ ] Application层测试（Use Cases）
-- [ ] Agent测试（Assistant, Engineer, Inspector）
-
-**集成测试**:
-- [ ] Agent路由测试
-- [ ] 并行执行测试
-- [ ] MCP工具测试
-
-**E2E测试**:
-- [x] 登录/鉴权流程
-- [x] Dock 与 Workspace 导航
-- [x] 权限入口控制
-- [x] 对话列表/筛选/消息发送
-- [x] 知识库文档/FAQ 渲染
-- [ ] 质检流程联动可视化
-- [ ] 报表/任务/需求全流程
-
-**压力测试**:
-- [ ] 1000并发对话测试
-- [ ] Agent性能测试
-- [ ] 数据库压力测试
+- 覆盖现状与缺口清单：`tests/COVERAGE_MATRIX.md`\n- P0 缺口：`tests/P0_GAPS.md`
 
 ---
 

@@ -8,17 +8,22 @@ import { TaskRepository } from '../../src/infrastructure/repositories/TaskReposi
 import { Task } from '../../src/domain/task/models/Task';
 import { TaskPriority } from '../../src/domain/task/value-objects/TaskPriority';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
+const API_PREFIX = '/api/v1/api';
 
 describeWithDb('Task API E2E Tests', () => {
   let app: FastifyInstance;
+  let authHeaders: Record<string, string>;
   let dataSource: DataSource;
   let repository: TaskRepository;
   let taskId: string;
 
+  const withAuth = (options: Parameters<FastifyInstance['inject']>[0]) => app.inject({ ...options, headers: authHeaders });
   beforeAll(async () => {
     dataSource = await getTestDataSource();
     app = await createApp(dataSource);
     await app.ready();
+    const token = app.jwt.sign({ sub: 'AGENT-TASK-001', role: 'admin' });
+    authHeaders = { Authorization: `Bearer ${token}` };
   });
 
   beforeEach(async () => {
@@ -27,6 +32,7 @@ describeWithDb('Task API E2E Tests', () => {
     const task = Task.create({
       title: 'Follow up issue',
       priority: TaskPriority.create('medium'),
+      assigneeId: 'AGENT-TASK-001',
     });
     await repository.save(task);
     taskId = task.id;
@@ -38,9 +44,9 @@ describeWithDb('Task API E2E Tests', () => {
   });
 
   it('should create task', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: '/api/tasks',
+      url: `${API_PREFIX}/tasks`,
       payload: {
         title: 'Resolve bug',
         description: 'Fix the login bug',
@@ -50,9 +56,9 @@ describeWithDb('Task API E2E Tests', () => {
   });
 
   it('should list tasks', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'GET',
-      url: '/api/tasks?page=1&limit=5',
+      url: `${API_PREFIX}/tasks?page=1&limit=5`,
     });
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
@@ -60,20 +66,20 @@ describeWithDb('Task API E2E Tests', () => {
   });
 
   it('should assign task', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: `/api/tasks/${taskId}/assign`,
-      payload: { assigneeId: 'user-1' },
+      url: `${API_PREFIX}/tasks/${taskId}/assign`,
+      payload: { assigneeId: 'AGENT-TASK-001' },
     });
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
-    expect(body.data.assigneeId).toBe('user-1');
+    expect(body.data.assigneeId).toBe('AGENT-TASK-001');
   });
 
   it('should update status', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'PATCH',
-      url: `/api/tasks/${taskId}/status`,
+      url: `${API_PREFIX}/tasks/${taskId}/status`,
       payload: { status: 'in_progress' },
     });
     expect(response.statusCode).toBe(200);
@@ -82,9 +88,9 @@ describeWithDb('Task API E2E Tests', () => {
   });
 
   it('should complete task', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: `/api/tasks/${taskId}/complete`,
+      url: `${API_PREFIX}/tasks/${taskId}/complete`,
       payload: {
         qualityScore: { timeliness: 80, completeness: 90, satisfaction: 100 },
       },

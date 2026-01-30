@@ -111,16 +111,6 @@ def test_assess_severity() -> None:
 
 
 @pytest.mark.asyncio
-async def test_diagnose_problem(
-    engineer_agent: EngineerAgent,
-    mock_mcp_client: BackendMCPClient,
-) -> None:
-    mock_mcp_client.call_tool.return_value = {"problem_type": "auth"}
-    result = await engineer_agent.diagnose_problem("无法登录", {"user": "u1"})
-    assert result["problem_type"] == "auth"
-
-
-@pytest.mark.asyncio
 async def test_prefetch_context_updates_metadata(
     engineer_agent: EngineerAgent,
     mock_mcp_client: BackendMCPClient,

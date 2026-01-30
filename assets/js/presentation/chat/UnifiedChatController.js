@@ -1,7 +1,7 @@
 import { qs, qsa, on } from '../../core/dom.js';
 import { scrollToBottom } from '../../core/scroll.js';
 import { showNotification } from '../../core/notifications.js';
-import { fetchConversationMessages, fetchConversationAiAnalysis, sendIncomingMessage, setConversationMode, sendMessageReceipt, submitAgentReview } from '../../api.js';
+import { fetchConversationMessages, fetchConversationAiAnalysis, sendIncomingMessage, setConversationMode, submitAgentReview } from '../../api.js';
 import { buildMessageNode } from './AgentMessageRenderer.js';
 import { AgentWebSocket } from '../../infrastructure/websocket/AgentWebSocket.js';
 import { AiAssistantPanel } from './AiAssistantPanel.js';
@@ -299,7 +299,7 @@ export class UnifiedChatController {
       const items = await this.fetchAndCacheConversationMessages(conversationId);
       if (Array.isArray(items)) {
         this.renderConversationMessages(items);
-        this.markLatestCustomerMessageRead(conversationId, items);
+        // 消息回执链路已移除，不再发送 read 回执
       }
     } catch (error) {
       console.warn('[UnifiedChat] 无法加载历史消息', error);
@@ -1085,25 +1085,4 @@ export class UnifiedChatController {
     }
   }
 
-  async markLatestCustomerMessageRead(conversationId, items) {
-    if (!conversationId || !Array.isArray(items) || items.length === 0) {
-      return;
-    }
-    const latestCustomer = [...items].reverse().find((item) => {
-      const senderType = item?.senderType || item?.sender_type;
-      return senderType === 'customer' || senderType === 'external';
-    });
-    if (!latestCustomer?.id) {
-      return;
-    }
-    try {
-      await sendMessageReceipt({
-        messageId: latestCustomer.id,
-        conversationId,
-        status: 'read',
-      });
-    } catch (error) {
-      console.warn('[UnifiedChat] update receipt failed', error);
-    }
-  }
 }

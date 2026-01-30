@@ -2,12 +2,18 @@
 
 > **文档体系版本**: v2.0 (模块化PRD)
 > **创建日期**: 2025-12-28
-> **最后更新**: 2025-12-30
+> **最后更新**: 2026-01-30
 > **维护团队**: 产品团队
+
+> 说明：本目录为“规划/需求文档”，不等同于当前实现。实际实现以 `docs/prd/BUSINESS_FLOW_DESIGN.md` 为准。
 
 ---
 
 ## 📖 文档导航
+
+**补充文档**：
+- 未实现功能清单与落地计划：`docs/prd/UNIMPLEMENTED_FEATURES_PLAN.md`
+- 未实现功能落地任务卡：`docs/prd/UNIMPLEMENTED_FEATURES_TASKS.md`
 
 ### 🎯 快速索引
 
@@ -25,7 +31,8 @@
 ```
 prd/
 ├── README.md                           # 📍 本文件(PRD导航)
-├── PRODUCT_ANALYSIS_REPORT.md          # 产品分析报告(v1.2)
+├── _archived/prd/PRODUCT_ANALYSIS_REPORT.md   # 归档：产品分析报告(v1.2)
+├── UNIMPLEMENTED_FEATURES_TASKS.md     # 未实现功能落地任务卡
 ├── BUSINESS_FLOW_DESIGN.md             # 业务流程设计
 │
 ├── 1-roadmap/                          # 🗺️ 产品路线图
@@ -78,7 +85,7 @@ prd/
 | **3-agents** | 4 | ✅ 100% | ~4,500行 | 完成 |
 | **4-hybrid-modules** | 4 | ✅ 100% | ~5,100行 | 完成 |
 | **5-nonfunctional** | 1 | ✅ 100% | ~1,100行 | 完成 |
-| **合计** | **14** | **✅ 100%** | **~14,750行** | **全部完成** |
+| **合计** | **14** | **文档齐全** | **~14,750行** | **规划文档** |
 
 ---
 
@@ -400,7 +407,7 @@ Hybrid PRD:
 ### 业务文档
 - [业务流程设计](./BUSINESS_FLOW_DESIGN.md)
 - [对话模式规格](./2-baseline/4-hybrid-modules/Conversation-Mode-PRD.md)
-- [产品分析报告](./PRODUCT_ANALYSIS_REPORT.md)
+- [产品分析报告(归档)](../_archived/prd/PRODUCT_ANALYSIS_REPORT.md)
 
 ---
 

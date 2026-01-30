@@ -13,17 +13,22 @@ import { CustomerLevelInfo } from '../../src/domain/customer/value-objects/Custo
 import { Metrics } from '../../src/domain/customer/value-objects/Metrics';
 import { CustomerProfileRepository } from '../../src/infrastructure/repositories/CustomerProfileRepository';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
+const API_PREFIX = '/api/v1/api';
 
 describeWithDb('Customer Profile API E2E Tests', () => {
   let app: FastifyInstance;
+  let authHeaders: Record<string, string>;
   let dataSource: DataSource;
   let repository: CustomerProfileRepository;
   let customerId: string;
 
+  const withAuth = (options: Parameters<FastifyInstance['inject']>[0]) => app.inject({ ...options, headers: authHeaders });
   beforeAll(async () => {
     dataSource = await getTestDataSource();
     app = await createApp(dataSource);
     await app.ready();
+    const token = app.jwt.sign({ sub: 'ADMIN-USER', role: 'admin' });
+    authHeaders = { Authorization: `Bearer ${token}` };
   });
 
   beforeEach(async () => {
@@ -60,9 +65,9 @@ describeWithDb('Customer Profile API E2E Tests', () => {
   });
 
   it('GET /api/customers/:id should return profile', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'GET',
-      url: `/api/customers/${customerId}`,
+      url: `${API_PREFIX}/customers/${customerId}`,
     });
 
     expect(response.statusCode).toBe(200);
@@ -72,9 +77,9 @@ describeWithDb('Customer Profile API E2E Tests', () => {
   });
 
   it('POST /api/customers/:id/refresh should accept new insights', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: `/api/customers/${customerId}/refresh`,
+      url: `${API_PREFIX}/customers/${customerId}/refresh`,
       payload: {
         source: 'manual',
         insights: [{ title: 'New Insight', detail: 'Detail' }],
@@ -87,9 +92,9 @@ describeWithDb('Customer Profile API E2E Tests', () => {
   });
 
   it('POST /api/customers/:id/service-records should add record', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: `/api/customers/${customerId}/service-records`,
+      url: `${API_PREFIX}/customers/${customerId}/service-records`,
       payload: {
         title: 'Follow-up',
         description: 'Discussed with customer',
@@ -102,9 +107,9 @@ describeWithDb('Customer Profile API E2E Tests', () => {
   });
 
   it('PATCH /api/customers/:id/commitments/:commitmentId should update progress', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'PATCH',
-      url: `/api/customers/${customerId}/commitments/commit-123`,
+      url: `${API_PREFIX}/customers/${customerId}/commitments/commit-123`,
       payload: { progress: 45 },
     });
 
@@ -116,9 +121,9 @@ describeWithDb('Customer Profile API E2E Tests', () => {
   });
 
   it('POST /api/customers/:id/interactions should record interaction', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: `/api/customers/${customerId}/interactions`,
+      url: `${API_PREFIX}/customers/${customerId}/interactions`,
       payload: {
         interactionType: 'chat',
         notes: 'Customer requested update',
@@ -131,9 +136,9 @@ describeWithDb('Customer Profile API E2E Tests', () => {
   });
 
   it('POST /api/customers/:id/mark-vip should toggle VIP status', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: `/api/customers/${customerId}/mark-vip`,
+      url: `${API_PREFIX}/customers/${customerId}/mark-vip`,
       payload: { reason: 'High value' },
     });
 

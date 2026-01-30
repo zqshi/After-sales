@@ -1,4 +1,4 @@
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder, OptimisticLockVersionMismatchError } from 'typeorm';
 import { validate as isUUID } from 'uuid';
 
 import { Conversation } from '@domain/conversation/models/Conversation';
@@ -44,6 +44,17 @@ export class ConversationRepository implements IConversationRepository {
 
     try {
       const entity = ConversationMapper.toEntity(conversation);
+      const existing = await queryRunner.manager.getRepository(ConversationEntity).findOne({
+        where: { id: entity.id },
+        select: ['id', 'version'],
+      });
+      if (existing && existing.version !== entity.version) {
+        throw new OptimisticLockVersionMismatchError(
+          'Conversation',
+          entity.version,
+          existing.version,
+        );
+      }
       await queryRunner.manager.save(entity);
 
       const events = conversation.getUncommittedEvents();
@@ -70,6 +81,7 @@ export class ConversationRepository implements IConversationRepository {
       );
 
       conversation.clearEvents();
+      (conversation as any)._version = entity.version;
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -124,52 +136,6 @@ export class ConversationRepository implements IConversationRepository {
       version: event.version,
     }));
   }
-
-  /**
-   * ⚠️ 已废弃：更新消息回执状态
-   *
-   * 废弃原因：
-   * - 方法仅更新 metadata，无业务逻辑
-   * - 缺少实际应用场景（失败告警、已读统计等）
-   * - IM 渠道的消息送达状态追踪价值有限
-   *
-   * 如需恢复，请先明确业务场景并补充完整逻辑
-   */
-  /*
-  async updateMessageReceipt(
-    messageId: string,
-    receipt: {
-      status: 'delivered' | 'read' | 'failed';
-      source?: string;
-      metadata?: Record<string, unknown>;
-      receivedAt: Date;
-    },
-    conversationId?: string,
-  ): Promise<void> {
-    const existing = await this.messageRepository.findOne({
-      where: {
-        id: messageId,
-        ...(conversationId ? { conversationId } : {}),
-      },
-    });
-
-    if (!existing) {
-      throw new Error('message not found');
-    }
-
-    const metadata = {
-      ...(existing.metadata || {}),
-      receipt: {
-        status: receipt.status,
-        source: receipt.source || 'im',
-        receivedAt: receipt.receivedAt.toISOString(),
-        ...(receipt.metadata || {}),
-      },
-    };
-
-    await this.messageRepository.update({ id: messageId }, { metadata });
-  }
-  */
 
   async findByFilters(
     filters: ConversationFilters = {},

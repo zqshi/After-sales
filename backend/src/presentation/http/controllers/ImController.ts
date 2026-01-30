@@ -26,6 +26,7 @@ import { ConversationTaskCoordinator } from '@application/services/ConversationT
 import { SearchKnowledgeUseCase } from '@application/use-cases/knowledge/SearchKnowledgeUseCase';
 import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
 import { AgentMode , Conversation } from '@domain/conversation/models/Conversation';
+import { isImChannel } from '@domain/conversation/constants';
 import { CustomerProfile } from '@domain/customer/models/CustomerProfile';
 import { ContactInfo } from '@domain/customer/value-objects/ContactInfo';
 import { CustomerLevelInfo } from '@domain/customer/value-objects/CustomerLevelInfo';
@@ -874,65 +875,6 @@ export class ImController {
   }
 
   /**
-   * ⚠️ 已废弃：更新消息回执状态
-   *
-   * 废弃原因：
-   * - 接口仅记录数据，无任何业务逻辑
-   * - 缺少失败告警、已读统计、超时提醒等实际应用场景
-   * - IM 渠道的消息送达状态追踪价值有限
-   *
-   * 如需恢复：
-   * 1. 明确业务场景（如消息未送达告警、已读率统计）
-   * 2. 补充完整的业务逻辑
-   * 3. 取消下方注释
-   */
-  /*
-  async updateMessageReceipt(
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const body = request.body as {
-        messageId: string;
-        conversationId?: string;
-        status: 'delivered' | 'read' | 'failed';
-        source?: string;
-        metadata?: Record<string, unknown>;
-        receivedAt?: string;
-      };
-
-      if (!body.messageId || !body.status) {
-        return reply.code(400).send({
-          success: false,
-          error: '缺少必需参数：messageId, status',
-        });
-      }
-
-      await this.conversationRepository.updateMessageReceipt(body.messageId, {
-        status: body.status,
-        source: body.source,
-        metadata: body.metadata,
-        receivedAt: body.receivedAt ? new Date(body.receivedAt) : new Date(),
-      }, body.conversationId);
-
-      reply.code(200).send({
-        success: true,
-        data: {
-          messageId: body.messageId,
-          status: body.status,
-        },
-      });
-    } catch (error) {
-      console.error('[ImController] updateMessageReceipt error', error);
-      reply.code(500).send({
-        success: false,
-        error: error instanceof Error ? error.message : '服务器内部错误',
-      });
-    }
-  }
-  */
-
-  /**
    * 提交人工审核结果
    * POST /im/reviews/submit
    */
@@ -1033,39 +975,42 @@ export class ImController {
   ): Promise<void> {
     try {
       const engine = WorkflowRegistry.getWorkflowEngine();
-      if (!engine) {
-        const pendingReviews = await this.reviewRequestRepository.findByFilters(
-          { status: 'pending' },
-          { limit: 50, offset: 0 },
-        );
-        reply.code(200).send({
-          success: true,
-          data: {
-            pending: pendingReviews.map((review) => ({
-              reviewId: review.id,
-              conversationId: review.conversationId,
-              status: review.status,
-              suggestion: review.suggestion,
-              confidence: review.confidence,
-              createdAt: review.createdAt.toISOString(),
-              updatedAt: review.updatedAt.toISOString(),
-              resolvedAt: review.resolvedAt?.toISOString(),
-            })),
-          },
-        });
-        return;
+      if (engine) {
+        const pending = engine.getPendingHumanReviews();
+        if (pending.length > 0) {
+          reply.code(200).send({
+            success: true,
+            data: {
+              pending: pending.map((item) => ({
+                executionId: item.executionId,
+                workflowName: item.workflowName,
+                stepName: item.stepName,
+                requestedAt: item.requestedAt,
+                timeout: item.timeout,
+                data: item.data,
+              })),
+            },
+          });
+          return;
+        }
       }
-      const pending = engine.getPendingHumanReviews();
+
+      const pendingReviews = await this.reviewRequestRepository.findByFilters(
+        { status: 'pending' },
+        { limit: 50, offset: 0 },
+      );
       reply.code(200).send({
         success: true,
         data: {
-          pending: pending.map((item) => ({
-            executionId: item.executionId,
-            workflowName: item.workflowName,
-            stepName: item.stepName,
-            requestedAt: item.requestedAt,
-            timeout: item.timeout,
-            data: item.data,
+          pending: pendingReviews.map((review) => ({
+            reviewId: review.id,
+            conversationId: review.conversationId,
+            status: review.status,
+            suggestion: review.suggestion,
+            confidence: review.confidence,
+            createdAt: review.createdAt.toISOString(),
+            updatedAt: review.updatedAt.toISOString(),
+            resolvedAt: review.resolvedAt?.toISOString(),
           })),
         },
       });
@@ -1207,7 +1152,7 @@ export class ImController {
         });
       }
 
-      if (body.status === 'closed' && ['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
+      if (body.status === 'closed' && isImChannel(conversation.channel.value)) {
         return reply.code(400).send({
           success: false,
           error: 'IM渠道不支持关闭会话，请使用问题生命周期管理',

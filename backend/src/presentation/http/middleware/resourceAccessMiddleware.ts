@@ -34,6 +34,10 @@ export class ResourceAccessMiddleware {
           reply.code(403).send({ success: false, error: error.message });
           return;
         }
+        if (error instanceof Error && error.message.startsWith('Conversation not found')) {
+          reply.code(404).send({ success: false, error: error.message });
+          return;
+        }
         throw error;
       }
     };
@@ -63,6 +67,10 @@ export class ResourceAccessMiddleware {
           reply.code(403).send({ success: false, error: error.message });
           return;
         }
+        if (error instanceof Error && error.message.startsWith('Task not found')) {
+          reply.code(404).send({ success: false, error: error.message });
+          return;
+        }
         throw error;
       }
     };
@@ -90,6 +98,10 @@ export class ResourceAccessMiddleware {
       } catch (error) {
         if (error instanceof ForbiddenError) {
           reply.code(403).send({ success: false, error: error.message });
+          return;
+        }
+        if (error instanceof Error && error.message.startsWith('Requirement not found')) {
+          reply.code(404).send({ success: false, error: error.message });
           return;
         }
         throw error;

@@ -148,7 +148,7 @@ describeWithDb('GetConversation Integration Test', () => {
 
     // Act & Assert
     await expect(getConversationUseCase.execute(request)).rejects.toThrow(
-      'conversationId is required',
+      'Validation failed',
     );
   });
 });

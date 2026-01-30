@@ -7,17 +7,24 @@ import { KnowledgeItem } from '../../src/domain/knowledge/models/KnowledgeItem';
 import { KnowledgeCategory } from '../../src/domain/knowledge/value-objects/KnowledgeCategory';
 import { KnowledgeRepository } from '../../src/infrastructure/repositories/KnowledgeRepository';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
+const API_PREFIX = '/api/v1';
 
 describeWithDb('AI API E2E Tests', () => {
   let app: FastifyInstance;
+  let authHeaders: Record<string, string>;
   let dataSource: DataSource;
   let repository: KnowledgeRepository;
   let knowledgeId: string;
+
+  const withAuth = (options: Parameters<FastifyInstance['inject']>[0]) =>
+    app.inject({ ...options, headers: authHeaders });
 
   beforeAll(async () => {
     dataSource = await getTestDataSource();
     app = await createApp(dataSource);
     await app.ready();
+    const token = app.jwt.sign({ sub: 'ADMIN-USER', role: 'admin' });
+    authHeaders = { Authorization: `Bearer ${token}` };
   });
 
   beforeEach(async () => {
@@ -40,9 +47,9 @@ describeWithDb('AI API E2E Tests', () => {
   });
 
   it('analyzes conversation and includes recommendations', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: '/ai/analyze',
+      url: `${API_PREFIX}/ai/analyze`,
       payload: {
         conversationId: 'conv-ai-001',
         context: 'quality',
@@ -58,9 +65,9 @@ describeWithDb('AI API E2E Tests', () => {
   });
 
   it('applies ai solution referencing a knowledge article', async () => {
-    const response = await app.inject({
+    const response = await withAuth({
       method: 'POST',
-      url: '/ai/solutions',
+      url: `${API_PREFIX}/ai/solutions`,
       payload: {
         conversationId: 'conv-ai-002',
         solutionType: 'knowledge_article',

@@ -1,6 +1,7 @@
 import { AiService } from '@application/services/AiService';
 import { ConversationReadyToCloseEvent } from '@domain/conversation/events/ConversationReadyToCloseEvent';
 import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
+import { isImChannel } from '@domain/conversation/constants';
 
 /**
  * ConversationReadyToCloseEventHandler
@@ -32,6 +33,13 @@ export class ConversationReadyToCloseEventHandler {
       if (!conversation) {
         console.warn(
           `[ConversationReadyToCloseEventHandler] Conversation ${conversationId} not found`,
+        );
+        return;
+      }
+
+      if (isImChannel(conversation.channel.value)) {
+        console.log(
+          `[ConversationReadyToCloseEventHandler] Skip closing IM conversation ${conversationId} (${conversation.channel.value})`,
         );
         return;
       }

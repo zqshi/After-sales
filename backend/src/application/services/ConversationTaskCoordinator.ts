@@ -21,6 +21,7 @@ import { QualityReportRepository } from '@infrastructure/repositories/QualityRep
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { WorkflowEngine } from '@infrastructure/workflow/WorkflowEngine';
+import { isImChannel } from '@domain/conversation/constants';
 
 import { CloseConversationUseCase } from '../use-cases/CloseConversationUseCase';
 import { CreateConversationUseCase } from '../use-cases/CreateConversationUseCase';
@@ -335,7 +336,7 @@ export class ConversationTaskCoordinator {
     //
     // 如果是非IM渠道（如工单系统），可以调用：
     // const conversation = await this.conversationRepository.findById(conversationId);
-    // if (conversation && !['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
+    // if (conversation && !isImChannel(conversation.channel.value)) {
     //   await this.closeConversationUseCase.execute({
     //     conversationId,
     //     closedBy: 'system',
@@ -471,71 +472,6 @@ export class ConversationTaskCoordinator {
         role: msg.senderType === 'customer' ? 'customer' : 'agent',
         content: msg.content,
       })) || [];
-
-      // 1.1 Workflow/ReAct路径（暂时禁用）
-      // ⚠️ 设计说明：
-      // - Workflow 提供确定性的业务流程控制（适用于合规检查、SLA 管理等场景）
-      // - AgentScope ReActAgent 提供智能灵活的回复生成（基于 LLM）
-      // - 当前 AgentScope 已经可以满足需求，Workflow YAML 定义缺失
-      // - 保留代码以便未来需要确定性流程时快速启用
-      //
-      // 启用方法：
-      // 1. 创建 workflow YAML 定义文件（如 customer_service_workflow.yaml）
-      // 2. 取消下方代码注释
-      // 3. 设置 config.workflow.enabled = true
-      /*
-      if (this.workflowEngine && config.workflow.enabled) {
-        try {
-          const workflowResult = await this.workflowEngine.execute(
-            'customer_service_workflow',
-            {
-              message: {
-                content: userMessage,
-                channel: incoming.channel,
-                senderId: incoming.senderId,
-              },
-              conversation: {
-                id: conversationId,
-                customerId: incoming.customerId,
-                channel: incoming.channel,
-                mode: incoming.mode ?? conversation?.mode,
-              },
-              history: conversationHistory,
-            },
-          );
-
-          const suggested =
-            workflowResult.output?.suggested_reply?.reply ||
-            workflowResult.output?.suggested_reply?.suggestedReply ||
-            workflowResult.output?.suggested_reply;
-          const confidence =
-            workflowResult.output?.suggested_reply?.confidence ??
-            workflowResult.output?.suggested_reply?.score ??
-            0.7;
-
-          if (suggested) {
-            return {
-              suggestedReply: String(suggested),
-              confidence: typeof confidence === 'number' ? confidence : 0.7,
-              agentName: 'react_workflow',
-              mode: 'agent_loop',
-              metadata: {
-                workflowName: workflowResult.workflowName,
-                executionId: workflowResult.executionId,
-                classification: workflowResult.output?.classification,
-                analysis: {
-                  sentiment: workflowResult.output?.sentiment_analysis,
-                  requirements: workflowResult.output?.requirement_detection,
-                  knowledge: workflowResult.output?.knowledge_search,
-                },
-              },
-            };
-          }
-        } catch (err) {
-          console.warn('[ConversationTaskCoordinator] Workflow生成回复失败，进入降级路径', err);
-        }
-      }
-      */
 
       // 2. 分析情绪
       const sentiment = await this.aiService.analyzeSentiment(
@@ -874,7 +810,7 @@ export class ConversationTaskCoordinator {
 
     // 检查是否为IM渠道
     const conversation = await this.conversationRepository.findById(conversationId);
-    if (conversation && ['wecom', 'feishu', 'dingtalk'].includes(conversation.channel.value)) {
+    if (conversation && isImChannel(conversation.channel.value)) {
       console.log(`[ConversationTaskCoordinator] Skipping quality inspection for IM channel: ${conversation.channel.value}`);
       console.log(`[ConversationTaskCoordinator] IM对话不支持关闭操作，质检由 ProblemResolvedEvent 触发`);
       return;

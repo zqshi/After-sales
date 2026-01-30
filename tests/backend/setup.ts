@@ -1,18 +1,19 @@
 import { beforeAll, afterAll, afterEach, vi } from 'vitest';
 import dotenv from 'dotenv';
-import { DataSource } from 'typeorm';
-import Redis from 'ioredis';
+import Redis from '../../backend/node_modules/ioredis/built/Redis.js';
 
 // 加载测试环境变量
 dotenv.config({ path: '.env.test' });
 
 const shouldInitializeEnv = process.env.SKIP_TEST_ENV_SETUP !== 'true';
+process.env.OUTBOX_PROCESSOR_ENABLED = 'false';
+process.env.WORKFLOW_ENGINE_ENABLED = 'false';
 
 // ============================================
 // 全局测试设置
 // ============================================
 
-let dataSource: DataSource | null = null;
+let dataSource: any | null = null;
 let redisClient: Redis;
 
 // 测试前初始化
@@ -26,13 +27,24 @@ beforeAll(async () => {
 
   // 初始化数据库连接
   try {
-    const { ConversationEntity } = await import('../src/infrastructure/database/entities/ConversationEntity.js');
-    const { MessageEntity } = await import('../src/infrastructure/database/entities/MessageEntity.js');
-    const { CustomerProfileEntity } = await import('../src/infrastructure/database/entities/CustomerProfileEntity.js');
-    const { RequirementEntity } = await import('../src/infrastructure/database/entities/RequirementEntity.js');
-    const { TaskEntity } = await import('../src/infrastructure/database/entities/TaskEntity.js');
-    const { DomainEventEntity } = await import('../src/infrastructure/database/entities/DomainEventEntity.js');
+    const { ConversationEntity } = await import('../../backend/src/infrastructure/database/entities/ConversationEntity.js');
+    const { MessageEntity } = await import('../../backend/src/infrastructure/database/entities/MessageEntity.js');
+    const { CustomerProfileEntity } = await import('../../backend/src/infrastructure/database/entities/CustomerProfileEntity.js');
+    const { RequirementEntity } = await import('../../backend/src/infrastructure/database/entities/RequirementEntity.js');
+    const { TaskEntity } = await import('../../backend/src/infrastructure/database/entities/TaskEntity.js');
+    const { KnowledgeItemEntity } = await import('../../backend/src/infrastructure/database/entities/KnowledgeItemEntity.js');
+    const { DomainEventEntity } = await import('../../backend/src/infrastructure/database/entities/DomainEventEntity.js');
+    const { OutboxEventEntity } = await import('../../backend/src/infrastructure/database/entities/OutboxEventEntity.js');
+    const { ReviewRequestEntity } = await import('../../backend/src/infrastructure/database/entities/ReviewRequestEntity.js');
+    const { ProblemEntity } = await import('../../backend/src/infrastructure/database/entities/ProblemEntity.js');
+    const { QualityReportEntity } = await import('../../backend/src/infrastructure/database/entities/QualityReportEntity.js');
+    const { SurveyEntity } = await import('../../backend/src/infrastructure/database/entities/SurveyEntity.js');
+    const { AuditEventEntity } = await import('../../backend/src/infrastructure/database/entities/AuditEventEntity.js');
+    const { MonitoringAlertEntity } = await import('../../backend/src/infrastructure/database/entities/MonitoringAlertEntity.js');
+    const { RoleEntity } = await import('../../backend/src/infrastructure/database/entities/RoleEntity.js');
+    const { UserEntity } = await import('../../backend/src/infrastructure/database/entities/UserEntity.js');
 
+    const { DataSource } = await import('../../backend/node_modules/typeorm/index.js');
     dataSource = new DataSource({
       type: 'postgres',
       host: process.env.TEST_DB_HOST || 'localhost',
@@ -40,7 +52,24 @@ beforeAll(async () => {
       username: process.env.TEST_DB_USER || 'admin',
       password: process.env.TEST_DB_PASSWORD || 'admin123',
       database: process.env.TEST_DB_NAME || 'aftersales_test',
-      entities: [ConversationEntity, MessageEntity, CustomerProfileEntity, RequirementEntity, TaskEntity, DomainEventEntity],
+      entities: [
+        ConversationEntity,
+        MessageEntity,
+        CustomerProfileEntity,
+        RequirementEntity,
+        TaskEntity,
+        KnowledgeItemEntity,
+        DomainEventEntity,
+        OutboxEventEntity,
+        ReviewRequestEntity,
+        ProblemEntity,
+        QualityReportEntity,
+        SurveyEntity,
+        AuditEventEntity,
+        MonitoringAlertEntity,
+        RoleEntity,
+        UserEntity,
+      ],
       synchronize: true,
       logging: false,
       dropSchema: true,

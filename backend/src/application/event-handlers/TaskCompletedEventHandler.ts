@@ -3,6 +3,7 @@ import { IConversationRepository } from '@domain/conversation/repositories/IConv
 import { TaskCompletedEvent } from '@domain/task/events/TaskCompletedEvent';
 import { ITaskRepository } from '@domain/task/repositories/ITaskRepository';
 import { EventBus } from '@infrastructure/events/EventBus';
+import { isImChannel } from '@domain/conversation/constants';
 
 /**
  * TaskCompletedEventHandler
@@ -61,6 +62,13 @@ export class TaskCompletedEventHandler {
         if (!conversation) {
           console.warn(
             `[TaskCompletedEventHandler] Conversation ${conversationId} not found`,
+          );
+          return;
+        }
+
+        if (isImChannel(conversation.channel.value)) {
+          console.log(
+            `[TaskCompletedEventHandler] Skip closing IM conversation ${conversationId} (${conversation.channel.value})`,
           );
           return;
         }

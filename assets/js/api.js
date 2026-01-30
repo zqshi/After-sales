@@ -196,13 +196,6 @@ export async function sendIncomingMessage(payload) {
   });
 }
 
-export async function sendMessageReceipt(payload) {
-  return safeRequest('/im/messages/receipt', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-}
-
 export async function submitAgentReview(payload) {
   return safeRequest('/im/reviews/submit', {
     method: 'POST',

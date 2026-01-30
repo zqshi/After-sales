@@ -18,6 +18,20 @@ interface MCPRequestPayload {
 
 export class MCPServer {
   private readonly tools = new Map<string, MCPToolDefinition>();
+  private readonly allowedTools = new Set([
+    'analyzeConversation',
+    'createSurvey',
+    'createTask',
+    'generateQualityReport',
+    'getConversationHistory',
+    'getCustomerHistory',
+    'getCustomerProfile',
+    'getSystemStatus',
+    'inspectConversation',
+    'saveQualityReport',
+    'searchKnowledge',
+    'searchTickets',
+  ]);
 
   constructor(
     private readonly app: FastifyInstance,
@@ -43,9 +57,18 @@ export class MCPServer {
 
     for (const set of collections) {
       for (const tool of set) {
+        if (!this.allowedTools.has(tool.name)) {
+          this.app.log.info({ tool: tool.name }, '[MCP] tool skipped (not in allowlist)');
+          continue;
+        }
         this.tools.set(tool.name, tool);
       }
     }
+
+    this.app.log.info(
+      { tools: Array.from(this.tools.keys()) },
+      '[MCP] tool registry ready',
+    );
   }
 
   private async handleRequest(
@@ -53,6 +76,7 @@ export class MCPServer {
     reply: FastifyReply,
   ): Promise<unknown> {
     const body = request.body;
+    const startedAt = Date.now();
 
     if (!body || !body.method) {
       // Graceful fallback for clients that probe /mcp without payload.
@@ -78,10 +102,23 @@ export class MCPServer {
       }
 
       const args = params.arguments ?? {};
+      request.log.info({
+        tool: toolName,
+        argKeys: Object.keys(args),
+      }, '[MCP] tool call start');
       try {
         const result = await tool.handler(args);
+        request.log.info({
+          tool: toolName,
+          durationMs: Date.now() - startedAt,
+        }, '[MCP] tool call success');
         return { result };
       } catch (err) {
+        request.log.error({
+          tool: toolName,
+          durationMs: Date.now() - startedAt,
+          error: err instanceof Error ? err.message : String(err),
+        }, '[MCP] tool call failed');
         reply.status(500);
         return { error: err instanceof Error ? err.message : 'tool execution failed' };
       }

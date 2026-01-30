@@ -19,6 +19,7 @@ import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
 import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
 import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
+import { isImChannel } from '@domain/conversation/constants';
 
 import { WorkflowStep, WorkflowContext } from '../types';
 
@@ -604,7 +605,7 @@ export class ActionStepExecutor extends BaseStepExecutor {
 
     // 检查是否为IM渠道
     const channel = context.variables?.conversation?.channel;
-    if (channel && ['wecom', 'feishu', 'dingtalk'].includes(channel)) {
+    if (channel && isImChannel(String(channel))) {
       console.log(`[ActionExecutor] IM渠道不支持关闭对话操作: ${channel}`);
       return {
         conversationId,

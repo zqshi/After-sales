@@ -17,7 +17,9 @@ YELLOW='\033[1;33m'
 NC='\033[0m'  # No Color
 
 # 配置
-BACKEND_URL="${BACKEND_URL:-http://localhost:8080/api/v1}"
+BACKEND_URL="${BACKEND_URL:-http://localhost:8080}"
+API_PREFIX="${API_PREFIX:-/api/v1/api}"
+QUALITY_PREFIX="${QUALITY_PREFIX:-/api/v1}"
 BACKEND_HEALTH_URL="${BACKEND_HEALTH_URL:-http://localhost:8080}"
 AGENTSCOPE_URL="${AGENTSCOPE_URL:-http://localhost:5000}"
 AUTH_EMAIL="${AUTH_EMAIL:-demo@aftersales.io}"
@@ -69,7 +71,7 @@ login_backend() {
     fi
 
     echo -n "登录Backend获取Token..."
-    LOGIN_RESPONSE=$(curl -s -X POST "${BACKEND_URL}/api/auth/login" \
+    LOGIN_RESPONSE=$(curl -s -X POST "${BACKEND_URL}${API_PREFIX}/auth/login" \
         -H "Content-Type: application/json" \
         -d "{
             \"identifier\": \"${AUTH_EMAIL}\",
@@ -87,7 +89,7 @@ login_backend() {
 
     AUTH_HEADER="Authorization: Bearer ${TOKEN}"
 
-    PROFILE_RESPONSE=$(curl -s -H "${AUTH_HEADER}" "${BACKEND_URL}/api/auth/me")
+    PROFILE_RESPONSE=$(curl -s -H "${AUTH_HEADER}" "${BACKEND_URL}${API_PREFIX}/auth/me")
     AGENT_ID=$(echo "$PROFILE_RESPONSE" | jq -r '.data.id')
     if [ "$AGENT_ID" = "null" ] || [ -z "$AGENT_ID" ]; then
         AGENT_ID="agent-001"
@@ -100,7 +102,7 @@ login_backend() {
 create_conversation() {
     echo -n "创建测试对话..."
 
-    CONV_RESPONSE=$(curl -s -X POST "${BACKEND_URL}/api/conversations" \
+    CONV_RESPONSE=$(curl -s -X POST "${BACKEND_URL}${API_PREFIX}/conversations" \
         -H "Content-Type: application/json" \
         -H "${AUTH_HEADER}" \
         -d '{
@@ -136,7 +138,7 @@ send_message() {
         sender_id="${AGENT_ID:-agent-001}"
     fi
 
-    MSG_RESPONSE=$(curl -s -X POST "${BACKEND_URL}/api/conversations/${CONV_ID}/messages" \
+    MSG_RESPONSE=$(curl -s -X POST "${BACKEND_URL}${API_PREFIX}/conversations/${CONV_ID}/messages" \
         -H "Content-Type: application/json" \
         -H "${AUTH_HEADER}" \
         -d "{
@@ -162,7 +164,7 @@ print(int(time.time() * 1000))
 PY
 )
 
-    CLOSE_RESPONSE=$(curl -s -X POST "${BACKEND_URL}/api/conversations/${CONV_ID}/close" \
+    CLOSE_RESPONSE=$(curl -s -X POST "${BACKEND_URL}${API_PREFIX}/conversations/${CONV_ID}/close" \
         -H "Content-Type: application/json" \
         -H "${AUTH_HEADER}" \
         -d '{"closedBy": "user"}')
@@ -199,7 +201,7 @@ wait_for_inspection() {
         echo -n "."
 
         # 查询质检报告
-        REPORT_RESPONSE=$(curl -s -H "${AUTH_HEADER}" "${BACKEND_URL}/quality/${CONV_ID}/reports")
+        REPORT_RESPONSE=$(curl -s -H "${AUTH_HEADER}" "${BACKEND_URL}${QUALITY_PREFIX}/quality/${CONV_ID}/reports")
 
         if echo "$REPORT_RESPONSE" | jq -e '.data.reports[0]' > /dev/null 2>&1; then
             echo -e " ${GREEN}✓${NC}"
@@ -218,7 +220,7 @@ wait_for_inspection() {
 verify_report() {
     echo -n "验证质检报告..."
 
-    REPORT_RESPONSE=$(curl -s -H "${AUTH_HEADER}" "${BACKEND_URL}/quality/${CONV_ID}/reports")
+    REPORT_RESPONSE=$(curl -s -H "${AUTH_HEADER}" "${BACKEND_URL}${QUALITY_PREFIX}/quality/${CONV_ID}/reports")
 
     # 验证报告结构
     if ! echo "$REPORT_RESPONSE" | jq -e '.data.reports[0].qualityScore' > /dev/null 2>&1; then
