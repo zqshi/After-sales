@@ -16,6 +16,9 @@ import { CustomerProfileRepository } from '../../infrastructure/repositories/Cus
 import { RequirementRepository } from '../../infrastructure/repositories/RequirementRepository.js';
 import { TaskRepository } from '../../infrastructure/repositories/TaskRepository.js';
 import { KnowledgeRepository } from '../../infrastructure/repositories/KnowledgeRepository.js';
+import { ProblemRepository } from '../../infrastructure/repositories/ProblemRepository.js';
+import { ReviewRepository } from '../../infrastructure/repositories/ReviewRepository.js';
+import { QualityRepository } from '../../infrastructure/repositories/QualityRepository.js';
 
 // Domain服务
 import { TaskService } from '../../domains/task/services/TaskService.js';
@@ -75,6 +78,24 @@ export function createContainer() {
   container.register('knowledgeRepository', (c) => {
     const apiClient = c.resolve('apiClient');
     return new KnowledgeRepository(apiClient);
+  }, true);
+
+  // ProblemRepository - 问题仓储（单例）
+  container.register('problemRepository', (c) => {
+    const apiClient = c.resolve('apiClient');
+    return new ProblemRepository(apiClient);
+  }, true);
+
+  // ReviewRepository - 审核仓储（单例）
+  container.register('reviewRepository', (c) => {
+    const apiClient = c.resolve('apiClient');
+    return new ReviewRepository(apiClient);
+  }, true);
+
+  // QualityRepository - 质检仓储（单例）
+  container.register('qualityRepository', (c) => {
+    const apiClient = c.resolve('apiClient');
+    return new QualityRepository(apiClient);
   }, true);
 
   // ==================== Domain服务层 ====================

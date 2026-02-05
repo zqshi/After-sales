@@ -30,6 +30,9 @@ import fastify, { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
 import { KnowledgeController } from './presentation/http/controllers/KnowledgeController';
 import { aiRoutes } from './presentation/http/routes/aiRoutes';
+import { problemRoutes } from './presentation/http/routes/problemRoutes';
+import { reviewRoutes } from './presentation/http/routes/reviewRoutes';
+import { qualityRoutes } from './presentation/http/routes/qualityRoutes';
 import { KnowledgeRepository } from './infrastructure/repositories/KnowledgeRepository';
 import { TaxKBAdapter } from './infrastructure/adapters/TaxKBAdapter';
 import { TaxKBKnowledgeRepository } from './infrastructure/repositories/TaxKBKnowledgeRepository';
@@ -83,6 +86,9 @@ import { MonitoringController } from './presentation/http/controllers/Monitoring
 import { monitoringRoutes } from './presentation/http/routes/monitoringRoutes';
 import { PermissionController } from './presentation/http/controllers/PermissionController';
 import { permissionRoutes } from './presentation/http/routes/permissionRoutes';
+import { ProblemController } from './presentation/http/controllers/ProblemController';
+import { ReviewController } from './presentation/http/controllers/ReviewController';
+import { QualityController } from './presentation/http/controllers/QualityController';
 import { ListRolesUseCase } from './application/use-cases/permissions/ListRolesUseCase';
 import { CreateRoleUseCase } from './application/use-cases/permissions/CreateRoleUseCase';
 import { UpdateRoleUseCase } from './application/use-cases/permissions/UpdateRoleUseCase';
@@ -112,6 +118,7 @@ import { GetRequirementUseCase } from './application/use-cases/requirement/GetRe
 import { CompleteReviewRequestUseCase } from './application/use-cases/review/CompleteReviewRequestUseCase';
 import { CreateReviewRequestUseCase } from './application/use-cases/review/CreateReviewRequestUseCase';
 import { SendMessageUseCase } from './application/use-cases/SendMessageUseCase';
+import { UpdateConversationUseCase } from './application/use-cases/UpdateConversationUseCase';
 import { EventBus } from './infrastructure/events/EventBus';
 import { OutboxEventBus } from './infrastructure/events/OutboxEventBus';
 import { OutboxProcessor } from './infrastructure/events/OutboxProcessor';
@@ -243,6 +250,9 @@ export async function createApp(
     conversationRepository,
     accessControl,
   );
+  const updateConversationUseCase = new UpdateConversationUseCase(
+    conversationRepository,
+  );
 
   const getCustomerProfileUseCase = new GetCustomerProfileUseCase(
     customerProfileRepository,
@@ -355,6 +365,7 @@ export async function createApp(
     sendMessageUseCase,
     closeConversationUseCase,
     getConversationUseCase,
+    updateConversationUseCase,
   );
 
   const customerProfileController = new CustomerProfileController(
@@ -442,8 +453,19 @@ export async function createApp(
     listMonitoringAlertsUseCase,
     resolveMonitoringAlertUseCase,
   );
+  const problemController = new ProblemController(
+    problemRepository,
+    createProblemUseCase,
+    updateProblemStatusUseCase,
+  );
+  const reviewController = new ReviewController(
+    reviewRequestRepository,
+    createReviewRequestUseCase,
+    completeReviewRequestUseCase,
+  );
 
   const qualityReportRepository = new QualityReportRepository(dataSource);
+  const qualityController = new QualityController(qualityReportRepository);
   const surveyRepository = new SurveyRepository(dataSource);
 
   let workflowEngine: WorkflowEngine | undefined;
@@ -638,6 +660,9 @@ export async function createApp(
     await requirementRoutes(apiApp, requirementController, accessMiddleware);
     await taskRoutes(apiApp, taskController, accessMiddleware);
     await knowledgeRoutes(apiApp, knowledgeController);
+    await problemRoutes(apiApp, problemController);
+    await reviewRoutes(apiApp, reviewController);
+    await qualityRoutes(apiApp, qualityController);
     await aiRoutes(apiApp, aiController);
     await imRoutes(apiApp, imController); // IM消息接入路由
   }, { prefix: '/api/v1' });

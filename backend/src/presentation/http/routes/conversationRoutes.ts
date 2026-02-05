@@ -205,6 +205,49 @@ export function conversationRoutes(
 
   /**
    * @swagger
+   * /api/conversations/{id}:
+   *   put:
+   *     tags:
+   *       - Conversations
+   *     summary: 更新对话（mode/metadata/status）
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               status:
+   *                 type: string
+   *               mode:
+   *                 type: string
+   *               metadata:
+   *                 type: object
+   *               reason:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: 更新成功
+   */
+  fastify.put(
+    '/api/conversations/:id',
+    {
+      config: { permissions: ['conversations.write'] },
+      preHandler: [accessMiddleware.checkConversationAccess('write')],
+    },
+    async (request, reply) => {
+      await controller.updateConversation(request, reply);
+    },
+  );
+
+  /**
+   * @swagger
    * /api/conversations/{id}/messages:
    *   post:
    *     tags:
@@ -300,82 +343,4 @@ export function conversationRoutes(
     },
   );
 
-  /**
-   * @swagger
-   * /api/conversations/{id}:
-   *   get:
-   *     tags:
-   *       - Conversations
-   *     summary: 获取对话详情
-   *     parameters:
-   *       - name: id
-   *         in: path
-   *         required: true
-   *         schema:
-   *           type: string
-   *       - name: includeMessages
-   *         in: query
-   *         required: false
-   *         schema:
-   *           type: boolean
-   *           default: true
-   *     responses:
-   *       200:
-   *         description: 对话详情
-   *       404:
-   *         description: 对话不存在
-   */
-  fastify.get(
-    '/api/conversations/:id',
-    {
-      config: { permissions: ['conversations.read'] },
-      preHandler: [accessMiddleware.checkConversationAccess('read')],
-    },
-    async (request, reply) => {
-      await controller.getConversation(request, reply);
-    },
-  );
-
-  /**
-   * @swagger
-   * /api/conversations/{id}/close:
-   *   post:
-   *     tags:
-   *       - Conversations
-   *     summary: 关闭对话
-   *     parameters:
-   *       - name: id
-   *         in: path
-   *         required: true
-   *         schema:
-   *           type: string
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required:
-   *               - closedBy
-   *             properties:
-   *               closedBy:
-   *                 type: string
-   *               reason:
-   *                 type: string
-   *     responses:
-   *       200:
-   *         description: 关闭成功
-   *       404:
-   *         description: 对话不存在
-   */
-  fastify.post(
-    '/api/conversations/:id/close',
-    {
-      config: { permissions: ['conversations.write'] },
-      preHandler: [accessMiddleware.checkConversationAccess('write')],
-    },
-    async (request, reply) => {
-      await controller.closeConversation(request, reply);
-    },
-  );
 }

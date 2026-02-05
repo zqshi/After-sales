@@ -258,6 +258,65 @@ export async function ignoreRequirement(requirementId) {
   });
 }
 
+// Problems
+export async function fetchProblems(params) {
+  return safeRequest('/api/problems', { params });
+}
+
+export async function fetchProblemDetail(problemId) {
+  return safeRequest(`/api/problems/${problemId}`);
+}
+
+export async function createProblem(payload) {
+  return safeRequest('/api/problems', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateProblemStatus(problemId, payload) {
+  return safeRequest(`/api/problems/${problemId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+// Reviews
+export async function fetchReviews(params) {
+  return safeRequest('/api/reviews', { params });
+}
+
+export async function fetchReviewDetail(reviewId) {
+  return safeRequest(`/api/reviews/${reviewId}`);
+}
+
+export async function createReview(payload) {
+  return safeRequest('/api/reviews', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function completeReview(reviewId, payload) {
+  return safeRequest(`/api/reviews/${reviewId}/complete`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// Quality
+export async function fetchQualityLatest(conversationId) {
+  return safeRequest(`/api/quality/${conversationId}`);
+}
+
+export async function fetchQualityReports(conversationId, params) {
+  return safeRequest(`/api/quality/${conversationId}/reports`, { params });
+}
+
+export async function fetchQualityLatestReports(params) {
+  return safeRequest('/api/quality/reports', { params });
+}
+
 export async function fetchRequirementStatistics() {
   return safeRequest('/api/requirements/statistics');
 }

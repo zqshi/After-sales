@@ -19,6 +19,7 @@ import { CreateConversationUseCase } from '../../../application/use-cases/Create
 import { GetConversationUseCase } from '../../../application/use-cases/GetConversationUseCase';
 import { ListConversationsUseCase } from '../../../application/use-cases/ListConversationsUseCase';
 import { SendMessageUseCase } from '../../../application/use-cases/SendMessageUseCase';
+import { UpdateConversationUseCase } from '../../../application/use-cases/UpdateConversationUseCase';
 import { ValidationError } from '../../../infrastructure/validation/Validator';
 
 export class ConversationController {
@@ -29,6 +30,7 @@ export class ConversationController {
     private readonly sendMessageUseCase: SendMessageUseCase,
     private readonly closeConversationUseCase: CloseConversationUseCase,
     private readonly getConversationUseCase: GetConversationUseCase,
+    private readonly updateConversationUseCase: UpdateConversationUseCase,
   ) {}
 
   /**
@@ -204,6 +206,40 @@ export class ConversationController {
         conversationId,
         includeMessages,
         userId: this.getUserId(request),
+      });
+
+      void reply.code(200).send({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  /**
+   * PUT /api/conversations/:id
+   * 更新对话（mode/metadata/status）
+   */
+  async updateConversation(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id: conversationId } = request.params as { id: string };
+      const payload = request.body as {
+        status?: string;
+        mode?: string;
+        metadata?: Record<string, unknown>;
+        reason?: string;
+      };
+
+      const result = await this.updateConversationUseCase.execute({
+        conversationId,
+        status: payload.status as any,
+        mode: payload.mode as any,
+        metadata: payload.metadata,
+        reason: payload.reason,
       });
 
       void reply.code(200).send({
