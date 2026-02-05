@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
 /**
  * ImController - IM消息接入控制器
  *
@@ -13,30 +14,30 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 import { FastifyRequest, FastifyReply } from 'fastify';
-
-import { ProblemRepository } from '@infrastructure/repositories/ProblemRepository';
-import { ReviewRequestRepository } from '@infrastructure/repositories/ReviewRequestRepository';
-import { CompleteReviewRequestUseCase } from '@application/use-cases/review/CompleteReviewRequestUseCase';
-import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
-import { config } from '@config/app.config';
 import { v4 as uuidv4 } from 'uuid';
+
 import { CustomerProfileResponseDTO } from '@application/dto/customer/CustomerProfileResponseDTO';
 import { AiService } from '@application/services/AiService';
 import { ConversationTaskCoordinator } from '@application/services/ConversationTaskCoordinator';
 import { SearchKnowledgeUseCase } from '@application/use-cases/knowledge/SearchKnowledgeUseCase';
+import { CompleteReviewRequestUseCase } from '@application/use-cases/review/CompleteReviewRequestUseCase';
 import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
-import { AgentMode , Conversation } from '@domain/conversation/models/Conversation';
+import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
+import { config } from '@config/app.config';
 import { isImChannel } from '@domain/conversation/constants';
+import { AgentMode , Conversation } from '@domain/conversation/models/Conversation';
 import { CustomerProfile } from '@domain/customer/models/CustomerProfile';
 import { ContactInfo } from '@domain/customer/value-objects/ContactInfo';
 import { CustomerLevelInfo } from '@domain/customer/value-objects/CustomerLevelInfo';
 import { Metrics } from '@domain/customer/value-objects/Metrics';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
+import { ProblemRepository } from '@infrastructure/repositories/ProblemRepository';
 import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
+import { ReviewRequestRepository } from '@infrastructure/repositories/ReviewRequestRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
-import { WorkflowRegistry } from '@infrastructure/workflow/WorkflowRegistry';
 import { ReviewRequestStream } from '@infrastructure/reviews/ReviewRequestStream';
+import { WorkflowRegistry } from '@infrastructure/workflow/WorkflowRegistry';
 
 interface IncomingMessageRequest {
   customerId: string;

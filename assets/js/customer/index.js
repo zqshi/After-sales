@@ -1,8 +1,6 @@
 import { qs, on } from '../core/dom.js';
 import { toggleRightSidebar } from '../ui/layout.js';
 import { fetchProfile, fetchProfileInteractions, isApiEnabled } from '../api.js';
-
-let currentConversationId = null;
 const interactionFilter = {
   range: '7d',
   type: '全部',
@@ -143,7 +141,6 @@ export function initCustomerProfile() {
 }
 
 export function updateCustomerContext(conversationId, customerId = null) {
-  currentConversationId = conversationId || null;
   const targetCustomerId = customerId || null;
   if (!targetCustomerId) {
     showEmptyCustomerProfile();

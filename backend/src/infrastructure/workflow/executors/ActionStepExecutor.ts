@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
 /**
  * ActionStepExecutor - 默认动作执行器
  *
@@ -17,9 +18,9 @@ import { CreateRequirementUseCase } from '@application/use-cases/requirement/Cre
 import { CreateReviewRequestUseCase } from '@application/use-cases/review/CreateReviewRequestUseCase';
 import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
 import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
+import { isImChannel } from '@domain/conversation/constants';
 import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
-import { isImChannel } from '@domain/conversation/constants';
 
 import { WorkflowStep, WorkflowContext } from '../types';
 

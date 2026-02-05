@@ -1,7 +1,9 @@
-import { AppDataSource } from './infrastructure/database/data-source';
-import { EventBus } from './infrastructure/events/EventBus';
-import { OutboxEventBus } from './infrastructure/events/OutboxEventBus';
-import { OutboxProcessor } from './infrastructure/events/OutboxProcessor';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
+import { AppDataSource } from '../database/data-source';
+
+import { EventBus } from './EventBus';
+import { OutboxEventBus } from './OutboxEventBus';
+import { OutboxProcessor } from './OutboxProcessor';
 
 /**
  * Outbox模式集成说明

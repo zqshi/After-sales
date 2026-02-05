@@ -193,7 +193,9 @@ export class UnifiedChatController {
   }
 
   appendMessage(message, messageId = null) {
-    if (!this.messagesContainer) return;
+    if (!this.messagesContainer) {
+      return;
+    }
 
     // 生成唯一的消息ID
     const finalMessageId = messageId || `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -220,7 +222,9 @@ export class UnifiedChatController {
   }
 
   updateMessageIssueIndicator(messageId, analysisData) {
-    if (!this.messagesContainer || !messageId) return;
+    if (!this.messagesContainer || !messageId) {
+      return;
+    }
     const messageRow = this.messagesContainer.querySelector(`[data-message-id="${messageId}"]`);
     if (!messageRow || messageRow.dataset.senderRole !== 'customer') {
       return;
@@ -287,7 +291,9 @@ export class UnifiedChatController {
   }
 
   async loadConversation(conversationId) {
-    if (!conversationId) return;
+    if (!conversationId) {
+      return;
+    }
     this.clearMessages();
 
     // 清空AI辅助面板和消息映射
@@ -487,18 +493,34 @@ export class UnifiedChatController {
     if (panel) {
       panel.classList.remove('hidden');
     }
-    if (replyPanel) replyPanel.classList.add('hidden');
-    if (solutionPanel) solutionPanel.classList.add('hidden');
-    if (clarifyPanel) clarifyPanel.classList.add('hidden');
-    if (requirementsPanel) requirementsPanel.classList.add('hidden');
-    if (actionPanel) actionPanel.classList.remove('hidden');
+    if (replyPanel) {
+      replyPanel.classList.add('hidden');
+    }
+    if (solutionPanel) {
+      solutionPanel.classList.add('hidden');
+    }
+    if (clarifyPanel) {
+      clarifyPanel.classList.add('hidden');
+    }
+    if (requirementsPanel) {
+      requirementsPanel.classList.add('hidden');
+    }
+    if (actionPanel) {
+      actionPanel.classList.remove('hidden');
+    }
 
     const titleEl = document.querySelector('#ai-assistant-title');
     const badgeEl = document.querySelector('#ai-assistant-badge');
     const descEl = document.querySelector('#ai-assistant-desc');
-    if (titleEl) titleEl.textContent = title || '协作面板';
-    if (badgeEl) badgeEl.textContent = badge || '人工';
-    if (descEl) descEl.textContent = desc || '';
+    if (titleEl) {
+      titleEl.textContent = title || '协作面板';
+    }
+    if (badgeEl) {
+      badgeEl.textContent = badge || '人工';
+    }
+    if (descEl) {
+      descEl.textContent = desc || '';
+    }
 
     const contentEl = document.querySelector('#ai-action-content');
     if (contentEl) {
@@ -638,8 +660,8 @@ export class UnifiedChatController {
       <div class="panel-card space-y-2">
         <div class="text-sm font-semibold text-gray-800">Agent建议资料</div>
         ${suggestions
-          .map((item) => `<div class="text-xs text-gray-600">• ${this.escapeHtml(item.title || item.name || '')}</div>`)
-          .join('')}
+    .map((item) => `<div class="text-xs text-gray-600">• ${this.escapeHtml(item.title || item.name || '')}</div>`)
+    .join('')}
       </div>
     `;
     this.showActionPanel({
@@ -851,7 +873,9 @@ export class UnifiedChatController {
    * 更新消息的情绪标记
    */
   updateMessageSentiment(message) {
-    if (!this.messagesContainer || !message?.sentiment) return;
+    if (!this.messagesContainer || !message?.sentiment) {
+      return;
+    }
 
     const customerRows = this.messagesContainer.querySelectorAll('.message-row[data-sender-role="customer"]');
     const lastCustomerRow = customerRows[customerRows.length - 1];
@@ -885,7 +909,7 @@ export class UnifiedChatController {
       urgent: '⚠️',
       anxious: '😰',
       angry: '😠',
-      frustrated: '😤'
+      frustrated: '😤',
     };
     return icons[emotion] || '😐';
   }
@@ -894,7 +918,9 @@ export class UnifiedChatController {
    * 添加知识卡片
    */
   appendKnowledgeCards(recommendations) {
-    if (!this.messagesContainer || !Array.isArray(recommendations)) return;
+    if (!this.messagesContainer || !Array.isArray(recommendations)) {
+      return;
+    }
 
     recommendations.forEach(rec => {
       const card = this.createKnowledgeCard(rec);
@@ -927,7 +953,9 @@ export class UnifiedChatController {
    */
   updateAnalysisPanel(analysis) {
     const panel = document.querySelector('#agent-analysis-panel');
-    if (!panel) return;
+    if (!panel) {
+      return;
+    }
 
     // 更新需求列表
     const reqSection = panel.querySelector('.requirements-list');
@@ -1027,7 +1055,7 @@ export class UnifiedChatController {
       this.aiPanel?.updateRelatedTasks(analysisData.relatedTasks);
     }
 
-    // 动态面板改为由快捷功能触发显示
+    // 动态面板改为由工具入口触发显示
   }
 
   /**
@@ -1035,7 +1063,9 @@ export class UnifiedChatController {
    */
   updateAgentSuggestionPanel(suggestion) {
     const panel = document.querySelector('.reply-suggestions');
-    if (!panel) return;
+    if (!panel) {
+      return;
+    }
 
     // 清空现有建议
     panel.innerHTML = `

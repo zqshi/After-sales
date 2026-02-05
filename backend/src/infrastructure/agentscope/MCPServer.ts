@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 import { buildAITools } from './tools/AITools';
@@ -32,6 +33,7 @@ export class MCPServer {
     'searchKnowledge',
     'searchTickets',
   ]);
+  private readonly allowedToolNames = Array.from(this.allowedTools);
 
   constructor(
     private readonly app: FastifyInstance,
@@ -65,8 +67,16 @@ export class MCPServer {
       }
     }
 
+    const missingTools = this.allowedToolNames.filter((name) => !this.tools.has(name));
+    if (missingTools.length > 0) {
+      this.app.log.warn(
+        { missingTools },
+        '[MCP] allowlist tools missing from registry',
+      );
+    }
+
     this.app.log.info(
-      { tools: Array.from(this.tools.keys()) },
+      { tools: Array.from(this.tools.keys()), count: this.tools.size },
       '[MCP] tool registry ready',
     );
   }

@@ -2,10 +2,10 @@ import { FastifyInstance } from 'fastify';
 
 import { AuditController } from '../controllers/AuditController';
 
-export async function auditRoutes(
+export function auditRoutes(
   fastify: FastifyInstance,
   controller: AuditController,
-): Promise<void> {
+): void {
   fastify.post('/audit/events', {
     config: { permissions: ['audit.write'] },
   }, async (request, reply) => {

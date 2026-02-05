@@ -5,11 +5,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { SendMessageUseCase } from '../../../src/application/use-cases/SendMessageUseCase';
-import { ConversationRepository } from '../../../src/infrastructure/repositories/ConversationRepository';
-import { EventBus } from '../../../src/infrastructure/events/EventBus';
-import { Conversation } from '../../../src/domain/conversation/models/Conversation';
-import { Channel } from '../../../src/domain/conversation/value-objects/Channel';
+import { SendMessageUseCase } from '../../../../backend/src/application/use-cases/SendMessageUseCase';
+import { ConversationRepository } from '../../../../backend/src/infrastructure/repositories/ConversationRepository';
+import { EventBus } from '../../../../backend/src/infrastructure/events/EventBus';
+import { Conversation } from '../../../../backend/src/domain/conversation/models/Conversation';
+import { Channel } from '../../../../backend/src/domain/conversation/value-objects/Channel';
 import { DataSource } from 'typeorm';
 import { getTestDataSource } from '../../helpers/testDatabase';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;

@@ -333,7 +333,9 @@ WebSocket 用于接收事件回推与人工输入。
 
 MCP（Model Context Protocol）工具由Backend提供，AgentScope通过HTTP调用。
 
-**Base URL**: `http://localhost:8080/mcp/tools` (Backend)
+**Base URL**: `http://localhost:8080/mcp` (Backend)
+
+说明：MCP 采用 JSON-RPC 风格调用（`POST /mcp`），工具列表可通过 `GET /mcp` 或 `GET /mcp/tools` 获取。
 
 ### 可用工具列表
 
@@ -346,7 +348,7 @@ MCP（Model Context Protocol）工具由Backend提供，AgentScope通过HTTP调�
 | **createTask** | 创建工单 | Engineer, Inspector | ✅ 已实现 |
 | **createSurvey** | 创建调研 | Inspector | ✅ 已实现 |
 | **saveQualityReport** | 保存质检报告 | Inspector | ✅ 已实现 |
-| **searchTickets** | 工单检索 | Engineer | ⏳ 待实现 |
+| **searchTickets** | 工单检索 | Engineer | ✅ 已实现 |
 
 ---
 

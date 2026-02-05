@@ -1,3 +1,6 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import { DataSource } from 'typeorm';
 
 import { config } from '../../config/app.config';
@@ -11,7 +14,7 @@ export const AppDataSource = new DataSource({
   database: config.database.name,
   synchronize: false, // 生产环境禁用，使用migrations
   logging: config.env === 'development',
-  entities: ['src/infrastructure/database/entities/**/*.ts'],
-  migrations: ['src/infrastructure/database/migrations/**/*.ts'],
+  entities: [path.join(path.dirname(fileURLToPath(import.meta.url)), 'entities', '**', '*.{js,ts}')],
+  migrations: [path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations', '**', '*.{js,ts}')],
   subscribers: [],
 });

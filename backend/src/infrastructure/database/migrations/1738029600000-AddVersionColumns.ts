@@ -51,7 +51,7 @@ export class AddVersionColumns1738029600000 implements MigrationInterface {
       }),
     );
 
-    console.log('✅ Added version columns for optimistic locking');
+    process.stdout.write('✅ Added version columns for optimistic locking\n');
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

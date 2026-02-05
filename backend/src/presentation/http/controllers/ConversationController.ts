@@ -12,13 +12,13 @@ import {
   ConversationCustomerLevelStatus,
 } from '../../../application/dto/ConversationListQueryDTO';
 import { CreateConversationRequestDTO } from '../../../application/dto/CreateConversationRequestDTO';
+import { ForbiddenError } from '../../../application/services/ResourceAccessControl';
 import { AssignAgentUseCase } from '../../../application/use-cases/AssignAgentUseCase';
 import { CloseConversationUseCase } from '../../../application/use-cases/CloseConversationUseCase';
 import { CreateConversationUseCase } from '../../../application/use-cases/CreateConversationUseCase';
 import { GetConversationUseCase } from '../../../application/use-cases/GetConversationUseCase';
 import { ListConversationsUseCase } from '../../../application/use-cases/ListConversationsUseCase';
 import { SendMessageUseCase } from '../../../application/use-cases/SendMessageUseCase';
-import { ForbiddenError } from '../../../application/services/ResourceAccessControl';
 import { ValidationError } from '../../../infrastructure/validation/Validator';
 
 export class ConversationController {
@@ -43,7 +43,7 @@ export class ConversationController {
       const payload = request.body as CreateConversationRequestDTO;
       const result = await this.createConversationUseCase.execute(payload);
 
-      reply.code(201).send({
+      void reply.code(201).send({
         success: true,
         data: result,
       });
@@ -82,7 +82,7 @@ export class ConversationController {
 
       const result = await this.listConversationsUseCase.execute(dto);
 
-      reply.code(200).send({
+      void reply.code(200).send({
         success: true,
         data: result,
       });
@@ -115,7 +115,7 @@ export class ConversationController {
         userId: this.getUserId(request),
       });
 
-      reply.code(200).send({
+      void reply.code(200).send({
         success: true,
         data: result,
       });
@@ -147,7 +147,7 @@ export class ConversationController {
         content,
       });
 
-      reply.code(201).send({
+      void reply.code(201).send({
         success: true,
         data: result,
       });
@@ -178,7 +178,7 @@ export class ConversationController {
         userId: this.getUserId(request),
       });
 
-      reply.code(200).send({
+      void reply.code(200).send({
         success: true,
         data: result,
       });
@@ -206,7 +206,7 @@ export class ConversationController {
         userId: this.getUserId(request),
       });
 
-      reply.code(200).send({
+      void reply.code(200).send({
         success: true,
         data: result,
       });
@@ -229,7 +229,7 @@ export class ConversationController {
    */
   private handleError(error: unknown, reply: FastifyReply): void {
     if (error instanceof ValidationError) {
-      reply.code(400).send({
+      void reply.code(400).send({
         success: false,
         error: {
           message: error.message,
@@ -240,7 +240,7 @@ export class ConversationController {
       return;
     }
     if (error instanceof ForbiddenError) {
-      reply.code(403).send({
+      void reply.code(403).send({
         success: false,
         error: {
           message: error.message,
@@ -251,7 +251,7 @@ export class ConversationController {
     }
     if (error instanceof Error) {
       const statusCode = this.getStatusCode(error.message);
-      reply.code(statusCode).send({
+      void reply.code(statusCode).send({
         success: false,
         error: {
           message: error.message,
@@ -259,7 +259,7 @@ export class ConversationController {
         },
       });
     } else {
-      reply.code(500).send({
+      void reply.code(500).send({
         success: false,
         error: {
           message: 'Internal server error',

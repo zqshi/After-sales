@@ -13,7 +13,7 @@ export class RequirementMapper {
         description: entity.description ?? undefined,
         category: entity.category,
         priority: Priority.create(entity.priority),
-        status: entity.status as any,
+        status: entity.status as Requirement['status'],
         source: entity.source
           ? RequirementSource.create(entity.source)
           : RequirementSource.create('manual'),

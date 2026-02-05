@@ -25,9 +25,9 @@ export function optionalNumber(value: unknown): number | undefined {
   return undefined;
 }
 
-export function optionalArray(value: unknown): unknown[] | undefined {
+export function optionalArray<T = unknown>(value: unknown): T[] | undefined {
   if (Array.isArray(value)) {
-    return value;
+    return value as T[];
   }
   return undefined;
 }

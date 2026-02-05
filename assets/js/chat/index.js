@@ -13,15 +13,12 @@ import {
   fetchConversationAiAnalysis,
   fetchSentimentAnalysis,
   fetchConversationStats,
-  fetchMonitoringAlerts,
-  fetchAuditSummary,
   createTask,
   fetchTasks,
   fetchQualityProfile,
   isApiEnabled,
 } from '../api.js';
 
-const outboundEnabled = false;
 let currentConversationId = null;
 let chatController = null;
 let serverStatusCounts = null;
@@ -32,7 +29,9 @@ let serverStatusCounts = null;
  * @returns {string} emoji图标
  */
 function getSentimentIcon(sentiment) {
-  if (!sentiment) return '';
+  if (!sentiment) {
+    return '';
+  }
 
   const sentimentType = typeof sentiment === 'string' ? sentiment : sentiment.type || sentiment.sentiment;
 
@@ -488,9 +487,9 @@ export async function openAssistCheck() {
 
     const knowledgeHtml = knowledge.length
       ? knowledge
-          .slice(0, 3)
-          .map(
-            (item) => `
+        .slice(0, 3)
+        .map(
+          (item) => `
             <div class="ai-panel-card ai-panel-card--compact flex items-start gap-3">
               <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-xs">KB</div>
               <div class="flex-1">
@@ -500,8 +499,8 @@ export async function openAssistCheck() {
               <button class="text-xs text-primary hover:underline" data-action="view-reference" data-title="${item.title}" data-meta="${item.category || ''}">查看</button>
             </div>
           `,
-          )
-          .join('')
+        )
+        .join('')
       : getAiEmptyStateHtml('暂无关联资料');
 
     setAiActionPanelContent({
@@ -576,9 +575,9 @@ export async function openFaultReport() {
 
     const actionsHtml = actions.length
       ? actions
-          .slice(0, 4)
-          .map((item) => `<li>${item.description || item.suggestedAction || item}</li>`)
-          .join('')
+        .slice(0, 4)
+        .map((item) => `<li>${item.description || item.suggestedAction || item}</li>`)
+        .join('')
       : '<li>暂无明确行动建议</li>';
 
     setAiActionPanelContent({
@@ -616,11 +615,6 @@ export async function openFaultReport() {
 
 
 export function openTicket() {
-  const latest = getLatestCustomerMessageText();
-  const now = new Date();
-  const dateValue = now.toLocaleDateString('sv-SE');
-  const timeValue = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-  const titleSuffix = latest ? latest.replace(/\s+/g, '').slice(0, 12) : '客户问题';
   openAiAssistantPanel();
   hideRightSidebarOverlay();
   setAiActionPanelContent({
@@ -728,7 +722,7 @@ export function openTicket() {
         <button class="w-full py-2.5 text-sm font-semibold text-white rounded-md bg-primary hover:bg-primary-dark" data-action="create-ticket">创建</button>
       </div>
     </div>
-  `
+  `,
   });
   setTimeout(() => {
     const titleInput = qs('#ticket-title');
@@ -743,16 +737,36 @@ export function openTicket() {
     const companyInput = qs('#ticket-company');
     const managementBtn = qs('[data-action="open-ticket-management"]');
 
-    if (titleInput) titleInput.value = '';
-    if (detailInput) detailInput.value = '';
-    if (tagSelect) tagSelect.value = '';
-    if (dateInput) dateInput.value = '';
-    if (timeInput) timeInput.value = '';
-    if (typeSelect) typeSelect.value = '';
-    if (productSelect) productSelect.value = '';
-    if (impactSelect) impactSelect.value = '';
-    if (incidentSelect) incidentSelect.value = '';
-    if (companyInput) companyInput.value = '';
+    if (titleInput) {
+      titleInput.value = '';
+    }
+    if (detailInput) {
+      detailInput.value = '';
+    }
+    if (tagSelect) {
+      tagSelect.value = '';
+    }
+    if (dateInput) {
+      dateInput.value = '';
+    }
+    if (timeInput) {
+      timeInput.value = '';
+    }
+    if (typeSelect) {
+      typeSelect.value = '';
+    }
+    if (productSelect) {
+      productSelect.value = '';
+    }
+    if (impactSelect) {
+      impactSelect.value = '';
+    }
+    if (incidentSelect) {
+      incidentSelect.value = '';
+    }
+    if (companyInput) {
+      companyInput.value = '';
+    }
     if (managementBtn) {
       managementBtn.addEventListener('click', () => {
         openTicketManagementPanel();
@@ -787,11 +801,13 @@ function bindTicketFormValidation() {
     { el: qs('#ticket-product'), name: '产品线', errorKey: 'ticket-product' },
     { el: qs('#ticket-impact'), name: '受影响程度', errorKey: 'ticket-impact' },
     { el: qs('#ticket-incident'), name: '是否故障', errorKey: 'ticket-incident' },
-    { el: qs('#ticket-company'), name: '客户公司名称', errorKey: 'ticket-company' }
+    { el: qs('#ticket-company'), name: '客户公司名称', errorKey: 'ticket-company' },
   ];
 
   const clearError = (el, errorKey) => {
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.classList.remove('border-red-400', 'ring-1', 'ring-red-200');
     const errorEl = actionBody.querySelector(`[data-error-for="${errorKey}"]`);
     if (errorEl) {
@@ -801,7 +817,9 @@ function bindTicketFormValidation() {
   };
 
   const markError = (el, errorKey, message) => {
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.classList.add('border-red-400', 'ring-1', 'ring-red-200');
     const errorEl = actionBody.querySelector(`[data-error-for="${errorKey}"]`);
     if (errorEl) {
@@ -811,7 +829,9 @@ function bindTicketFormValidation() {
   };
 
   fields.forEach(({ el, errorKey }) => {
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.addEventListener('input', () => clearError(el, errorKey));
     el.addEventListener('change', () => clearError(el, errorKey));
   });
@@ -912,10 +932,10 @@ function renderTicketManagementPanel(tickets, options = {}) {
   const contentHtml = `
     <div class="ai-panel-stack ai-panel-stack-tight">
       ${showCreateButton
-        ? `<div class="flex justify-end">
+    ? `<div class="flex justify-end">
             <button class="ai-panel-chip" data-action="open-ticket-form">创建工单</button>
           </div>`
-        : ''}
+    : ''}
       <div class="ai-panel-stack ai-panel-stack-tight">
         ${list.length ? list.map((ticket) => `
           <button class="ticket-item ai-panel-card ai-panel-card--compact" data-ticket-id="${ticket.id}">
@@ -937,21 +957,27 @@ function renderTicketManagementPanel(tickets, options = {}) {
     titleText: '工单管理',
     badgeText: '工单',
     descText: '查看工单状态与进展，点击查看详情。',
-    contentHtml
+    contentHtml,
   });
 
   bindTicketListActions(list);
 }
 
 function getTicketStatusClass(status) {
-  if (status.includes('处理中')) return 'status-progress';
-  if (status.includes('待确认')) return 'status-warn';
+  if (status.includes('处理中')) {
+    return 'status-progress';
+  }
+  if (status.includes('待确认')) {
+    return 'status-warn';
+  }
   return 'status-open';
 }
 
 function bindTicketListActions(tickets) {
   const actionBody = qs('#ai-action-content');
-  if (!actionBody) return;
+  if (!actionBody) {
+    return;
+  }
 
   actionBody.onclick = (event) => {
     const createBtn = event.target.closest('[data-action="open-ticket-form"]');
@@ -960,10 +986,14 @@ function bindTicketListActions(tickets) {
       return;
     }
     const item = event.target.closest('.ticket-item');
-    if (!item) return;
+    if (!item) {
+      return;
+    }
     const ticketId = item.dataset.ticketId;
     const ticket = tickets.find((t) => t.id === ticketId);
-    if (!ticket) return;
+    if (!ticket) {
+      return;
+    }
     showActionModal({
       title: `工单详情 · ${ticket.id || '暂无数据'}`,
       bodyHtml: `
@@ -976,14 +1006,16 @@ function bindTicketListActions(tickets) {
           <div><strong>创建时间：</strong>${ticket.createdAt || '暂无数据'}</div>
           <div><strong>摘要：</strong>${ticket.summary || '暂无数据'}</div>
         </div>
-      `
+      `,
     });
   };
 }
 
 function bindAssistCheckActions() {
   const actionBody = qs('#ai-action-content');
-  if (!actionBody) return;
+  if (!actionBody) {
+    return;
+  }
 
   actionBody.onclick = (event) => {
     const btn = event.target.closest('[data-action="manual-check"]');
@@ -1088,7 +1120,9 @@ const CONVERSATION_NAME_OVERRIDES = {};
 const CUSTOMER_NAME_OVERRIDES = {};
 
 function getConversationDisplayName(conv) {
-  if (!conv) return '客户';
+  if (!conv) {
+    return '客户';
+  }
   const byName = CUSTOMER_NAME_OVERRIDES[conv.customerName];
   return (
     CONVERSATION_NAME_OVERRIDES[conv.conversationId] ||
@@ -1225,10 +1259,14 @@ async function loadSentimentForConversation(conversationId) {
  */
 function updateConversationSentiment(conversationId, sentiment) {
   const conversationItem = qs(`.conversation-item[data-id="${conversationId}"]`);
-  if (!conversationItem) return;
+  if (!conversationItem) {
+    return;
+  }
 
   const sentimentIcon = getSentimentIcon(sentiment);
-  if (!sentimentIcon) return;
+  if (!sentimentIcon) {
+    return;
+  }
 
   // 查找或创建情绪icon容器
   const existingIcon = conversationItem.querySelector('.sentiment-icon');
@@ -1609,7 +1647,7 @@ let filterState = {
   status: 'all',
   channel: '',
   urgency: '',
-  sla: ''
+  sla: '',
 };
 
 function initConversationFilters() {
@@ -1773,7 +1811,6 @@ function applyFilters() {
 
 function getConversationStatus(item) {
   // 根据对话项的内容判断状态
-  const slaElement = item.querySelector('.px-2.py-0\\.5.rounded-full');
   const urgencyElement = item.querySelector('.text-xs.text-red-600, .text-xs.text-gray-500');
 
   const urgencyText = urgencyElement?.textContent?.toLowerCase() || '';
@@ -1803,7 +1840,9 @@ function updateStatusCounts(counts) {
 
 function showNoResultsMessage(show) {
   const container = qs('.conversation-list');
-  if (!container) return;
+  if (!container) {
+    return;
+  }
 
   let noResultsDiv = container.querySelector('.no-results-message');
 
@@ -1832,23 +1871,33 @@ export function resetFilters() {
     status: 'all',
     channel: '',
     urgency: '',
-    sla: ''
+    sla: '',
   };
 
   const searchInput = qs('#conversation-search-input');
-  if (searchInput) searchInput.value = '';
+  if (searchInput) {
+    searchInput.value = '';
+  }
 
   const channelSelect = qs('#filter-channel');
-  if (channelSelect) channelSelect.value = '';
+  if (channelSelect) {
+    channelSelect.value = '';
+  }
 
   const urgencySelect = qs('#filter-urgency');
-  if (urgencySelect) urgencySelect.value = '';
+  if (urgencySelect) {
+    urgencySelect.value = '';
+  }
 
   const slaSelect = qs('#filter-sla');
-  if (slaSelect) slaSelect.value = '';
+  if (slaSelect) {
+    slaSelect.value = '';
+  }
 
   const allButton = qs('#filter-status-all');
-  if (allButton) updateStatusButtonStyles(allButton);
+  if (allButton) {
+    updateStatusButtonStyles(allButton);
+  }
 
   applyFilters();
   loadConversationStats();

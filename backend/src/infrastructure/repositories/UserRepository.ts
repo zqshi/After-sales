@@ -1,4 +1,5 @@
 import { DataSource, Repository } from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { UserEntity } from '@infrastructure/database/entities/UserEntity';
 
@@ -39,7 +40,7 @@ export class UserRepository {
   }
 
   async updateById(id: string, updates: Partial<UserEntity>): Promise<UserEntity | null> {
-    await this.repository.update({ id }, updates as any);
+    await this.repository.update({ id }, updates as QueryDeepPartialEntity<UserEntity>);
     return this.findById(id);
   }
 

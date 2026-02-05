@@ -3,11 +3,11 @@ import { FastifyInstance } from 'fastify';
 import { CustomerActionController } from '../controllers/CustomerActionController';
 import { CustomerProfileController } from '../controllers/CustomerProfileController';
 
-export async function customerRoutes(
+export function customerRoutes(
   fastify: FastifyInstance,
   profileController: CustomerProfileController,
   actionController: CustomerActionController,
-): Promise<void> {
+): void {
   fastify.get('/api/customers/:id', {
     config: { permissions: ['customers.read'] },
   }, async (request, reply) => {

@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
-import { createApp } from '../../src/app';
+import { createApp } from '../../../backend/src/app';
 import { getTestDataSource, closeTestDataSource } from '../helpers/testDatabase';
-import { OutboxEventBus } from '../../src/infrastructure/events/OutboxEventBus';
-import { RequirementRepository } from '../../src/infrastructure/repositories/RequirementRepository';
-import { Requirement } from '../../src/domain/requirement/models/Requirement';
-import { Priority } from '../../src/domain/requirement/value-objects/Priority';
-import { RequirementSource } from '../../src/domain/requirement/value-objects/RequirementSource';
+import { OutboxEventBus } from '../../../backend/src/infrastructure/events/OutboxEventBus';
+import { RequirementRepository } from '../../../backend/src/infrastructure/repositories/RequirementRepository';
+import { Requirement } from '../../../backend/src/domain/requirement/models/Requirement';
+import { Priority } from '../../../backend/src/domain/requirement/value-objects/Priority';
+import { RequirementSource } from '../../../backend/src/domain/requirement/value-objects/RequirementSource';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
 const API_PREFIX = '/api/v1/api';
 

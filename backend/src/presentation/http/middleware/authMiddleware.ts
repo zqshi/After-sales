@@ -15,7 +15,7 @@ export async function authMiddleware(
   try {
     await request.jwtVerify();
   } catch (_error) {
-    reply.code(401).send({
+    void reply.code(401).send({
       success: false,
       error: 'Unauthorized',
     });

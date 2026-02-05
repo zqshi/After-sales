@@ -6,10 +6,10 @@ import { FastifyInstance } from 'fastify';
 
 import { ImController } from '../controllers/ImController';
 
-export async function imRoutes(
+export function imRoutes(
   fastify: FastifyInstance,
   controller: ImController,
-): Promise<void> {
+): void {
   /**
    * @swagger
    * /api/im/incoming-message:

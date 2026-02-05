@@ -17,9 +17,10 @@
  * });
  */
 
+import { request as sharedRequest, isApiEnabled as sharedIsApiEnabled } from '../../api.js';
+
 const GLOBAL_CONFIG = window.config || {};
 const API_BASE = GLOBAL_CONFIG.apiBaseUrl?.replace(/\/$/, '') || '';
-const IS_API_ENABLED = Boolean(API_BASE);
 
 const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
@@ -125,71 +126,11 @@ export class ApiClient {
    * @returns {Promise<any>}
    */
   async request(path, options = {}, retryCount = 0) {
-    if (!this.baseURL) {
+    if (!sharedIsApiEnabled()) {
       throw new Error('[ApiClient] API not configured, missing baseURL');
     }
 
-    const { params, timeout = this.timeout, ...rest } = options;
-    const query = this._buildQuery(params);
-    const url = `${this.baseURL}${path}${query}`;
-
-    let response;
-    try {
-      response = await this._fetchWithTimeout(
-        url,
-        {
-          ...rest,
-          headers: this._getHeaders(rest.headers),
-        },
-        timeout,
-      );
-    } catch (err) {
-      // 网络错误,尝试重试
-      if (retryCount < this.maxRetries) {
-        const delay = this._getRetryDelay(retryCount);
-        console.warn(
-          `[ApiClient] Request failed, retrying in ${delay}ms (${retryCount + 1}/${this.maxRetries})...`,
-        );
-        await this._delay(delay);
-        return this.request(path, options, retryCount + 1);
-      }
-      throw this._createError('Network request failed', err.message, 0, null);
-    }
-
-    const resultText = await response.text();
-
-    // 安全解析JSON
-    let content = null;
-    if (resultText) {
-      try {
-        content = JSON.parse(resultText);
-      } catch (parseErr) {
-        console.error('[ApiClient] Failed to parse response as JSON:', resultText.slice(0, 200));
-        throw this._createError(
-          'Invalid JSON response',
-          `Failed to parse response from ${path}`,
-          response.status,
-          null,
-        );
-      }
-    }
-
-    // 检查是否需要重试
-    if (!response.ok) {
-      if (this._shouldRetry(response.status, retryCount)) {
-        const delay = this._getRetryDelay(retryCount);
-        console.warn(
-          `[ApiClient] Request failed with status ${response.status}, retrying in ${delay}ms (${retryCount + 1}/${this.maxRetries})...`,
-        );
-        await this._delay(delay);
-        return this.request(path, options, retryCount + 1);
-      }
-
-      const errorMessage = content?.message || content?.error || response.statusText || 'Request failed';
-      throw this._createError(errorMessage, errorMessage, response.status, content);
-    }
-
-    return content;
+    return sharedRequest(path, options, retryCount);
   }
 
   /**
@@ -284,7 +225,7 @@ export class ApiClient {
    * 检查API是否已启用
    */
   isEnabled() {
-    return Boolean(this.baseURL);
+    return sharedIsApiEnabled();
   }
 
   /**
@@ -306,5 +247,5 @@ ApiClient._instance = apiClient;
 
 // 导出工具函数(保持向后兼容)
 export function isApiEnabled() {
-  return IS_API_ENABLED;
+  return sharedIsApiEnabled();
 }

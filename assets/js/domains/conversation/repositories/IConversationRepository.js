@@ -4,27 +4,27 @@
  * 提供对话查询、保存以及行为相关的契约。
  */
 export class IConversationRepository {
-  async findById(conversationId) {
+  async findById(_conversationId) {
     throw new Error('[IConversationRepository] findById() must be implemented');
   }
 
-  async findAll(filters = {}) {
+  async findAll(_filters = {}) {
     throw new Error('[IConversationRepository] findAll() must be implemented');
   }
 
-  async save(conversation) {
+  async save(_conversation) {
     throw new Error('[IConversationRepository] save() must be implemented');
   }
 
-  async list(filters = {}) {
+  async list(_filters = {}) {
     throw new Error('[IConversationRepository] list() must be implemented');
   }
 
-  async sendMessage(conversationId, message) {
+  async sendMessage(_conversationId, _message) {
     throw new Error('[IConversationRepository] sendMessage() must be implemented');
   }
 
-  async close(conversationId, payload) {
+  async close(_conversationId, _payload) {
     throw new Error('[IConversationRepository] close() must be implemented');
   }
 }

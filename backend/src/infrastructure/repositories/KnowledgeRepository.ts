@@ -66,8 +66,8 @@ export class KnowledgeRepository implements IKnowledgeRepository {
   async countByFilters(filters: KnowledgeFilters): Promise<number> {
     const qb = this.repository.createQueryBuilder('knowledgeItem').select('COUNT(*)', 'count');
     this.applyFilters(qb, filters);
-    const result = await qb.getRawOne();
-    return Number(result.count);
+    const result = await qb.getRawOne<{ count: string }>();
+    return Number(result?.count ?? 0);
   }
 
   async delete(id: string): Promise<void> {

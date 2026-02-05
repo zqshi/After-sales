@@ -20,9 +20,12 @@
 DATABASE_URL=postgresql://admin:admin123@localhost:5432/aftersales
 REDIS_URL=redis://:redis123@localhost:6379
 JWT_SECRET=change-me-in-production
+JWT_ENFORCE_STRONG_SECRET=false
 AGENTSCOPE_URL=http://localhost:5000
 WORKFLOW_ENGINE_ENABLED=true
 WORKFLOW_ENGINE_MODE=full
+OUTBOX_PROCESSOR_ENABLED=true
+OUTBOX_PUBLISH_MODE=dual
 ```
 
 ---

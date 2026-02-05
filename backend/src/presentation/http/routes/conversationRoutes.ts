@@ -7,11 +7,11 @@ import { FastifyInstance } from 'fastify';
 import { ConversationController } from '../controllers/ConversationController';
 import { ResourceAccessMiddleware } from '../middleware/resourceAccessMiddleware';
 
-export async function conversationRoutes(
+export function conversationRoutes(
   fastify: FastifyInstance,
   controller: ConversationController,
   accessMiddleware: ResourceAccessMiddleware,
-): Promise<void> {
+): void {
   /**
    * @swagger
    * /api/conversations:
@@ -171,6 +171,40 @@ export async function conversationRoutes(
 
   /**
    * @swagger
+   * /api/conversations/{id}:
+   *   get:
+   *     tags:
+   *       - Conversations
+   *     summary: 获取对话详情
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - name: includeMessages
+   *         in: query
+   *         schema:
+   *           type: boolean
+   *     responses:
+   *       200:
+   *         description: 对话详情
+   *       404:
+   *         description: 对话不存在
+   */
+  fastify.get(
+    '/api/conversations/:id',
+    {
+      config: { permissions: ['conversations.read'] },
+      preHandler: [accessMiddleware.checkConversationAccess('read')],
+    },
+    async (request, reply) => {
+      await controller.getConversation(request, reply);
+    },
+  );
+
+  /**
+   * @swagger
    * /api/conversations/{id}/messages:
    *   post:
    *     tags:
@@ -299,6 +333,49 @@ export async function conversationRoutes(
     },
     async (request, reply) => {
       await controller.getConversation(request, reply);
+    },
+  );
+
+  /**
+   * @swagger
+   * /api/conversations/{id}/close:
+   *   post:
+   *     tags:
+   *       - Conversations
+   *     summary: 关闭对话
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - closedBy
+   *             properties:
+   *               closedBy:
+   *                 type: string
+   *               reason:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: 关闭成功
+   *       404:
+   *         description: 对话不存在
+   */
+  fastify.post(
+    '/api/conversations/:id/close',
+    {
+      config: { permissions: ['conversations.write'] },
+      preHandler: [accessMiddleware.checkConversationAccess('write')],
+    },
+    async (request, reply) => {
+      await controller.closeConversation(request, reply);
     },
   );
 }

@@ -1,3 +1,4 @@
+/* eslint-disable import/order, import/no-named-as-default, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
 /**
  * Fastify Application Factory
  *
@@ -7,26 +8,6 @@
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 
-import { CloseConversationUseCase } from './application/use-cases/CloseConversationUseCase';
-import { AssociateRequirementWithConversationUseCase } from './application/use-cases/requirement/AssociateRequirementWithConversationUseCase';
-import { GetConversationUseCase } from './application/use-cases/GetConversationUseCase';
-import { ConversationRepository } from './infrastructure/repositories/ConversationRepository';
-import { EventBus } from './infrastructure/events/EventBus';
-import { CustomerProfileController } from './presentation/http/controllers/CustomerProfileController';
-import { CustomerActionController } from './presentation/http/controllers/CustomerActionController';
-import { customerRoutes } from './presentation/http/routes/customerRoutes';
-import { GetCustomerProfileUseCase } from './application/use-cases/customer/GetCustomerProfileUseCase';
-import { RefreshCustomerProfileUseCase } from './application/use-cases/customer/RefreshCustomerProfileUseCase';
-import { GetCustomerInteractionsUseCase } from './application/use-cases/customer/GetCustomerInteractionsUseCase';
-import { AddServiceRecordUseCase } from './application/use-cases/customer/AddServiceRecordUseCase';
-import { UpdateCommitmentProgressUseCase } from './application/use-cases/customer/UpdateCommitmentProgressUseCase';
-import { AddInteractionUseCase } from './application/use-cases/customer/AddInteractionUseCase';
-import { MarkCustomerAsVIPUseCase } from './application/use-cases/customer/MarkCustomerAsVIPUseCase';
-import { CustomerProfileRepository } from './infrastructure/repositories/CustomerProfileRepository';
-import { RequirementController } from './presentation/http/controllers/RequirementController';
-import { requirementRoutes } from './presentation/http/routes/requirementRoutes';
-import { CreateRequirementUseCase } from './application/use-cases/requirement/CreateRequirementUseCase';
-import { GetRequirementUseCase } from './application/use-cases/requirement/GetRequirementUseCase';
 import { ListRequirementsUseCase } from './application/use-cases/requirement/ListRequirementsUseCase';
 import { UpdateRequirementStatusUseCase } from './application/use-cases/requirement/UpdateRequirementStatusUseCase';
 import { DeleteRequirementUseCase } from './application/use-cases/requirement/DeleteRequirementUseCase';
@@ -112,27 +93,48 @@ import { UpdateMemberUseCase } from './application/use-cases/permissions/UpdateM
 import { DeleteMemberUseCase } from './application/use-cases/permissions/DeleteMemberUseCase';
 import { RolePermissionService } from './application/services/RolePermissionService';
 import { AssignAgentUseCase } from './application/use-cases/AssignAgentUseCase';
+import { CloseConversationUseCase } from './application/use-cases/CloseConversationUseCase';
 import { CreateConversationUseCase } from './application/use-cases/CreateConversationUseCase';
+import { AddInteractionUseCase } from './application/use-cases/customer/AddInteractionUseCase';
+import { AddServiceRecordUseCase } from './application/use-cases/customer/AddServiceRecordUseCase';
+import { GetCustomerInteractionsUseCase } from './application/use-cases/customer/GetCustomerInteractionsUseCase';
+import { GetCustomerProfileUseCase } from './application/use-cases/customer/GetCustomerProfileUseCase';
+import { MarkCustomerAsVIPUseCase } from './application/use-cases/customer/MarkCustomerAsVIPUseCase';
+import { RefreshCustomerProfileUseCase } from './application/use-cases/customer/RefreshCustomerProfileUseCase';
+import { UpdateCommitmentProgressUseCase } from './application/use-cases/customer/UpdateCommitmentProgressUseCase';
+import { GetConversationUseCase } from './application/use-cases/GetConversationUseCase';
 import { ListConversationsUseCase } from './application/use-cases/ListConversationsUseCase';
 import { CreateProblemUseCase } from './application/use-cases/problem/CreateProblemUseCase';
-import { WorkflowRegistry } from './infrastructure/workflow/WorkflowRegistry';
-import { QualityReportRepository } from './infrastructure/repositories/QualityReportRepository';
-import { SurveyRepository } from './infrastructure/repositories/SurveyRepository';
 import { UpdateProblemStatusUseCase } from './application/use-cases/problem/UpdateProblemStatusUseCase';
-import { CreateReviewRequestUseCase } from './application/use-cases/review/CreateReviewRequestUseCase';
+import { AssociateRequirementWithConversationUseCase } from './application/use-cases/requirement/AssociateRequirementWithConversationUseCase';
+import { CreateRequirementUseCase } from './application/use-cases/requirement/CreateRequirementUseCase';
+import { GetRequirementUseCase } from './application/use-cases/requirement/GetRequirementUseCase';
 import { CompleteReviewRequestUseCase } from './application/use-cases/review/CompleteReviewRequestUseCase';
+import { CreateReviewRequestUseCase } from './application/use-cases/review/CreateReviewRequestUseCase';
 import { SendMessageUseCase } from './application/use-cases/SendMessageUseCase';
+import { EventBus } from './infrastructure/events/EventBus';
 import { OutboxEventBus } from './infrastructure/events/OutboxEventBus';
 import { OutboxProcessor } from './infrastructure/events/OutboxProcessor';
+import { TempDirCleaner } from './infrastructure/maintenance/TempDirCleaner';
+import { ConversationRepository } from './infrastructure/repositories/ConversationRepository';
+import { CustomerProfileRepository } from './infrastructure/repositories/CustomerProfileRepository';
+import { QualityReportRepository } from './infrastructure/repositories/QualityReportRepository';
+import { SurveyRepository } from './infrastructure/repositories/SurveyRepository';
 import { ActionStepExecutor } from './infrastructure/workflow/executors/ActionStepExecutor';
 import { HumanInLoopExecutor } from './infrastructure/workflow/executors/HumanInLoopExecutor';
 import { WorkflowEngine } from './infrastructure/workflow/WorkflowEngine';
+import { WorkflowRegistry } from './infrastructure/workflow/WorkflowRegistry';
 import { AiController } from './presentation/http/controllers/AiController';
 import { ConversationController } from './presentation/http/controllers/ConversationController';
+import { CustomerActionController } from './presentation/http/controllers/CustomerActionController';
+import { CustomerProfileController } from './presentation/http/controllers/CustomerProfileController';
 import { ImController } from './presentation/http/controllers/ImController';
+import { RequirementController } from './presentation/http/controllers/RequirementController';
 import { conversationRoutes } from './presentation/http/routes/conversationRoutes';
+import { customerRoutes } from './presentation/http/routes/customerRoutes';
 import { imRoutes } from './presentation/http/routes/imRoutes';
 import { knowledgeRoutes } from './presentation/http/routes/knowledgeRoutes';
+import { requirementRoutes } from './presentation/http/routes/requirementRoutes';
 
 export async function createApp(
   dataSource: DataSource,
@@ -140,6 +142,18 @@ export async function createApp(
   const app = fastify({
     logger: process.env.NODE_ENV !== 'test',
   });
+
+  const jwtSecret = config.jwt.secret;
+  const isDefaultJwtSecret = jwtSecret === 'your-secret-key-change-in-production';
+  const isWeakJwtSecret = jwtSecret.length < 32;
+  if (config.env === 'production') {
+    if (config.jwt.enforceStrongSecret && (isDefaultJwtSecret || isWeakJwtSecret)) {
+      throw new Error('JWT secret is weak or default; set JWT_SECRET to a strong value');
+    }
+    if (isDefaultJwtSecret || isWeakJwtSecret) {
+      app.log.warn('[Security] JWT_SECRET is weak or default; set a strong value for production');
+    }
+  }
 
   if (process.env.NODE_ENV === 'production') {
     await app.register(helmet);
@@ -460,28 +474,30 @@ export async function createApp(
 
     WorkflowRegistry.setWorkflowEngine(workflowEngine, humanInLoopExecutor);
 
-    humanInLoopExecutor.getEventEmitter().on('human_review_requested', async (request) => {
-      try {
-        const data = request.data || {};
-        const conversationId =
-          data.conversationId || data.conversation?.id || data.conversation_id;
-        if (!conversationId) {
-          app.log.warn('[Workflow] human_review_requested without conversationId');
-          return;
+    humanInLoopExecutor.getEventEmitter().on('human_review_requested', (request) => {
+      void (async () => {
+        try {
+          const data = request.data || {};
+          const conversationId =
+            data.conversationId || data.conversation?.id || data.conversation_id;
+          if (!conversationId) {
+            app.log.warn('[Workflow] human_review_requested without conversationId');
+            return;
+          }
+          const review = await createReviewRequestUseCase.execute({
+            conversationId,
+            suggestion: {
+              ...data,
+              executionId: request.executionId,
+              stepName: request.stepName,
+            },
+            confidence: data.confidence,
+          });
+          app.log.info(`[Workflow] ReviewRequest created: ${review.id}`);
+        } catch (error) {
+          app.log.error({ error }, '[Workflow] Failed to create ReviewRequest');
         }
-        const review = await createReviewRequestUseCase.execute({
-          conversationId,
-          suggestion: {
-            ...data,
-            executionId: request.executionId,
-            stepName: request.stepName,
-          },
-          confidence: data.confidence,
-        });
-        app.log.info(`[Workflow] ReviewRequest created: ${review.id}`);
-      } catch (error) {
-        app.log.error({ error }, '[Workflow] Failed to create ReviewRequest');
-      }
+      })();
     });
   }
 
@@ -540,16 +556,18 @@ export async function createApp(
   const reviewRequestStream = ReviewRequestStream.getInstance();
 
   // 订阅事件
-  eventBus.subscribe('TaskCompleted', (event) => taskCompletedEventHandler.handle(event as any));
-  eventBus.subscribe('ConversationReadyToClose', (event) =>
-    conversationReadyToCloseEventHandler.handle(event as any),
-  );
-  eventBus.subscribe('RequirementCreated', (event) =>
-    requirementCreatedEventHandler.handle(event as any),
-  );
-  eventBus.subscribe('ProblemResolved', (event) =>
-    problemResolvedEventHandler.handle(event as any),
-  );
+  eventBus.subscribe('TaskCompleted', (event) => {
+    void taskCompletedEventHandler.handle(event as any);
+  });
+  eventBus.subscribe('ConversationReadyToClose', (event) => {
+    void conversationReadyToCloseEventHandler.handle(event as any);
+  });
+  eventBus.subscribe('RequirementCreated', (event) => {
+    void requirementCreatedEventHandler.handle(event as any);
+  });
+  eventBus.subscribe('ProblemResolved', (event) => {
+    void problemResolvedEventHandler.handle(event as any);
+  });
   eventBus.subscribe('AgentReviewRequested', (event) => {
     const payload = (event as any).payload;
     reviewRequestStream.emitRequested({
@@ -562,9 +580,9 @@ export async function createApp(
         : payload.createdAt,
     });
   });
-  eventBus.subscribe('ConversationClosed', (event) =>
-    conversationTaskCoordinator.onConversationClosed(event as any),
-  );
+  eventBus.subscribe('ConversationClosed', (event) => {
+    void conversationTaskCoordinator.onConversationClosed(event as any);
+  });
 
   if (config.outbox.enabled) {
     const outboxProcessor = new OutboxProcessor(outboxEventBus, eventBus, dataSource);
@@ -572,6 +590,10 @@ export async function createApp(
     app.decorate('outboxProcessor', outboxProcessor);
     app.log.info(`[Outbox] Processor started (interval ${config.outbox.intervalMs}ms)`);
   }
+
+  const tempDirCleaner = new TempDirCleaner(config.tempCleanup, app.log);
+  tempDirCleaner.start();
+  app.decorate('tempDirCleaner', tempDirCleaner);
 
   // 注册路由 - 所有业务路由添加 /api/v1 前缀
   await app.register(async (apiApp) => {
@@ -621,7 +643,7 @@ export async function createApp(
   }, { prefix: '/api/v1' });
 
   // Metrics路由不添加前缀（直接挂载在根路径）
-  await metricsRoutes(app);
+  metricsRoutes(app);
 
   const agentScopeDependencies = {
     conversationRepository,

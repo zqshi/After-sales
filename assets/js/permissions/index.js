@@ -182,10 +182,10 @@ function renderRoleList(roles, activeRoleId) {
         <div class="flex items-center gap-2 text-xs">
           <button class="permissions-role-edit text-primary hover:text-primary-dark" data-permission="${MANAGE_ROLE_PERMISSION_KEY}">编辑</button>
           ${
-            role.isSystem
-              ? '<span class="text-gray-400">系统</span>'
-              : '<button class="permissions-role-delete text-red-600 hover:text-red-700" data-permission="permissions.roles.manage">删除</button>'
-          }
+  role.isSystem
+    ? '<span class="text-gray-400">系统</span>'
+    : '<button class="permissions-role-delete text-red-600 hover:text-red-700" data-permission="permissions.roles.manage">删除</button>'
+}
         </div>
       `
       : '';
@@ -677,12 +677,24 @@ export function initPermissionManager() {
     if (memberModalTitle) {
       memberModalTitle.textContent = member ? '编辑成员' : '新增成员';
     }
-    if (memberNameInput) memberNameInput.value = member?.name || '';
-    if (memberEmailInput) memberEmailInput.value = member?.email || '';
-    if (memberPhoneInput) memberPhoneInput.value = member?.phone || '';
-    if (memberTeamInput) memberTeamInput.value = member?.team || '';
-    if (memberBadgeInput) memberBadgeInput.value = member?.badge || '';
-    if (memberPasswordInput) memberPasswordInput.value = '';
+    if (memberNameInput) {
+      memberNameInput.value = member?.name || '';
+    }
+    if (memberEmailInput) {
+      memberEmailInput.value = member?.email || '';
+    }
+    if (memberPhoneInput) {
+      memberPhoneInput.value = member?.phone || '';
+    }
+    if (memberTeamInput) {
+      memberTeamInput.value = member?.team || '';
+    }
+    if (memberBadgeInput) {
+      memberBadgeInput.value = member?.badge || '';
+    }
+    if (memberPasswordInput) {
+      memberPasswordInput.value = '';
+    }
     if (memberPasswordField) {
       memberPasswordField.classList.toggle('hidden', Boolean(member));
     }

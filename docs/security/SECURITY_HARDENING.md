@@ -77,6 +77,11 @@ export const authConfig = {
 };
 ```
 
+**生产运行建议**
+
+- `JWT_SECRET` 必须为强随机值（建议≥32字符）
+- 建议设置 `JWT_ENFORCE_STRONG_SECRET=true`，在生产环境启动时强制校验
+
 #### 1.2 Session安全配置
 
 **backend/src/config/session.config.ts**

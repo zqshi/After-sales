@@ -8,7 +8,7 @@ export class IProfileRepository {
    * 根据客户ID加载画像
    * @param {string} customerId
    */
-  async findById(customerId) {
+  async findById(_customerId) {
     throw new Error('[IProfileRepository] findById() must be implemented');
   }
 
@@ -17,7 +17,7 @@ export class IProfileRepository {
    * @param {string} customerId
    * @param {Object} filters
    */
-  async getInteractions(customerId, filters = {}) {
+  async getInteractions(_customerId, _filters = {}) {
     throw new Error('[IProfileRepository] getInteractions() must be implemented');
   }
 
@@ -25,7 +25,7 @@ export class IProfileRepository {
    * 保存画像
    * @param {CustomerProfile} profile
    */
-  async save(profile) {
+  async save(_profile) {
     throw new Error('[IProfileRepository] save() must be implemented');
   }
 
@@ -33,7 +33,7 @@ export class IProfileRepository {
    * 刷新画像
    * @param {string} customerId
    */
-  async refresh(customerId) {
+  async refresh(_customerId) {
     throw new Error('[IProfileRepository] refresh() must be implemented');
   }
 }

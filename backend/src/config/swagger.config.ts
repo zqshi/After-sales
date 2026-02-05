@@ -100,5 +100,5 @@ export async function registerSwagger(fastify: FastifyInstance): Promise<void> {
     transformStaticCSP: (header) => header,
   });
 
-  console.log('✅ Swagger文档已配置: http://localhost:8080/docs');
+  process.stdout.write('✅ Swagger文档已配置: http://localhost:8080/docs\n');
 }

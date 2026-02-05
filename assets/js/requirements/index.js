@@ -358,9 +358,6 @@ function handleRightPanelAction(type, label, btn) {
         open(label, '_blank'),
       );
       break;
-    case 'quick':
-      showActionModal('快捷操作', `已记录操作「${label}」，可在集成后触发后端接口。`);
-      break;
     case 'knowledge-graph':
       showActionModal('知识图谱', '当前显示的是登录问题的知识图谱节点，后续可替换为实时数据。');
       break;

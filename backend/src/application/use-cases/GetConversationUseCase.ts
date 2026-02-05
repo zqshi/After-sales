@@ -7,8 +7,8 @@ import { z } from 'zod';
 import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
 import { nonEmptyStringSchema, uuidSchema } from '../../infrastructure/validation/CommonSchemas';
 import { Validator } from '../../infrastructure/validation/Validator';
-import { ResourceAccessControl } from '../services/ResourceAccessControl';
 import { ConversationResponseDTO } from '../dto/ConversationResponseDTO';
+import { ResourceAccessControl } from '../services/ResourceAccessControl';
 
 export interface GetConversationRequest {
   conversationId: string;

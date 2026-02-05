@@ -9,13 +9,13 @@ import { GetConversationUseCase } from '@application/use-cases/GetConversationUs
 import { GetKnowledgeItemUseCase } from '@application/use-cases/knowledge/GetKnowledgeItemUseCase';
 import { SearchKnowledgeUseCase } from '@application/use-cases/knowledge/SearchKnowledgeUseCase';
 import { UploadDocumentUseCase } from '@application/use-cases/knowledge/UploadDocumentUseCase';
-import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
+import { ListConversationsUseCase } from '@application/use-cases/ListConversationsUseCase';
 import { CreateRequirementUseCase } from '@application/use-cases/requirement/CreateRequirementUseCase';
 import { ListRequirementsUseCase } from '@application/use-cases/requirement/ListRequirementsUseCase';
 import { UpdateRequirementStatusUseCase } from '@application/use-cases/requirement/UpdateRequirementStatusUseCase';
+import { SendMessageUseCase } from '@application/use-cases/SendMessageUseCase';
 import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase';
 import { UpdateTaskStatusUseCase } from '@application/use-cases/task/UpdateTaskStatusUseCase';
-import { ListConversationsUseCase } from '@application/use-cases/ListConversationsUseCase';
 import { KnowledgeRecommender } from '@domain/knowledge/services/KnowledgeRecommender';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';

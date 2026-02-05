@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unresolved, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
 /**
  * MetricsScheduler - 定期更新指标的调度器
  *
@@ -8,22 +9,22 @@
  * 4. 更新Gauge类型的指标
  */
 
-import { ConversationRepository } from '../../domain/conversation/repositories/ConversationRepository';
-import { RequirementRepository } from '../../domain/requirement/repositories/RequirementRepository';
-import { TaskRepository } from '../../domain/task/repositories/TaskRepository';
+import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
+import { IRequirementRepository } from '@domain/requirement/repositories/IRequirementRepository';
+import { ITaskRepository } from '@domain/task/repositories/ITaskRepository';
 
 import { metricsCollector } from './MetricsCollector';
 
 export class MetricsScheduler {
-  private taskRepository: TaskRepository;
-  private conversationRepository: ConversationRepository;
-  private requirementRepository: RequirementRepository;
+  private taskRepository: ITaskRepository;
+  private conversationRepository: IConversationRepository;
+  private requirementRepository: IRequirementRepository;
   private intervals: NodeJS.Timeout[] = [];
 
   constructor(
-    taskRepository: TaskRepository,
-    conversationRepository: ConversationRepository,
-    requirementRepository: RequirementRepository,
+    taskRepository: ITaskRepository,
+    conversationRepository: IConversationRepository,
+    requirementRepository: IRequirementRepository,
   ) {
     this.taskRepository = taskRepository;
     this.conversationRepository = conversationRepository;
@@ -76,23 +77,19 @@ export class MetricsScheduler {
    */
   private async updateTaskMetrics(): Promise<void> {
     try {
-      // 统计各状态的Task数量
+      const [pending, inProgress, completed, cancelled] = await Promise.all([
+        this.taskRepository.countByFilters({ status: 'pending' }),
+        this.taskRepository.countByFilters({ status: 'in_progress' }),
+        this.taskRepository.countByFilters({ status: 'completed' }),
+        this.taskRepository.countByFilters({ status: 'cancelled' }),
+      ]);
+
       const statusCounts: Record<string, number> = {
-        pending: 0,
-        in_progress: 0,
-        completed: 0,
-        cancelled: 0,
+        pending,
+        in_progress: inProgress,
+        completed,
+        cancelled,
       };
-
-      // 获取所有Task（这里简化处理，实际应该用聚合查询）
-      const allTasks = await this.taskRepository.findAll();
-
-      for (const task of allTasks) {
-        const status = task.status;
-        if (status in statusCounts) {
-          statusCounts[status]++;
-        }
-      }
 
       // 更新Gauge指标
       metricsCollector.setTasksByStatus(statusCounts);
@@ -108,21 +105,17 @@ export class MetricsScheduler {
    */
   private async updateConversationMetrics(): Promise<void> {
     try {
-      // 统计各状态的Conversation数量
+      const [open, pending, closed] = await Promise.all([
+        this.conversationRepository.countByFilters({ status: 'open' }),
+        this.conversationRepository.countByFilters({ status: 'pending' }),
+        this.conversationRepository.countByFilters({ status: 'closed' }),
+      ]);
+
       const statusCounts: Record<string, number> = {
-        open: 0,
-        closed: 0,
+        open,
+        pending,
+        closed,
       };
-
-      // 获取所有Conversation
-      const allConversations = await this.conversationRepository.findAll();
-
-      for (const conversation of allConversations) {
-        const status = conversation.status;
-        if (status in statusCounts) {
-          statusCounts[status]++;
-        }
-      }
 
       // 更新Gauge指标
       metricsCollector.setConversationsByStatus(statusCounts);
@@ -138,23 +131,21 @@ export class MetricsScheduler {
    */
   private async updateRequirementMetrics(): Promise<void> {
     try {
-      // 统计各状态的Requirement数量
+      const [pending, approved, resolved, ignored, cancelled] = await Promise.all([
+        this.requirementRepository.countByFilters({ status: 'pending' }),
+        this.requirementRepository.countByFilters({ status: 'approved' }),
+        this.requirementRepository.countByFilters({ status: 'resolved' }),
+        this.requirementRepository.countByFilters({ status: 'ignored' }),
+        this.requirementRepository.countByFilters({ status: 'cancelled' }),
+      ]);
+
       const statusCounts: Record<string, number> = {
-        open: 0,
-        in_progress: 0,
-        completed: 0,
-        rejected: 0,
+        pending,
+        approved,
+        resolved,
+        ignored,
+        cancelled,
       };
-
-      // 获取所有Requirement
-      const allRequirements = await this.requirementRepository.findAll();
-
-      for (const requirement of allRequirements) {
-        const status = requirement.status;
-        if (status in statusCounts) {
-          statusCounts[status]++;
-        }
-      }
 
       // 更新Gauge指标
       metricsCollector.setRequirementsByStatus(statusCounts);

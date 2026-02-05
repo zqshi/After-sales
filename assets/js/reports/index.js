@@ -1,17 +1,6 @@
 import { fetchAuditSummary, isApiEnabled } from '../api.js';
 import { qs } from '../core/dom.js';
 
-function formatDate(value) {
-  if (!value) {
-    return '--';
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '--';
-  }
-  return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
-}
-
 function formatCount(value, suffix) {
   const numberValue = Number(value);
   if (!Number.isFinite(numberValue)) {
@@ -79,7 +68,7 @@ export async function initReports() {
   const hasSummary = REPORT_FIELDS.some((key) => reportSummary?.[key] !== undefined && reportSummary?.[key] !== null);
 
   let chartLabels = [];
-  let chartData = [];
+  const chartData = [];
   let chartDataset = [];
 
   if (!hasSummary) {

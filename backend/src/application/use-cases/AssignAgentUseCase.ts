@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
 import { EventBus } from '../../infrastructure/events/EventBus';
+import { shouldPublishDirectly } from '../../infrastructure/events/outboxPolicy';
 import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
 import { nonEmptyStringSchema, uuidSchema } from '../../infrastructure/validation/CommonSchemas';
 import { Validator } from '../../infrastructure/validation/Validator';
-import { ResourceAccessControl } from '../services/ResourceAccessControl';
 import { ConversationResponseDTO } from '../dto/ConversationResponseDTO';
+import { ResourceAccessControl } from '../services/ResourceAccessControl';
 
 export interface AssignAgentRequest {
   conversationId: string;
@@ -57,8 +58,10 @@ export class AssignAgentUseCase {
     const events = conversation.getUncommittedEvents();
     await this.conversationRepository.save(conversation);
 
-    await this.eventBus.publishAll(events);
-    conversation.clearEvents();
+    if (shouldPublishDirectly()) {
+      await this.eventBus.publishAll(events);
+      conversation.clearEvents();
+    }
 
     return ConversationResponseDTO.fromAggregate(conversation);
   }

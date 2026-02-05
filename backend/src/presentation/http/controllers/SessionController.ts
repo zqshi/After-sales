@@ -13,7 +13,7 @@ export class SessionController {
   ): Promise<void> {
     const roles = await this.roleRepository.list();
     if (roles.length) {
-      reply.code(200).send({
+      void reply.code(200).send({
         success: true,
         data: {
           roles: roles.map((role) => role.key),
@@ -22,7 +22,7 @@ export class SessionController {
       return;
     }
 
-    reply.code(200).send({
+    void reply.code(200).send({
       success: true,
       data: {
         roles: ['admin', 'manager', 'agent'],
@@ -41,7 +41,7 @@ export class SessionController {
       ? await rolePermissionService.getPermissions(role)
       : getRolePermissions(role);
 
-    reply.code(200).send({
+    void reply.code(200).send({
       success: true,
       data: {
         role,

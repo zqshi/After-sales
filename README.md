@@ -26,6 +26,7 @@
 
 - **当前版本**：v0.1.0（开发阶段）
 - **交付形态**：前端 + 后端 + AgentScope（Python）多服务协作
+- **投产整改清单**：[`docs/doing/production-readiness-todo.md`](./docs/doing/production-readiness-todo.md)
 
 ## 🧭 服务与端口
 
@@ -35,7 +36,7 @@
 - **Prometheus**：http://localhost:9090（可选）
 - **Grafana**：http://localhost:3001（可选）
 
-Docker Compose 模式下前端默认映射到 http://localhost:3000。
+Docker Compose 模式下前端默认映射到 http://localhost:3002，Nginx 统一入口可选用 80/443。
 
 ## 🚀 快速开始
 
@@ -56,6 +57,12 @@ Docker Compose 模式下前端默认映射到 http://localhost:3000。
 ```bash
 docker compose up -d --build
 ```
+
+### 生产环境准备
+
+1. 拷贝并配置环境变量：`cp backend/.env.example backend/.env`
+2. 替换生产密钥（JWT/数据库/Redis/AI 服务）
+3. 参考部署清单与整改清单完成上线前检查
 
 ## 📁 项目结构
 
@@ -157,7 +164,7 @@ AGENTSCOPE_PREFETCH_ENABLED=false
 
 ### 前端运行时配置
 
-编辑 `public/runtime-config.js` 以覆盖默认 API 地址：
+编辑 `public/runtime-config.js` 以覆盖默认 API 地址（页面通过 `/runtime-config.js` 以 `type="module"` 方式加载，不参与 Vite 打包）：
 
 ```javascript
 window.RUNTIME_CONFIG = {
@@ -184,7 +191,7 @@ Vite 开发环境会将 `/api/v1` 代理到 `http://localhost:8080`，可通过 
 1. 构建前端：`npm run build`
 2. 构建后端：`cd backend && npm run build`
 3. 使用 `docker-compose` 或自定义部署方式上线
-4. 可选启用 `nginx` profile 提供统一入口
+4. 可选启用 `nginx` profile 提供统一入口（80/443）
 
 ## 📖 文档
 
@@ -193,6 +200,8 @@ Vite 开发环境会将 `/api/v1` 代理到 `http://localhost:8080`，可通过 
 - [启动指南](./docs/guides/STARTUP_GUIDE.md) - 完整启动说明
 - [架构设计](./docs/architecture/AGENT_ARCHITECTURE_DESIGN.md)
 - [API 参考](./docs/api/API_REFERENCE.md)
+- [部署检查清单](./docs/deployment/DEPLOYMENT_CHECKLIST.md)
+- [投产整改清单](./docs/doing/production-readiness-todo.md)
 - [变更日志](./CHANGELOG.md)
 
 ## 🤝 贡献指南

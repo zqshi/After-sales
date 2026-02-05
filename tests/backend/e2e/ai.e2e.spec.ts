@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
-import { createApp } from '../../src/app';
+import { createApp } from '../../../backend/src/app';
 import { getTestDataSource, closeTestDataSource } from '../helpers/testDatabase';
-import { KnowledgeItem } from '../../src/domain/knowledge/models/KnowledgeItem';
-import { KnowledgeCategory } from '../../src/domain/knowledge/value-objects/KnowledgeCategory';
-import { KnowledgeRepository } from '../../src/infrastructure/repositories/KnowledgeRepository';
+import { KnowledgeItem } from '../../../backend/src/domain/knowledge/models/KnowledgeItem';
+import { KnowledgeCategory } from '../../../backend/src/domain/knowledge/value-objects/KnowledgeCategory';
+import { KnowledgeRepository } from '../../../backend/src/infrastructure/repositories/KnowledgeRepository';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
 const API_PREFIX = '/api/v1';
 

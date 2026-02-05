@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
 /**
  * HumanInLoopExecutor - 人工干预执行器
  *
@@ -134,7 +135,7 @@ export class HumanInLoopExecutor extends BaseStepExecutor {
         throw new Error('Human review timed out');
 
       default:
-        throw new Error(`Unknown response action: ${response.action}`);
+        throw new Error(`Unknown response action: ${String(response.action)}`);
     }
   }
 

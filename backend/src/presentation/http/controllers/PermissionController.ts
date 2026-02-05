@@ -26,7 +26,7 @@ export class PermissionController {
   async listRoles(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
       const roles = await this.listRolesUseCase.execute();
-      reply.code(200).send({ success: true, data: roles });
+      void reply.code(200).send({ success: true, data: roles });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -37,7 +37,7 @@ export class PermissionController {
       const payload = request.body as CreateRoleRequestDTO;
       const role = await this.createRoleUseCase.execute(payload);
       await request.server.rolePermissionService?.refresh();
-      reply.code(201).send({ success: true, data: role });
+      void reply.code(201).send({ success: true, data: role });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -49,7 +49,7 @@ export class PermissionController {
       const payload = request.body as UpdateRoleRequestDTO;
       const role = await this.updateRoleUseCase.execute(roleKey, payload);
       await request.server.rolePermissionService?.refresh();
-      reply.code(200).send({ success: true, data: role });
+      void reply.code(200).send({ success: true, data: role });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -60,7 +60,7 @@ export class PermissionController {
       const roleKey = (request.params as { id: string }).id;
       await this.deleteRoleUseCase.execute(roleKey);
       await request.server.rolePermissionService?.refresh();
-      reply.code(200).send({ success: true });
+      void reply.code(200).send({ success: true });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -69,7 +69,7 @@ export class PermissionController {
   async listMembers(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
       const members = await this.listMembersUseCase.execute();
-      reply.code(200).send({ success: true, data: members });
+      void reply.code(200).send({ success: true, data: members });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -79,7 +79,7 @@ export class PermissionController {
     try {
       const payload = request.body as CreateMemberRequestDTO;
       const member = await this.createMemberUseCase.execute(payload);
-      reply.code(201).send({ success: true, data: member });
+      void reply.code(201).send({ success: true, data: member });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -90,7 +90,7 @@ export class PermissionController {
       const memberId = (request.params as { id: string }).id;
       const payload = request.body as UpdateMemberRequestDTO;
       const member = await this.updateMemberUseCase.execute(memberId, payload);
-      reply.code(200).send({ success: true, data: member });
+      void reply.code(200).send({ success: true, data: member });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -101,11 +101,11 @@ export class PermissionController {
       const memberId = (request.params as { id: string }).id;
       const currentUserId = (request.user as { sub?: string })?.sub;
       if (currentUserId && currentUserId === memberId) {
-        reply.code(400).send({ success: false, error: 'cannot delete current user' });
+        void reply.code(400).send({ success: false, error: 'cannot delete current user' });
         return;
       }
       await this.deleteMemberUseCase.execute(memberId);
-      reply.code(200).send({ success: true });
+      void reply.code(200).send({ success: true });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -119,7 +119,7 @@ export class PermissionController {
           : message.includes('invalid') || message.includes('required') ? 400
             : 500;
 
-    reply.code(status).send({
+    void reply.code(status).send({
       success: false,
       error: message,
     });

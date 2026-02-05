@@ -73,6 +73,19 @@ https://grafana.after-sales.com
 # - QPS正常范围 (100-2000)
 ```
 
+### 1.3 关键配置检查
+
+```bash
+# 后端关键环境变量（生产建议）
+# 1) JWT 强密钥（避免默认值）
+JWT_SECRET=<32位以上随机字符串>
+JWT_ENFORCE_STRONG_SECRET=true
+
+# 2) Outbox 事件发布模式（生产建议 outbox_only）
+OUTBOX_PROCESSOR_ENABLED=true
+OUTBOX_PUBLISH_MODE=outbox_only
+```
+
 ---
 
 ## 2. 监控检查

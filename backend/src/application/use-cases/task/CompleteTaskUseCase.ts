@@ -1,7 +1,6 @@
-import { z } from 'zod';
-
 import { QualityScore } from '@domain/task/value-objects/QualityScore';
 import { EventBus } from '@infrastructure/events/EventBus';
+import { shouldPublishDirectly } from '@infrastructure/events/outboxPolicy';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { nonEmptyStringSchema, uuidSchema } from '@infrastructure/validation/CommonSchemas';
 import { Validator } from '@infrastructure/validation/Validator';
@@ -57,10 +56,12 @@ export class CompleteTaskUseCase {
     await this.taskRepository.save(task);
 
     // 发布领域事件
-    for (const event of events) {
-      await this.eventBus.publish(event);
+    if (shouldPublishDirectly()) {
+      for (const event of events) {
+        await this.eventBus.publish(event);
+      }
+      task.clearEvents();
     }
-    task.clearEvents();
 
     return TaskResponseDTO.fromTask(task);
   }

@@ -1,13 +1,13 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 
 import { CreateRequirementRequestDTO } from '../../../application/dto/requirement/CreateRequirementRequestDTO';
+import { ForbiddenError } from '../../../application/services/ResourceAccessControl';
 import { CreateRequirementUseCase } from '../../../application/use-cases/requirement/CreateRequirementUseCase';
 import { DeleteRequirementUseCase } from '../../../application/use-cases/requirement/DeleteRequirementUseCase';
 import { GetRequirementStatisticsUseCase } from '../../../application/use-cases/requirement/GetRequirementStatisticsUseCase';
 import { GetRequirementUseCase } from '../../../application/use-cases/requirement/GetRequirementUseCase';
 import { ListRequirementsUseCase } from '../../../application/use-cases/requirement/ListRequirementsUseCase';
 import { UpdateRequirementStatusUseCase } from '../../../application/use-cases/requirement/UpdateRequirementStatusUseCase';
-import { ForbiddenError } from '../../../application/services/ResourceAccessControl';
 import { ValidationError } from '../../../infrastructure/validation/Validator';
 
 export class RequirementController {
@@ -27,7 +27,7 @@ export class RequirementController {
     try {
       const payload = request.body as CreateRequirementRequestDTO;
       const result = await this.createRequirementUseCase.execute(payload);
-      reply.code(201).send({ success: true, data: result });
+      void reply.code(201).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -43,7 +43,7 @@ export class RequirementController {
         requirementId: id,
         userId: this.getUserId(request),
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -73,7 +73,7 @@ export class RequirementController {
         limit: query.limit ? Number.parseInt(query.limit, 10) : undefined,
       };
       const result = await this.listRequirementsUseCase.execute(dto);
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -93,7 +93,7 @@ export class RequirementController {
         status,
         userId: this.getUserId(request),
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -110,7 +110,7 @@ export class RequirementController {
         status: 'ignored',
         userId: this.getUserId(request),
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -122,7 +122,7 @@ export class RequirementController {
   ): Promise<void> {
     try {
       const result = await this.getRequirementStatisticsUseCase.execute();
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -138,7 +138,7 @@ export class RequirementController {
         requirementId: id,
         userId: this.getUserId(request),
       });
-      reply.code(204).send();
+      void reply.code(204).send();
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -146,7 +146,7 @@ export class RequirementController {
 
   private handleError(error: unknown, reply: FastifyReply): void {
     if (error instanceof ValidationError) {
-      reply.code(400).send({
+      void reply.code(400).send({
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
@@ -157,7 +157,7 @@ export class RequirementController {
       return;
     }
     if (error instanceof ForbiddenError) {
-      reply.code(403).send({
+      void reply.code(403).send({
         success: false,
         error: {
           code: 'FORBIDDEN',
@@ -168,7 +168,7 @@ export class RequirementController {
     }
     if (error instanceof Error) {
       const statusCode = this.getStatusCode(error.message);
-      reply.code(statusCode).send({
+      void reply.code(statusCode).send({
         success: false,
         error: {
           code: this.getErrorCode(error.message),
@@ -178,7 +178,7 @@ export class RequirementController {
       return;
     }
 
-    reply.code(500).send({
+    void reply.code(500).send({
       success: false,
       error: {
         code: 'INTERNAL_ERROR',

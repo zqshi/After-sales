@@ -329,7 +329,7 @@ export function openFullAnalysisPanel() {
     leanContainer: leanContainer ? `找到 (类名: ${leanContainer.className})` : '❌ 未找到',
     classicContainer: classicContainer ? `找到 (类名: ${classicContainer.className})` : '❌ 未找到',
     railMetrics: railMetrics ? `找到 (类名: ${railMetrics.className})` : '❌ 未找到',
-    railHistory: railHistory ? `找到 (类名: ${railHistory.className})` : '❌ 未找到'
+    railHistory: railHistory ? `找到 (类名: ${railHistory.className})` : '❌ 未找到',
   });
 
   // 强制隐藏质检面板

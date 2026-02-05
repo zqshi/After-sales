@@ -357,7 +357,7 @@ export class RequirementPriorityCalculator {
     const maxDimension = Object.entries(breakdown).reduce((max, [key, value]) =>
       value > max[1] ? [key, value] : max,
     );
-    const [maxKey, maxValue] = maxDimension;
+    const [maxKey] = maxDimension;
 
     // 客户维度理由
     if (maxKey === 'customerScore' || breakdown.customerScore >= 70) {

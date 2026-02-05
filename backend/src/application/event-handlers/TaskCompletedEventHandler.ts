@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
+import { isImChannel } from '@domain/conversation/constants';
 import { ConversationReadyToCloseEvent } from '@domain/conversation/events/ConversationReadyToCloseEvent';
 import { IConversationRepository } from '@domain/conversation/repositories/IConversationRepository';
 import { TaskCompletedEvent } from '@domain/task/events/TaskCompletedEvent';
 import { ITaskRepository } from '@domain/task/repositories/ITaskRepository';
 import { EventBus } from '@infrastructure/events/EventBus';
-import { isImChannel } from '@domain/conversation/constants';
 
 /**
  * TaskCompletedEventHandler

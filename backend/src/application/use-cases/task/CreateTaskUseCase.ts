@@ -3,9 +3,9 @@ import { TaskPriority } from '@domain/task/value-objects/TaskPriority';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 
+import { Validator } from '../../../infrastructure/validation/Validator';
 import { CreateTaskRequestDTO, CreateTaskRequestSchema } from '../../dto/CreateTaskRequestDTO';
 import { TaskResponseDTO } from '../../dto/task/TaskResponseDTO';
-import { Validator } from '../../../infrastructure/validation/Validator';
 
 
 export class CreateTaskUseCase {

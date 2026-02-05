@@ -10,15 +10,29 @@ import { AppDataSource } from './infrastructure/database/data-source.js';
 
 let appInstance: Awaited<ReturnType<typeof createApp>> | null = null;
 
-const start = async () => {
+type AppDecorations = {
+  outboxProcessor?: { stop(): void };
+  tempDirCleaner?: { stop(): void };
+};
+
+const logInfo = (message: string): void => {
+  process.stdout.write(`${message}\n`);
+};
+
+const logError = (message: string, error?: unknown): void => {
+  const suffix = error ? ` ${String(error)}` : '';
+  process.stderr.write(`${message}${suffix}\n`);
+};
+
+const start = async (): Promise<void> => {
   try {
     // 1. 初始化数据库连接
-    console.log('📦 正在连接数据库...');
+    logInfo('📦 正在连接数据库...');
     await AppDataSource.initialize();
-    console.log('✅ 数据库连接成功');
+    logInfo('✅ 数据库连接成功');
 
     // 2. 创建Fastify应用（包含所有路由）
-    console.log('🚀 正在初始化应用...');
+    logInfo('🚀 正在初始化应用...');
     const app = await createApp(AppDataSource);
     appInstance = app;
 
@@ -35,23 +49,26 @@ const start = async () => {
     app.log.info('========================================');
 
   } catch (err) {
-    console.error('❌ 服务器启动失败:', err);
+    logError('❌ 服务器启动失败:', err);
     process.exit(1);
   }
 };
 
 // 优雅关闭
-process.on('SIGINT', async () => {
-  console.log('\n⏳ 正在关闭服务器...');
-  const outboxProcessor = (appInstance as any)?.outboxProcessor;
-  if (outboxProcessor) {
-    outboxProcessor.stop();
-  }
+const shutdown = async (): Promise<void> => {
+  logInfo('\n⏳ 正在关闭服务器...');
+  const decorated = appInstance as (Awaited<ReturnType<typeof createApp>> & AppDecorations) | null;
+  decorated?.outboxProcessor?.stop();
+  decorated?.tempDirCleaner?.stop();
   if (AppDataSource.isInitialized) {
     await AppDataSource.destroy();
   }
-  console.log('✅ 服务器已关闭');
+  logInfo('✅ 服务器已关闭');
   process.exit(0);
+};
+
+process.on('SIGINT', () => {
+  void shutdown();
 });
 
-start();
+void start();

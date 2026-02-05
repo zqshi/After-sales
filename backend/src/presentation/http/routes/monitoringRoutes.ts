@@ -2,10 +2,10 @@ import { FastifyInstance } from 'fastify';
 
 import { MonitoringController } from '../controllers/MonitoringController';
 
-export async function monitoringRoutes(
+export function monitoringRoutes(
   fastify: FastifyInstance,
   controller: MonitoringController,
-): Promise<void> {
+): void {
   fastify.get('/monitoring/alerts', {
     config: { permissions: ['monitoring.read'] },
   }, async (request, reply) => {

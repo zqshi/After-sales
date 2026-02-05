@@ -5,13 +5,13 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
-import { createApp } from '../../src/app';
+import { createApp } from '../../../backend/src/app';
 import { getTestDataSource, closeTestDataSource } from '../helpers/testDatabase';
-import { CustomerProfile } from '../../src/domain/customer/models/CustomerProfile';
-import { ContactInfo } from '../../src/domain/customer/value-objects/ContactInfo';
-import { CustomerLevelInfo } from '../../src/domain/customer/value-objects/CustomerLevelInfo';
-import { Metrics } from '../../src/domain/customer/value-objects/Metrics';
-import { CustomerProfileRepository } from '../../src/infrastructure/repositories/CustomerProfileRepository';
+import { CustomerProfile } from '../../../backend/src/domain/customer/models/CustomerProfile';
+import { ContactInfo } from '../../../backend/src/domain/customer/value-objects/ContactInfo';
+import { CustomerLevelInfo } from '../../../backend/src/domain/customer/value-objects/CustomerLevelInfo';
+import { Metrics } from '../../../backend/src/domain/customer/value-objects/Metrics';
+import { CustomerProfileRepository } from '../../../backend/src/infrastructure/repositories/CustomerProfileRepository';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
 const API_PREFIX = '/api/v1/api';
 

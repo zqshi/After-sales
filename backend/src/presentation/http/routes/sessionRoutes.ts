@@ -2,10 +2,10 @@ import { FastifyInstance } from 'fastify';
 
 import { SessionController } from '../controllers/SessionController';
 
-export async function sessionRoutes(
+export function sessionRoutes(
   fastify: FastifyInstance,
   controller: SessionController,
-): Promise<void> {
+): void {
   fastify.get('/session/roles', {
     config: { permissions: ['session.read'] },
   }, async (request, reply) => {

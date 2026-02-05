@@ -188,19 +188,33 @@ export function initKnowledgeApplication() {
   const setSearchMode = (enabled) => {
     if (enabled) {
       container.classList.add('has-results');
-      if (shortcuts) shortcuts.classList.add('hidden');
-      if (tips) tips.classList.add('hidden');
-      if (header) header.style.display = 'none';
+      if (shortcuts) {
+        shortcuts.classList.add('hidden');
+      }
+      if (tips) {
+        tips.classList.add('hidden');
+      }
+      if (header) {
+        header.style.display = 'none';
+      }
     } else {
       container.classList.remove('has-results');
-      if (shortcuts) shortcuts.classList.remove('hidden');
-      if (tips) tips.classList.remove('hidden');
-      if (header) header.style.display = '';
+      if (shortcuts) {
+        shortcuts.classList.remove('hidden');
+      }
+      if (tips) {
+        tips.classList.remove('hidden');
+      }
+      if (header) {
+        header.style.display = '';
+      }
     }
   };
 
   const tokenize = (text) => {
-    if (!text) return [];
+    if (!text) {
+      return [];
+    }
     const tokens = text
       .toLowerCase()
       .split(/[\s,，;；/]+/)
@@ -335,7 +349,9 @@ export function initKnowledgeApplication() {
       <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[11px]">${tag}</span>
     `).join('');
     detailPanel.classList.remove('hidden');
-    if (resultsLayout) resultsLayout.classList.remove('is-compact');
+    if (resultsLayout) {
+      resultsLayout.classList.remove('is-compact');
+    }
   };
 
   on(searchBtn, 'click', () => {

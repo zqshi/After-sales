@@ -16,7 +16,7 @@ export class AssignTaskUseCase {
   ) {}
 
   async execute(request: AssignTaskRequest): Promise<TaskResponseDTO> {
-    const validatedRequest = Validator.validate(AssignTaskRequestSchema, request);
+    const validatedRequest = Validator.validate(AssignTaskRequestSchema, request) as AssignTaskRequest;
 
     if (validatedRequest.userId && this.accessControl) {
       await this.accessControl.checkTaskAccess(

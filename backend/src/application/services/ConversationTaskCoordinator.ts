@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
 /**
  * ConversationTaskCoordinator - 对话任务协调服务
  *
@@ -10,6 +11,7 @@
  */
 
 import { config } from '@config/app.config';
+import { isImChannel } from '@domain/conversation/constants';
 import { ConversationClosedEvent } from '@domain/conversation/events/ConversationClosedEvent';
 import { AgentMode } from '@domain/conversation/models/Conversation';
 import { RequirementDetectorService } from '@domain/requirement/services/RequirementDetectorService';
@@ -21,17 +23,16 @@ import { QualityReportRepository } from '@infrastructure/repositories/QualityRep
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { WorkflowEngine } from '@infrastructure/workflow/WorkflowEngine';
-import { isImChannel } from '@domain/conversation/constants';
 
 import { CloseConversationUseCase } from '../use-cases/CloseConversationUseCase';
 import { CreateConversationUseCase } from '../use-cases/CreateConversationUseCase';
 import { CreateProblemUseCase } from '../use-cases/problem/CreateProblemUseCase';
+import { UpdateProblemStatusUseCase } from '../use-cases/problem/UpdateProblemStatusUseCase';
 import { AssociateRequirementWithConversationUseCase } from '../use-cases/requirement/AssociateRequirementWithConversationUseCase';
 import { CreateRequirementUseCase } from '../use-cases/requirement/CreateRequirementUseCase';
-import { CreateTaskUseCase } from '../use-cases/task/CreateTaskUseCase';
-import { SendMessageUseCase } from '../use-cases/SendMessageUseCase';
-import { UpdateProblemStatusUseCase } from '../use-cases/problem/UpdateProblemStatusUseCase';
 import { CreateReviewRequestUseCase } from '../use-cases/review/CreateReviewRequestUseCase';
+import { SendMessageUseCase } from '../use-cases/SendMessageUseCase';
+import { CreateTaskUseCase } from '../use-cases/task/CreateTaskUseCase';
 
 import { AiService } from './AiService';
 

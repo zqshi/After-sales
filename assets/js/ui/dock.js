@@ -182,7 +182,7 @@ function showKnowledgeManagementContent() {
   sidebarTabs.forEach(tab => {
     const tabId = tab.getAttribute('data-tab');
     const tabGroup = tab.getAttribute('data-tab-group');
-    
+
     if (tabGroup === 'sidebar') {
       if (tabId === 'knowledge') {
         tab.classList.add('tab-active');
@@ -230,7 +230,7 @@ function showToolsContent() {
   sidebarTabs.forEach(tab => {
     const tabId = tab.getAttribute('data-tab');
     const tabGroup = tab.getAttribute('data-tab-group');
-    
+
     if (tabGroup === 'sidebar') {
       if (tabId === 'tools') {
         tab.classList.add('tab-active');

@@ -1,6 +1,6 @@
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
-import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
+import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 
 /**
  * 权限拒绝错误
@@ -79,7 +79,10 @@ export class ResourceAccessControl {
     }
 
     // 检查用户是否是任务负责人或创建者
-    const isOwner = task.assigneeId === userId || task.createdBy === userId;
+    const createdBy = typeof task.metadata?.createdBy === 'string'
+      ? task.metadata.createdBy
+      : undefined;
+    const isOwner = task.assigneeId === userId || createdBy === userId;
 
     if (!isOwner) {
       throw new ForbiddenError(`You do not have ${action} access to task ${taskId}`);
@@ -91,7 +94,7 @@ export class ResourceAccessControl {
     }
 
     // 只有创建者可以删除任务
-    if (action === 'delete' && task.createdBy !== userId) {
+    if (action === 'delete' && createdBy !== userId) {
       throw new ForbiddenError('Only creator can delete task');
     }
   }

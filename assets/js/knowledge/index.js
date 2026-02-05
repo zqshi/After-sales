@@ -36,7 +36,6 @@ let faqQuery = '';
 let selectedFiles = [];
 let pendingDeleteId = null;
 let pendingFaqDeleteId = null;
-let activeLibrary = 'doc';
 let editingFaqId = null;
 let faqModalMode = 'add';
 let faqSimilarList = [];
@@ -67,7 +66,6 @@ export function initKnowledgeBase() {
   const addDropzone = qs('#knowledge-add-dropzone');
   const faqMiningToggle = qs('#knowledge-faq-mining-toggle');
   const faqMiningSettings = qs('#knowledge-faq-mining-settings');
-  const faqMiningCount = qs('#knowledge-faq-mining-count');
   const detailCloseBtn = qs('#knowledge-detail-close');
   const detailDismissBtn = qs('#knowledge-detail-dismiss');
   const deleteCancelBtn = qs('#knowledge-delete-cancel');
@@ -846,7 +844,6 @@ function renderNode(node, depth, parentPath, keyword) {
     .filter(Boolean)
     .join('');
 
-  const isLeaf = !hasChildren;
   const isActive = selectedCategory === path;
 
   const toggleIcon = hasChildren
@@ -963,11 +960,11 @@ function renderDocList() {
           <div class="knowledge-cell flex items-center justify-end gap-2 px-0">
             <button class="text-xs text-primary hover:underline" data-doc-action="view">查看</button>
             ${doc.status === 'retry'
-              ? '<button class="text-xs text-amber-600 hover:underline" data-doc-action="retry">重试</button>'
-              : ''}
+    ? '<button class="text-xs text-amber-600 hover:underline" data-doc-action="retry">重试</button>'
+    : ''}
             ${DOC_ALLOWED_STATUSES.includes(doc.status)
-              ? '<button class="text-xs text-red-600 hover:underline" data-doc-action="delete">删除</button>'
-              : '<span class="text-xs text-gray-300">删除</span>'}
+    ? '<button class="text-xs text-red-600 hover:underline" data-doc-action="delete">删除</button>'
+    : '<span class="text-xs text-gray-300">删除</span>'}
           </div>
         </div>
       `;
@@ -1059,8 +1056,8 @@ function renderFaqList() {
             <button class="text-xs text-primary hover:underline" data-faq-action="view">查看</button>
             <button class="text-xs text-indigo-600 hover:underline" data-faq-action="edit">编辑</button>
             ${DOC_ALLOWED_STATUSES.includes(faq.status)
-              ? '<button class="text-xs text-red-600 hover:underline" data-faq-action="delete">删除</button>'
-              : '<span class="text-xs text-gray-300">删除</span>'}
+    ? '<button class="text-xs text-red-600 hover:underline" data-faq-action="delete">删除</button>'
+    : '<span class="text-xs text-gray-300">删除</span>'}
           </div>
         </div>
       `;
@@ -1142,7 +1139,6 @@ function getStatusLabels() {
 }
 
 function switchLibrary(type) {
-  activeLibrary = type;
   const docTab = qs('#knowledge-tab-doc');
   const faqTab = qs('#knowledge-tab-faq');
   const docSection = qs('#knowledge-doc-section');
@@ -2127,15 +2123,6 @@ function parseDateValue(value) {
     return 0;
   }
   return timestamp;
-}
-
-function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
 function initSimpleKnowledgePage() {

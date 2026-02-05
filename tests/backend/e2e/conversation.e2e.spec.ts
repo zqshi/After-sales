@@ -7,11 +7,11 @@
 import { describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
-import { createApp } from '../../src/app';
+import { createApp } from '../../../backend/src/app';
 import { closeTestDataSource, getTestDataSource } from '../helpers/testDatabase';
-import { Conversation } from '../../src/domain/conversation/models/Conversation';
-import { Channel } from '../../src/domain/conversation/value-objects/Channel';
-import { ConversationRepository } from '../../src/infrastructure/repositories/ConversationRepository';
+import { Conversation } from '../../../backend/src/domain/conversation/models/Conversation';
+import { Channel } from '../../../backend/src/domain/conversation/value-objects/Channel';
+import { ConversationRepository } from '../../../backend/src/infrastructure/repositories/ConversationRepository';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
 const API_PREFIX = '/api/v1/api';
 

@@ -2,10 +2,10 @@ import { FastifyInstance } from 'fastify';
 
 import { AiController } from '../controllers/AiController';
 
-export async function aiRoutes(
+export function aiRoutes(
   fastify: FastifyInstance,
   controller: AiController,
-): Promise<void> {
+): void {
   fastify.post('/ai/analyze', {
     config: { permissions: ['ai.use'] },
   }, async (request, reply) => {

@@ -19,13 +19,15 @@ export function generateId(prefix = '') {
  * @returns {string} 转义后的安全HTML
  */
 export function escapeHtml(text) {
-  if (!text) return '';
+  if (!text) {
+    return '';
+  }
   const map = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
-    "'": '&#039;'
+    "'": '&#039;',
   };
   return String(text).replace(/[&<>"']/g, m => map[m]);
 }

@@ -81,7 +81,8 @@ export class ConversationRepository implements IConversationRepository {
       );
 
       conversation.clearEvents();
-      (conversation as any)._version = entity.version;
+      const versionedConversation = conversation as Conversation & { _version?: number };
+      versionedConversation._version = entity.version;
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();

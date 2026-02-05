@@ -26,7 +26,7 @@ export async function rbacMiddleware(
 
   const user = request.user as { role?: string } | undefined;
   if (!user?.role) {
-    reply.code(403).send({
+    void reply.code(403).send({
       success: false,
       error: 'Forbidden',
     });
@@ -41,7 +41,7 @@ export async function rbacMiddleware(
   const allowed = required.every((permission) => available.has(permission));
 
   if (!allowed) {
-    reply.code(403).send({
+    void reply.code(403).send({
       success: false,
       error: 'Insufficient permissions',
     });

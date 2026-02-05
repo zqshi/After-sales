@@ -20,7 +20,7 @@ export class CustomerProfileController {
       const result = await this.getCustomerProfileUseCase.execute({
         customerId: id,
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -67,7 +67,7 @@ export class CustomerProfileController {
         interactions: payload.interactions,
         serviceRecords: payload.serviceRecords,
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -82,7 +82,7 @@ export class CustomerProfileController {
       const result = await this.getCustomerInteractionsUseCase.execute({
         customerId: id,
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -91,7 +91,7 @@ export class CustomerProfileController {
   private handleError(error: unknown, reply: FastifyReply): void {
     if (error instanceof Error) {
       const statusCode = this.getStatusCode(error.message);
-      reply.code(statusCode).send({
+      void reply.code(statusCode).send({
         success: false,
         error: {
           message: error.message,
@@ -101,7 +101,7 @@ export class CustomerProfileController {
       return;
     }
 
-    reply.code(500).send({
+    void reply.code(500).send({
       success: false,
       error: {
         message: 'Internal server error',

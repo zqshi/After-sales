@@ -8,7 +8,7 @@ class AgentScopeSettings:
     """Wraps the runtime configuration that describes how AgentScope integrates with the node backend."""
 
     def __init__(self) -> None:
-        self.node_backend_url = os.getenv("NODE_BACKEND_URL", "http://localhost:3000")
+        self.node_backend_url = os.getenv("NODE_BACKEND_URL", "http://localhost:8080")
         self.mcp_api_key = os.getenv("MCP_API_KEY", "")
         self.deepseek_config: Dict[str, Any] = {
             "config_name": "deepseek_qwen",

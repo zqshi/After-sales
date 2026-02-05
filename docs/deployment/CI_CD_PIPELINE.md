@@ -53,7 +53,7 @@ REDIS_DB=1
 
 ```
 ENVIRONMENT=test
-DEEPSEEK_API_KEY=test-api-key
+AI_SERVICE_API_KEY=test-api-key
 DEEPSEEK_BASE_URL=https://api.test.com
 BACKEND_MCP_URL=http://localhost:3000
 AGENTSCOPE_PREFETCH_ENABLED=false

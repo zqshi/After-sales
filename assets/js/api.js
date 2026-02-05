@@ -88,7 +88,7 @@ function getRetryDelay(retryCount) {
   return API_CONFIG.retryDelay * Math.pow(2, retryCount);
 }
 
-async function request(path, options = {}, retryCount = 0) {
+export async function request(path, options = {}, retryCount = 0) {
   if (!IS_API_ENABLED) {
     throw new Error('API not configured');
   }
@@ -161,7 +161,7 @@ async function request(path, options = {}, retryCount = 0) {
   return content;
 }
 
-async function safeRequest(path, options = {}) {
+export async function safeRequest(path, options = {}) {
   try {
     return await request(path, options);
   } catch (err) {

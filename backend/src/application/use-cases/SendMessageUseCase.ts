@@ -5,9 +5,10 @@
  */
 
 import { EventBus } from '../../infrastructure/events/EventBus';
+import { shouldPublishDirectly } from '../../infrastructure/events/outboxPolicy';
 import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
 import { Validator } from '../../infrastructure/validation/Validator';
-import { SendMessageRequestSchema, SendMessageRequestDTO } from '../dto/SendMessageRequestDTO';
+import { SendMessageRequestSchema } from '../dto/SendMessageRequestDTO';
 
 export interface SendMessageRequest {
   conversationId: string;
@@ -73,10 +74,12 @@ export class SendMessageUseCase {
     await this.conversationRepository.save(conversation);
 
     // 6. 发布领域事件
-    for (const event of events) {
-      await this.eventBus.publish(event);
+    if (shouldPublishDirectly()) {
+      for (const event of events) {
+        await this.eventBus.publish(event);
+      }
+      conversation.clearEvents();
     }
-    conversation.clearEvents();
 
     // 7. 返回结果
     const lastMessage = conversation.messages[conversation.messages.length - 1];

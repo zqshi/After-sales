@@ -25,7 +25,7 @@ export class AuthController {
         name: user.name,
       });
 
-      reply.code(200).send({
+      void reply.code(200).send({
         success: true,
         data: {
           token,
@@ -42,7 +42,7 @@ export class AuthController {
       const payload = request.body as RegisterRequestDTO;
       const user = await this.registerUseCase.execute(payload);
 
-      reply.code(201).send({
+      void reply.code(201).send({
         success: true,
         data: user,
       });
@@ -55,12 +55,12 @@ export class AuthController {
     try {
       const userId = (request.user as { sub?: string }).sub;
       if (!userId) {
-        reply.code(401).send({ success: false, error: 'Unauthorized' });
+        void reply.code(401).send({ success: false, error: 'Unauthorized' });
         return;
       }
 
       const user = await this.getCurrentUserUseCase.execute(userId);
-      reply.code(200).send({ success: true, data: user });
+      void reply.code(200).send({ success: true, data: user });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -74,7 +74,7 @@ export class AuthController {
           : message.includes('exists') ? 409
             : 400;
 
-    reply.code(status).send({
+    void reply.code(status).send({
       success: false,
       error: message,
     });

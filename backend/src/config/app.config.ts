@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import dotenv from 'dotenv';
+import { config as dotenvConfig } from 'dotenv';
 
 const resolveEnvPath = (): string | undefined => {
   const explicit = process.env.DOTENV_CONFIG_PATH;
@@ -17,7 +17,31 @@ const resolveEnvPath = (): string | undefined => {
   return candidates.find((candidate) => fs.existsSync(candidate));
 };
 
-dotenv.config({ path: resolveEnvPath() });
+dotenvConfig({ path: resolveEnvPath() });
+
+const resolveProjectRoot = (): string => {
+  const envRoot = process.env.PROJECT_ROOT;
+  if (envRoot) {
+    return path.resolve(envRoot);
+  }
+  const candidates = [
+    process.cwd(),
+    path.resolve(process.cwd(), '..'),
+    path.resolve(process.cwd(), '..', '..'),
+  ];
+  for (const candidate of candidates) {
+    if (
+      fs.existsSync(path.join(candidate, 'docker-compose.yml')) ||
+      fs.existsSync(path.join(candidate, 'start-all.sh'))
+    ) {
+      return candidate;
+    }
+  }
+  return process.cwd();
+};
+
+const projectRoot = resolveProjectRoot();
+const dayMs = 24 * 60 * 60 * 1000;
 
 export const config = {
   env: process.env.NODE_ENV || 'development',
@@ -46,6 +70,7 @@ export const config = {
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    enforceStrongSecret: process.env.JWT_ENFORCE_STRONG_SECRET === 'true',
   },
 
   auth: {
@@ -83,6 +108,7 @@ export const config = {
     enabled: process.env.OUTBOX_PROCESSOR_ENABLED !== 'false',
     intervalMs: parseInt(process.env.OUTBOX_PROCESSOR_INTERVAL || '5000', 10),
     concurrency: parseInt(process.env.OUTBOX_PROCESSOR_CONCURRENCY || '10', 10),
+    publishMode: (process.env.OUTBOX_PUBLISH_MODE || 'dual') as 'dual' | 'outbox_only' | 'direct_only',
   },
 
   quality: {
@@ -108,5 +134,63 @@ export const config = {
   monitoring: {
     sentryDsn: process.env.SENTRY_DSN || '',
     prometheusEnabled: process.env.PROMETHEUS_ENABLED === 'true',
+  },
+
+  tempCleanup: {
+    enabled: process.env.TEMP_DIR_CLEANUP_ENABLED !== 'false',
+    intervalMs: parseInt(process.env.TEMP_DIR_CLEANUP_INTERVAL_MINUTES || '60', 10) * 60 * 1000,
+    maxAgeMs: parseInt(process.env.TEMP_DIR_MAX_AGE_HOURS || '24', 10) * 60 * 60 * 1000,
+    targets: [
+      {
+        baseDir: path.resolve(projectRoot, 'backend'),
+        kind: 'dirPrefix',
+        pattern: 'tmp-workflow-',
+        maxAgeMs: parseInt(process.env.TEMP_DIR_MAX_AGE_HOURS || '24', 10) * 60 * 60 * 1000,
+      },
+      {
+        baseDir: path.resolve(projectRoot, 'logs'),
+        kind: 'fileSuffix',
+        pattern: '.log',
+        maxAgeMs: parseInt(process.env.TEMP_LOG_MAX_AGE_DAYS || '7', 10) * dayMs,
+      },
+      {
+        baseDir: path.resolve(projectRoot, 'backend', 'logs'),
+        kind: 'fileSuffix',
+        pattern: '.log',
+        maxAgeMs: parseInt(process.env.TEMP_LOG_MAX_AGE_DAYS || '7', 10) * dayMs,
+      },
+      {
+        baseDir: projectRoot,
+        kind: 'dirName',
+        pattern: 'coverage',
+        maxAgeMs: parseInt(process.env.TEMP_ARTIFACT_MAX_AGE_DAYS || '7', 10) * dayMs,
+      },
+      {
+        baseDir: path.resolve(projectRoot, 'backend'),
+        kind: 'dirName',
+        pattern: 'coverage',
+        maxAgeMs: parseInt(process.env.TEMP_ARTIFACT_MAX_AGE_DAYS || '7', 10) * dayMs,
+      },
+      {
+        baseDir: projectRoot,
+        kind: 'dirName',
+        pattern: '.cache',
+        maxAgeMs: parseInt(process.env.TEMP_CACHE_MAX_AGE_DAYS || '7', 10) * dayMs,
+      },
+      {
+        baseDir: path.resolve(projectRoot, 'agentscope-service'),
+        kind: 'dirName',
+        pattern: '.pytest_cache',
+        maxAgeMs: parseInt(process.env.TEMP_CACHE_MAX_AGE_DAYS || '7', 10) * dayMs,
+      },
+      {
+        baseDir: path.resolve(projectRoot, 'agentscope-service'),
+        kind: 'dirName',
+        pattern: '__pycache__',
+        recursive: true,
+        maxAgeMs: parseInt(process.env.TEMP_CACHE_MAX_AGE_DAYS || '7', 10) * dayMs,
+      },
+    ],
+    excludeDirs: ['.git', 'node_modules'],
   },
 } as const;

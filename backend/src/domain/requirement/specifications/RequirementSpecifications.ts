@@ -63,11 +63,11 @@ export class PendingRequirementSpecification extends Specification<Requirement> 
 /**
  * 处理中需求规格
  *
- * 规则：状态为in_progress
+ * 规则：状态为approved
  */
 export class InProgressRequirementSpecification extends Specification<Requirement> {
   isSatisfiedBy(requirement: Requirement): boolean {
-    return requirement.status === 'in_progress';
+    return requirement.status === 'approved';
   }
 }
 
@@ -85,11 +85,11 @@ export class ResolvedRequirementSpecification extends Specification<Requirement>
 /**
  * 已关闭需求规格
  *
- * 规则：状态为closed
+ * 规则：状态为cancelled
  */
 export class ClosedRequirementSpecification extends Specification<Requirement> {
   isSatisfiedBy(requirement: Requirement): boolean {
-    return requirement.status === 'closed';
+    return requirement.status === 'cancelled';
   }
 }
 
@@ -170,18 +170,21 @@ export class BelongsToConversationSpecification extends Specification<Requiremen
 /**
  * 未分配的需求规格
  *
- * 规则：assigneeId为空
+ * 规则：assigneeId为空（来自metadata）
  */
 export class UnassignedRequirementSpecification extends Specification<Requirement> {
   isSatisfiedBy(requirement: Requirement): boolean {
-    return !requirement.assigneeId;
+    const assigneeId = typeof requirement.metadata?.assigneeId === 'string'
+      ? requirement.metadata.assigneeId
+      : undefined;
+    return !assigneeId;
   }
 }
 
 /**
  * 分配给指定客服的需求规格
  *
- * 规则：assigneeId匹配
+ * 规则：assigneeId匹配（来自metadata）
  */
 export class AssignedToSpecification extends Specification<Requirement> {
   constructor(private readonly agentId: string) {
@@ -189,7 +192,10 @@ export class AssignedToSpecification extends Specification<Requirement> {
   }
 
   isSatisfiedBy(requirement: Requirement): boolean {
-    return requirement.assigneeId === this.agentId;
+    const assigneeId = typeof requirement.metadata?.assigneeId === 'string'
+      ? requirement.metadata.assigneeId
+      : undefined;
+    return assigneeId === this.agentId;
   }
 }
 

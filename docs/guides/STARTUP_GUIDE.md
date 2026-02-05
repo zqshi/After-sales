@@ -227,7 +227,7 @@ cd agentscope-service
 **编辑`.env`**:
 ```bash
 # DeepSeek LLM配置
-DEEPSEEK_API_KEY=your-deepseek-api-key
+AI_SERVICE_API_KEY=your-api-key-here
 DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
 DEEPSEEK_MODEL=deepseek-chat
 
@@ -318,7 +318,7 @@ npm start
 
 **验证后端**:
 ```bash
-curl http://localhost:8080/api/health
+curl http://localhost:8080/health
 # 预期输出: {"status":"ok","timestamp":"..."}
 ```
 
@@ -502,7 +502,7 @@ chmod +x start-all.sh
 **检查所有服务状态**:
 ```bash
 # 后端
-curl http://localhost:8080/api/health
+curl http://localhost:8080/health
 
 # AgentScope
 curl http://localhost:5000/health

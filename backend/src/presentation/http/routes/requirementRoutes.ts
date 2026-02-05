@@ -3,11 +3,11 @@ import { FastifyInstance } from 'fastify';
 import { RequirementController } from '../controllers/RequirementController';
 import { ResourceAccessMiddleware } from '../middleware/resourceAccessMiddleware';
 
-export async function requirementRoutes(
+export function requirementRoutes(
   fastify: FastifyInstance,
   controller: RequirementController,
   accessMiddleware: ResourceAccessMiddleware,
-): Promise<void> {
+): void {
   fastify.post('/api/requirements', {
     config: { permissions: ['requirements.write'] },
   }, async (request, reply) => {
@@ -34,6 +34,14 @@ export async function requirementRoutes(
   });
 
   fastify.patch('/api/requirements/:id/status', {
+    config: { permissions: ['requirements.write'] },
+    preHandler: [accessMiddleware.checkRequirementAccess('write')],
+  }, async (request, reply) => {
+    await controller.updateStatus(request, reply);
+  });
+
+  // 兼容旧客户端: PATCH /api/requirements/:id
+  fastify.patch('/api/requirements/:id', {
     config: { permissions: ['requirements.write'] },
     preHandler: [accessMiddleware.checkRequirementAccess('write')],
   }, async (request, reply) => {

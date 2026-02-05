@@ -3,7 +3,6 @@ import { showNotification } from '../core/notifications.js';
 import { toggleRightSidebar } from '../ui/layout.js';
 import {
   isApiEnabled,
-  fetchTasks,
   actionTask,
   fetchQualityProfile,
 } from '../api.js';
@@ -826,7 +825,6 @@ function setupTaskConversationFlow() {
   const workspace = qs('#workspace-tasks-tab');
   const qualityView = qs('#task-quality-overview');
   const conversationArea = qs('#task-conversation-area');
-  const log = qs('#task-agent-log');
   const input = qs('#task-agent-command-input');
   const sendBtn = qs('#task-agent-send');
   const chips = qsa('.task-agent-chip');
@@ -973,55 +971,6 @@ function appendMessage(text, role, extraContent = '') {
   // 为了IM体验，我们应该 append。
   logContainer.appendChild(entry);
   logContainer.scrollTop = logContainer.scrollHeight;
-}
-
-async function saveAsLongTermTask(title, desc, priority) {
-  const sidebarTasks = qs('#sidebar-tasks-list');
-  if (!sidebarTasks) {
-    return;
-  }
-
-  // 复用 addSidebarTask，但可以加一点样式区分，或者仅仅是加到列表里
-  // 这里我们假设长期任务在列表里有一个特殊的标识
-  const wrapper = document.createElement('div');
-  wrapper.className = 'task-list-item long-term-task bg-emerald-50/30'; // 微弱背景区分
-  wrapper.dataset.taskId = `task-long-${Date.now()}`;
-
-  const priorityChip =
-    priority === 'high'
-      ? 'bg-amber-50 text-amber-700 border border-amber-200'
-      : priority === 'low'
-        ? 'bg-green-50 text-green-700 border border-green-200'
-        : 'bg-blue-50 text-blue-700 border border-blue-200';
-
-  wrapper.innerHTML = `
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500" title="长期指令"></span>
-          <span class="text-sm font-semibold text-gray-800">${title}</span>
-          <span class="text-[11px] px-2 py-0.5 rounded-full ${priorityChip}">${priority === 'high' ? '高' : priority === 'low' ? '低' : '中'}</span>
-        </div>
-        <p class="text-xs text-gray-600 mt-0.5"><i class="fa fa-refresh text-[10px] mr-1 text-emerald-500"></i>${desc}</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <button class="task-execute-btn text-xs text-primary hover:underline" title="立即触发">执行</button>
-        <button class="task-delete-btn text-xs text-red-600 hover:text-red-700">移除</button>
-      </div>`;
-
-  try {
-    await taskController.createTask({
-      title,
-      description: desc,
-      priority,
-      type: 'long_term',
-      assigneeId: window.config?.userId,
-    });
-    sidebarTasks.prepend(wrapper);
-    showNotification('已沉淀为长期快捷指令', 'success');
-  } catch (err) {
-    console.warn('[tasks] save long term failed', err);
-    showNotification('保存长期任务失败', 'error');
-  }
 }
 
 function inferTaskIntent(text) {

@@ -1,13 +1,13 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 
 import { CreateTaskRequestDTO } from '../../../application/dto/task/CreateTaskRequestDTO';
+import { ForbiddenError } from '../../../application/services/ResourceAccessControl';
 import { AssignTaskUseCase } from '../../../application/use-cases/task/AssignTaskUseCase';
 import { CompleteTaskUseCase } from '../../../application/use-cases/task/CompleteTaskUseCase';
 import { CreateTaskUseCase } from '../../../application/use-cases/task/CreateTaskUseCase';
 import { GetTaskUseCase } from '../../../application/use-cases/task/GetTaskUseCase';
 import { ListTasksUseCase } from '../../../application/use-cases/task/ListTasksUseCase';
 import { UpdateTaskStatusUseCase } from '../../../application/use-cases/task/UpdateTaskStatusUseCase';
-import { ForbiddenError } from '../../../application/services/ResourceAccessControl';
 import { ValidationError } from '../../../infrastructure/validation/Validator';
 
 export class TaskController {
@@ -27,7 +27,7 @@ export class TaskController {
     try {
       const payload = request.body as CreateTaskRequestDTO;
       const result = await this.createTaskUseCase.execute(payload);
-      reply.code(201).send({ success: true, data: result });
+      void reply.code(201).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -43,7 +43,7 @@ export class TaskController {
         taskId: id,
         userId: this.getUserId(request),
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -73,7 +73,7 @@ export class TaskController {
         limit: query.limit ? Number.parseInt(query.limit, 10) : undefined,
       };
       const result = await this.listTasksUseCase.execute(dto);
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -91,7 +91,7 @@ export class TaskController {
         assigneeId,
         userId: this.getUserId(request),
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -109,7 +109,7 @@ export class TaskController {
         status: body.status,
         userId: this.getUserId(request),
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -133,7 +133,7 @@ export class TaskController {
         qualityScore: body.qualityScore,
         userId: this.getUserId(request),
       });
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -148,7 +148,7 @@ export class TaskController {
       const { action } = request.body as { action: string };
 
       if (!action) {
-        reply.code(400).send({
+        void reply.code(400).send({
           success: false,
           error: { message: 'action is required', code: 'VALIDATION_ERROR' },
         });
@@ -161,7 +161,7 @@ export class TaskController {
           status: 'cancelled',
           userId: this.getUserId(request),
         });
-        reply.code(200).send({ success: true, data: result });
+        void reply.code(200).send({ success: true, data: result });
         return;
       }
 
@@ -171,11 +171,11 @@ export class TaskController {
           status: 'in_progress',
           userId: this.getUserId(request),
         });
-        reply.code(200).send({ success: true, data: result });
+        void reply.code(200).send({ success: true, data: result });
         return;
       }
 
-      reply.code(400).send({
+      void reply.code(400).send({
         success: false,
         error: { message: `unsupported action: ${action}`, code: 'INVALID_INPUT' },
       });
@@ -186,7 +186,7 @@ export class TaskController {
 
   private handleError(error: unknown, reply: FastifyReply): void {
     if (error instanceof ValidationError) {
-      reply.code(400).send({
+      void reply.code(400).send({
         success: false,
         error: {
           message: error.message,
@@ -197,7 +197,7 @@ export class TaskController {
       return;
     }
     if (error instanceof ForbiddenError) {
-      reply.code(403).send({
+      void reply.code(403).send({
         success: false,
         error: {
           message: error.message,
@@ -208,14 +208,14 @@ export class TaskController {
     }
     if (error instanceof Error) {
       const statusCode = this.getStatusCode(error.message);
-      reply.code(statusCode).send({
+      void reply.code(statusCode).send({
         success: false,
         error: { message: error.message, code: this.getErrorCode(error.message) },
       });
       return;
     }
 
-    reply.code(500).send({
+    void reply.code(500).send({
       success: false,
       error: { message: 'Internal server error', code: 'INTERNAL_ERROR' },
     });

@@ -20,7 +20,7 @@ export class TaskMapper {
         assigneeId: entity.assigneeId ?? undefined,
         conversationId: entity.conversationId ?? undefined,
         requirementId: entity.metadata?.requirementId as string | undefined,
-        status: entity.status as any,
+        status: entity.status as Task['status'],
         priority: TaskPriority.create(entity.priority),
         dueDate:
           entity.metadata?.dueDate && typeof entity.metadata.dueDate === 'string'

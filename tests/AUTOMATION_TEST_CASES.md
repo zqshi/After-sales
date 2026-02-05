@@ -68,7 +68,6 @@
 - MSG-003 搜索/筛选（状态/渠道/紧急度/等级）【E2E, P0】
 - MSG-004 发送消息/空消息/超长提示【E2E, P0】
 - MSG-005 表情面板开关【E2E, P1】
-- MSG-006 快捷操作入口可用【E2E, P1】
 - MSG-007 Agent 模式切换与接口调用【E2E, P0】
 - MSG-008 风险词低置信提示【E2E, P1】
 - MSG-A11Y-001 Enter 发送/Shift+Enter 换行【E2E, P2】
@@ -142,9 +141,6 @@
 - PERM-003 成员/角色增删改【E2E, P1】
 - PERM-004 系统角色不可删除【E2E, P1】
 
-### 15. 工具箱快捷动作（QUICK）
-- QUICK-001 系统通知/工单/升级问题提交【E2E, P2】
-- QUICK-002 弹窗 ESC 关闭【E2E, P2】
 
 ### 16. 运行时配置（RUNTIME）
 - RUNTIME-001 runtime-config 覆盖 API 地址【集成, P1】
@@ -211,7 +207,6 @@
 - `tests/frontend/e2e/tools.spec.js`
 - `tests/frontend/e2e/reports.spec.js`
 - `tests/frontend/e2e/permission-panel.spec.js`
-- `tests/frontend/e2e/quick-actions.spec.js`
 - `tests/frontend/e2e/runtime-config.spec.js`
 - `tests/frontend/e2e/reliability.spec.js`
 - `tests/frontend/e2e/api/health.spec.js`

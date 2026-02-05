@@ -8,14 +8,15 @@ import { Conversation } from '@domain/conversation/models/Conversation';
 import { Channel } from '@domain/conversation/value-objects/Channel';
 
 import { EventBus } from '../../infrastructure/events/EventBus';
+import { shouldPublishDirectly } from '../../infrastructure/events/outboxPolicy';
 import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
+import { Validator } from '../../infrastructure/validation/Validator';
 import { ConversationResponseDTO } from '../dto/ConversationResponseDTO';
 import {
   CreateConversationRequestDTO,
   CreateConversationRequestSchema,
   InitialMessageSenderType,
 } from '../dto/CreateConversationRequestDTO';
-import { Validator } from '../../infrastructure/validation/Validator';
 
 type SenderTypeMap = Record<InitialMessageSenderType, 'agent' | 'customer'>;
 
@@ -64,8 +65,10 @@ export class CreateConversationUseCase {
     const events = conversation.getUncommittedEvents();
     await this.conversationRepository.save(conversation);
 
-    await this.eventBus.publishAll(events);
-    conversation.clearEvents();
+    if (shouldPublishDirectly()) {
+      await this.eventBus.publishAll(events);
+      conversation.clearEvents();
+    }
 
     return ConversationResponseDTO.fromAggregate(conversation);
   }

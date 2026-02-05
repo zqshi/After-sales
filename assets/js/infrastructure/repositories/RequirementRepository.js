@@ -64,7 +64,7 @@ export class RequirementRepository extends BaseRepository {
    * @returns {Promise<Object>}
    */
   async updateStatus(id, status) {
-    return this.patch(`/${id}`, { status });
+    return this.patch(`/${id}/status`, { status });
   }
 
   /**

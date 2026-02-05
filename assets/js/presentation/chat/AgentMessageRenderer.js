@@ -1,7 +1,9 @@
 import { getCurrentProfile } from '../../customer/index.js';
 
 function escapeHtml(value) {
-  if (!value) return '';
+  if (!value) {
+    return '';
+  }
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -35,9 +37,15 @@ export function buildMessageNode({ role, author = '客户', content, timestamp, 
 
   wrapper.className = `message-row ${normalizedRole === 'agent' ? 'justify-end' : 'justify-start'}`;
   wrapper.dataset.senderRole = normalizedRole;
-  if (isAIAgent) wrapper.dataset.aiAgent = 'true';
-  if (messageId) wrapper.dataset.messageId = messageId;
-  if (sentiment?.emotion) wrapper.dataset.sentiment = sentiment.emotion;
+  if (isAIAgent) {
+    wrapper.dataset.aiAgent = 'true';
+  }
+  if (messageId) {
+    wrapper.dataset.messageId = messageId;
+  }
+  if (sentiment?.emotion) {
+    wrapper.dataset.sentiment = sentiment.emotion;
+  }
 
   const avatar = document.createElement('div');
   avatar.className = `avatar ${isAIAgent ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`;
@@ -274,7 +282,7 @@ export function renderAgentMessage(message) {
       fromAI: true,
       agentType: 'ai',
       confidence: message.confidence,
-      ...message.metadata
-    }
+      ...message.metadata,
+    },
   });
 }

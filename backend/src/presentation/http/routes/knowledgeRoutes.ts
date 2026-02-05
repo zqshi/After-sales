@@ -2,10 +2,10 @@ import { FastifyInstance } from 'fastify';
 
 import { KnowledgeController } from '../controllers/KnowledgeController';
 
-export async function knowledgeRoutes(
+export function knowledgeRoutes(
   fastify: FastifyInstance,
   controller: KnowledgeController,
-): Promise<void> {
+): void {
   fastify.post('/api/knowledge/search', {
     config: { permissions: ['knowledge.read'] },
   }, async (request, reply) => {

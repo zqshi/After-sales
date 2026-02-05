@@ -6,6 +6,8 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 
 import { metricsCollector } from '../../../infrastructure/monitoring/MetricsCollector';
 
+type TimedRequest = FastifyRequest & { startTime?: number };
+
 /**
  * Metrics中间件 - onRequest hook
  * 记录请求开始时间
@@ -14,9 +16,10 @@ export function metricsMiddleware(
   request: FastifyRequest,
   reply: FastifyReply,
   done: () => void,
-) {
+): void {
+  void reply;
   // 记录请求开始时间
-  (request as any).startTime = Date.now();
+  (request as TimedRequest).startTime = Date.now();
   done();
 }
 
@@ -28,8 +31,8 @@ export function metricsResponseHook(
   request: FastifyRequest,
   reply: FastifyReply,
   done: () => void,
-) {
-  const startTime = (request as any).startTime || Date.now();
+): void {
+  const startTime = (request as TimedRequest).startTime || Date.now();
   const duration = Date.now() - startTime;
   const method = request.method;
   const route = request.routeOptions?.url || request.url;

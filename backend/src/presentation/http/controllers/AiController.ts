@@ -21,7 +21,7 @@ export class AiController {
         options?: Record<string, unknown>;
       };
       const result = await this.analyzeUseCase.execute(payload);
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -40,7 +40,7 @@ export class AiController {
         customization?: Record<string, unknown>;
       };
       const result = await this.applySolutionUseCase.execute(payload);
-      reply.code(200).send({ success: true, data: result });
+      void reply.code(200).send({ success: true, data: result });
     } catch (error) {
       this.handleError(error, reply);
     }
@@ -49,13 +49,13 @@ export class AiController {
   private handleError(error: unknown, reply: FastifyReply): void {
     if (error instanceof Error) {
       const status = this.getStatus(error.message);
-      reply.code(status).send({
+      void reply.code(status).send({
         success: false,
         error: { message: error.message, code: this.getCode(error.message) },
       });
       return;
     }
-    reply.code(500).send({
+    void reply.code(500).send({
       success: false,
       error: { message: 'Internal server error', code: 'INTERNAL_ERROR' },
     });

@@ -16,10 +16,10 @@ export class MonitoringController {
     try {
       const { status } = request.query as { status?: string };
       const alerts = await this.listMonitoringAlertsUseCase.execute(status);
-      reply.code(200).send({ success: true, data: alerts });
+      void reply.code(200).send({ success: true, data: alerts });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      reply.code(500).send({ success: false, error: message });
+      void reply.code(500).send({ success: false, error: message });
     }
   }
 
@@ -27,10 +27,10 @@ export class MonitoringController {
     try {
       const payload = request.body as CreateMonitoringAlertRequestDTO;
       const alert = await this.createMonitoringAlertUseCase.execute(payload);
-      reply.code(201).send({ success: true, data: alert });
+      void reply.code(201).send({ success: true, data: alert });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      reply.code(400).send({ success: false, error: message });
+      void reply.code(400).send({ success: false, error: message });
     }
   }
 
@@ -38,10 +38,10 @@ export class MonitoringController {
     try {
       const { id } = request.params as { id: string };
       const alert = await this.resolveMonitoringAlertUseCase.execute(id);
-      reply.code(200).send({ success: true, data: alert });
+      void reply.code(200).send({ success: true, data: alert });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
-      reply.code(404).send({ success: false, error: message });
+      void reply.code(404).send({ success: false, error: message });
     }
   }
 }

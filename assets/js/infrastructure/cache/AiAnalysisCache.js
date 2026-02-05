@@ -24,7 +24,7 @@ export class AiAnalysisCache {
 
     this.cache.set(conversationId, {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -79,7 +79,9 @@ export class AiAnalysisCache {
    */
   has(conversationId) {
     const cached = this.cache.get(conversationId);
-    if (!cached) return false;
+    if (!cached) {
+      return false;
+    }
 
     // 检查是否过期
     if (Date.now() - cached.timestamp > this.maxAge) {

@@ -18,24 +18,24 @@ export class ResourceAccessMiddleware {
       try {
         const user = request.user as { sub: string } | undefined;
         if (!user) {
-          reply.code(401).send({ success: false, error: 'Unauthorized' });
+          void reply.code(401).send({ success: false, error: 'Unauthorized' });
           return;
         }
 
         const conversationId = (request.params as { id?: string }).id;
         if (!conversationId) {
-          reply.code(400).send({ success: false, error: 'Conversation ID required' });
+          void reply.code(400).send({ success: false, error: 'Conversation ID required' });
           return;
         }
 
         await this.accessControl.checkConversationAccess(user.sub, conversationId, action);
       } catch (error) {
         if (error instanceof ForbiddenError) {
-          reply.code(403).send({ success: false, error: error.message });
+          void reply.code(403).send({ success: false, error: error.message });
           return;
         }
         if (error instanceof Error && error.message.startsWith('Conversation not found')) {
-          reply.code(404).send({ success: false, error: error.message });
+          void reply.code(404).send({ success: false, error: error.message });
           return;
         }
         throw error;
@@ -51,24 +51,24 @@ export class ResourceAccessMiddleware {
       try {
         const user = request.user as { sub: string } | undefined;
         if (!user) {
-          reply.code(401).send({ success: false, error: 'Unauthorized' });
+          void reply.code(401).send({ success: false, error: 'Unauthorized' });
           return;
         }
 
         const taskId = (request.params as { id?: string }).id;
         if (!taskId) {
-          reply.code(400).send({ success: false, error: 'Task ID required' });
+          void reply.code(400).send({ success: false, error: 'Task ID required' });
           return;
         }
 
         await this.accessControl.checkTaskAccess(user.sub, taskId, action);
       } catch (error) {
         if (error instanceof ForbiddenError) {
-          reply.code(403).send({ success: false, error: error.message });
+          void reply.code(403).send({ success: false, error: error.message });
           return;
         }
         if (error instanceof Error && error.message.startsWith('Task not found')) {
-          reply.code(404).send({ success: false, error: error.message });
+          void reply.code(404).send({ success: false, error: error.message });
           return;
         }
         throw error;
@@ -84,24 +84,24 @@ export class ResourceAccessMiddleware {
       try {
         const user = request.user as { sub: string } | undefined;
         if (!user) {
-          reply.code(401).send({ success: false, error: 'Unauthorized' });
+          void reply.code(401).send({ success: false, error: 'Unauthorized' });
           return;
         }
 
         const requirementId = (request.params as { id?: string }).id;
         if (!requirementId) {
-          reply.code(400).send({ success: false, error: 'Requirement ID required' });
+          void reply.code(400).send({ success: false, error: 'Requirement ID required' });
           return;
         }
 
         await this.accessControl.checkRequirementAccess(user.sub, requirementId, action);
       } catch (error) {
         if (error instanceof ForbiddenError) {
-          reply.code(403).send({ success: false, error: error.message });
+          void reply.code(403).send({ success: false, error: error.message });
           return;
         }
         if (error instanceof Error && error.message.startsWith('Requirement not found')) {
-          reply.code(404).send({ success: false, error: error.message });
+          void reply.code(404).send({ success: false, error: error.message });
           return;
         }
         throw error;

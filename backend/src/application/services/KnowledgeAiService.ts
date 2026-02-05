@@ -68,7 +68,8 @@ export class KnowledgeAiService {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return parsed
+    const faqs = parsed as Array<{ question?: unknown; answer?: unknown }>;
+    return faqs
       .map((item) => ({
         question: String(item?.question || '').trim(),
         answer: String(item?.answer || '').trim(),

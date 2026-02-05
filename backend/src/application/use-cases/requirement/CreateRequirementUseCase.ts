@@ -5,12 +5,13 @@ import { RequirementSource } from '@domain/requirement/value-objects/Requirement
 import { EventBus } from '@infrastructure/events/EventBus';
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
 
+import { shouldPublishDirectly } from '../../../infrastructure/events/outboxPolicy';
+import { Validator } from '../../../infrastructure/validation/Validator';
 import {
   CreateRequirementRequestDTO,
   CreateRequirementRequestSchema,
 } from '../../dto/requirement/CreateRequirementRequestDTO';
 import { RequirementResponseDTO } from '../../dto/requirement/RequirementResponseDTO';
-import { Validator } from '../../../infrastructure/validation/Validator';
 
 export class CreateRequirementUseCase {
   private detector: RequirementDetectorService;
@@ -54,10 +55,12 @@ export class CreateRequirementUseCase {
     await this.requirementRepository.save(requirement);
 
     // 发布领域事件
-    for (const event of events) {
-      await this.eventBus.publish(event);
+    if (shouldPublishDirectly()) {
+      for (const event of events) {
+        await this.eventBus.publish(event);
+      }
+      requirement.clearEvents();
     }
-    requirement.clearEvents();
 
     return RequirementResponseDTO.fromDomain(requirement);
   }

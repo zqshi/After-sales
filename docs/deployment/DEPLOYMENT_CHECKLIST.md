@@ -63,6 +63,11 @@ REDIS_PORT=6379
 # JWT
 JWT_SECRET=your-secret-key-change-in-production
 JWT_EXPIRES_IN=7d
+JWT_ENFORCE_STRONG_SECRET=true
+
+# Outbox
+OUTBOX_PROCESSOR_ENABLED=true
+OUTBOX_PUBLISH_MODE=outbox_only
 
 # AI服务
 AI_SERVICE_URL=https://platform.deepseek.com/usage

@@ -13,4 +13,10 @@ test.describe('实时通信与 SSE', () => {
     const res = await request.get(`${apiBaseUrl}/im/reviews/pending`);
     expect(res.ok()).toBeTruthy();
   });
+
+  test.skip('SSE 推送事件结构校验（P0 缺口骨架）', async ({ request }) => {
+    // TODO: 增加 SSE 事件流订阅与 payload 结构断言
+    const res = await request.get(`${apiBaseUrl}/im/reviews/stream`);
+    expect(res.ok()).toBeTruthy();
+  });
 });

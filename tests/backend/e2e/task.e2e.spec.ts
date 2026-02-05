@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { FastifyInstance } from 'fastify';
 import { DataSource } from 'typeorm';
-import { createApp } from '../../src/app';
+import { createApp } from '../../../backend/src/app';
 import { getTestDataSource, closeTestDataSource } from '../helpers/testDatabase';
-import { OutboxEventBus } from '../../src/infrastructure/events/OutboxEventBus';
-import { TaskRepository } from '../../src/infrastructure/repositories/TaskRepository';
-import { Task } from '../../src/domain/task/models/Task';
-import { TaskPriority } from '../../src/domain/task/value-objects/TaskPriority';
+import { OutboxEventBus } from '../../../backend/src/infrastructure/events/OutboxEventBus';
+import { TaskRepository } from '../../../backend/src/infrastructure/repositories/TaskRepository';
+import { Task } from '../../../backend/src/domain/task/models/Task';
+import { TaskPriority } from '../../../backend/src/domain/task/value-objects/TaskPriority';
 const describeWithDb = process.env.SKIP_TEST_ENV_SETUP === 'true' ? describe.skip : describe;
 const API_PREFIX = '/api/v1/api';
 

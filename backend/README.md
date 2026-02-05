@@ -161,7 +161,7 @@ npm run migration:revert   # 回滚迁移
 
 ## API 文档
 
-启动服务器后访问：http://localhost:8080/documentation
+启动服务器后访问：http://localhost:8080/docs
 
 ## 许可证
 

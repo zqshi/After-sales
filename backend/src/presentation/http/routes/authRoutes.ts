@@ -2,10 +2,10 @@ import { FastifyInstance } from 'fastify';
 
 import { AuthController } from '../controllers/AuthController';
 
-export async function authRoutes(
+export function authRoutes(
   fastify: FastifyInstance,
   controller: AuthController,
-): Promise<void> {
+): void {
   fastify.post('/api/auth/login', {
     config: { auth: false },
   }, async (request, reply) => {

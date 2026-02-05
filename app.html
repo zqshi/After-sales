@@ -82,7 +82,7 @@
   </script>
 
   <!-- 运行时配置（可选，用于覆盖默认API地址） -->
-  <script src="runtime-config.js"></script>
+  <script src="/runtime-config.js" type="module"></script>
   <!-- API配置 -->
   <script>
     // 全局配置对象 - 用于配置API地址和用户信息
@@ -329,7 +329,6 @@
             </div>
           </div>
 
-          <!-- 快捷功能 -->
           <div class="mb-3 flex flex-nowrap gap-2 overflow-x-auto">
             <button class="px-3 py-1.5 text-xs bg-primary text-white rounded-full hover:bg-primary-dark transition-colors shadow-sm" onclick="openTicketManagementPanel()" data-permission="actions.ticket.manage">工单管理</button>
             <button class="px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-full hover:border-primary hover:text-primary" onclick="openAiReplyPanel()" data-permission="actions.reply.suggest">回复建议</button>
@@ -562,7 +561,6 @@
               </div>
             </div>
 
-            <!-- 场景问题快捷入口 -->
             <div id="knowledge-app-shortcuts" class="w-full mx-auto">
               <div class="flex items-center gap-2 mb-4">
                 <i class="fa fa-bolt text-amber-500 text-sm"></i>
@@ -676,7 +674,7 @@
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div class="text-xs text-gray-500 uppercase tracking-wide">工具中心</div>
-              <h2 class="text-lg font-semibold text-gray-900">常用工具与快捷动作</h2>
+          <h2 class="text-lg font-semibold text-gray-900">常用工具</h2>
             </div>
             <span class="text-xs text-gray-500">集中处理系统巡检、诊断与工单协作</span>
           </div>
@@ -711,30 +709,6 @@
               <button class="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg flex flex-col items-center justify-center transition-colors" data-click="tool" data-label="系统配置" data-permission="tools.system.settings">
                 <i class="fa fa-cogs text-indigo-600 text-2xl mb-2"></i>
                 <span class="text-xs">系统配置</span>
-              </button>
-            </div>
-          </div>
-          <div class="panel-card">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-semibold text-gray-800">快捷动作</h3>
-              <span class="text-xs text-gray-500">跨系统联动</span>
-            </div>
-            <div class="grid md:grid-cols-2 gap-2">
-              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="发送系统通知" data-permission="tools.quick.notify">
-                <span>发送系统通知</span>
-                <i class="fa fa-paper-plane-o"></i>
-              </button>
-              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="创建事件工单" data-permission="tools.quick.ticket">
-                <span>创建事件工单</span>
-                <i class="fa fa-plus-square-o"></i>
-              </button>
-              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="升级问题" data-permission="tools.quick.escalate">
-                <span>升级问题</span>
-                <i class="fa fa-arrow-up"></i>
-              </button>
-              <button class="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg text-xs hover:border-primary hover:text-primary" data-click="quick" data-label="生成报告" data-permission="tools.quick.report">
-                <span>生成报告</span>
-                <i class="fa fa-file-text-o"></i>
               </button>
             </div>
           </div>

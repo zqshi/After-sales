@@ -4,11 +4,13 @@
 
 import { z } from 'zod';
 
+import { isImChannel } from '@domain/conversation/constants';
+
 import { EventBus } from '../../infrastructure/events/EventBus';
+import { shouldPublishDirectly } from '../../infrastructure/events/outboxPolicy';
 import { ConversationRepository } from '../../infrastructure/repositories/ConversationRepository';
 import { nonEmptyStringSchema, uuidSchema } from '../../infrastructure/validation/CommonSchemas';
 import { ValidationError, Validator } from '../../infrastructure/validation/Validator';
-import { isImChannel } from '@domain/conversation/constants';
 import { ResourceAccessControl } from '../services/ResourceAccessControl';
 
 export interface CloseConversationRequest {
@@ -71,10 +73,12 @@ export class CloseConversationUseCase {
     await this.conversationRepository.save(conversation);
 
     // 6. 发布领域事件
-    for (const event of events) {
-      await this.eventBus.publish(event);
+    if (shouldPublishDirectly()) {
+      for (const event of events) {
+        await this.eventBus.publish(event);
+      }
+      conversation.clearEvents();
     }
-    conversation.clearEvents();
 
     // 6. 返回结果
     return {

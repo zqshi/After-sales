@@ -22,4 +22,12 @@ test.describe('问题并行管理', () => {
     });
     expect(res.ok()).toBeTruthy();
   });
+
+  test.skip('问题关闭/归档（P0 缺口骨架）', async ({ request }) => {
+    // TODO: 补齐接口路径、状态流转与断言
+    const res = await request.post(`${apiBaseUrl}/problems/prob-1/close`, {
+      data: { reason: 'resolved' },
+    });
+    expect(res.ok()).toBeTruthy();
+  });
 });

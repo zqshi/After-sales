@@ -15,6 +15,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         app: resolve(__dirname, 'app.html'),
       },
+      external: ['/runtime-config.js', 'runtime-config.js'],
     },
   },
   server: {

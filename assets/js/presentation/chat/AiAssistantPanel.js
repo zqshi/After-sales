@@ -21,7 +21,7 @@ export class AiAssistantPanel {
       knowledgeContent: qs('#ai-knowledge-content'),
       tasksSection: qs('#ai-panel-tasks'),
       tasksContent: qs('#ai-tasks-content'),
-      messageInput: qs('#message-input')
+      messageInput: qs('#message-input'),
     };
 
     // 兼容旧代码
@@ -49,7 +49,9 @@ export class AiAssistantPanel {
    * 初始化折叠/展开按钮
    */
   initToggleButton() {
-    if (!this.panel) return;
+    if (!this.panel) {
+      return;
+    }
 
     // 创建折叠按钮
     const toggleBtn = document.createElement('button');
@@ -85,7 +87,9 @@ export class AiAssistantPanel {
    * 折叠面板
    */
   collapse() {
-    if (!this.panel) return;
+    if (!this.panel) {
+      return;
+    }
     this.state = 'collapsed';
     this.panel.classList.add('collapsed');
     const toggleBtn = this.panel.querySelector('#ai-panel-toggle');
@@ -99,7 +103,9 @@ export class AiAssistantPanel {
    * 展开面板
    */
   expand() {
-    if (!this.panel) return;
+    if (!this.panel) {
+      return;
+    }
     this.state = 'expanded';
     this.panel.classList.remove('collapsed');
     const toggleBtn = this.panel.querySelector('#ai-panel-toggle');
@@ -114,7 +120,9 @@ export class AiAssistantPanel {
    * @param {string} mode - 'issue'问题模式或'normal'普通模式
    */
   show(mode = 'normal') {
-    if (!this.panel) return;
+    if (!this.panel) {
+      return;
+    }
 
     this.mode = mode;
     this.panel.classList.remove('hidden');
@@ -122,9 +130,15 @@ export class AiAssistantPanel {
     // 根据模式显示/隐藏内容
     if (mode === 'normal') {
       // 普通模式：只显示回复建议
-      if (this.sentimentSection) this.sentimentSection.classList.add('hidden');
-      if (this.knowledgeSection) this.knowledgeSection.classList.add('hidden');
-      if (this.tasksSection) this.tasksSection.classList.add('hidden');
+      if (this.sentimentSection) {
+        this.sentimentSection.classList.add('hidden');
+      }
+      if (this.knowledgeSection) {
+        this.knowledgeSection.classList.add('hidden');
+      }
+      if (this.tasksSection) {
+        this.tasksSection.classList.add('hidden');
+      }
     } else if (mode === 'issue') {
       // 问题模式：显示全部内容（由各update方法控制具体显示）
       // 不做隐藏操作，让数据决定显示什么
@@ -149,7 +163,9 @@ export class AiAssistantPanel {
    * @param {Object} sentiment - 情感数据 {emotion, score, confidence}
    */
   updateSentiment(sentiment) {
-    if (!sentiment || !this.elements.sentimentSection) return;
+    if (!sentiment || !this.elements.sentimentSection) {
+      return;
+    }
 
     const { emotion, score, confidence } = sentiment;
 
@@ -159,7 +175,7 @@ export class AiAssistantPanel {
       neutral: { icon: '😐', label: '中性', class: 'bg-slate-100 text-slate-700 border-slate-200' },
       negative: { icon: '😟', label: '消极', class: 'bg-rose-50 text-rose-700 border-rose-200' },
       urgent: { icon: '⚠️', label: '急切', class: 'bg-rose-50 text-rose-700 border-rose-200' },
-      anxious: { icon: '😰', label: '焦虑', class: 'bg-rose-50 text-rose-700 border-rose-200' }
+      anxious: { icon: '😰', label: '焦虑', class: 'bg-rose-50 text-rose-700 border-rose-200' },
     };
 
     const emotionInfo = emotionMap[emotion] || emotionMap.neutral;
@@ -185,7 +201,9 @@ export class AiAssistantPanel {
    * @param {Object} suggestion - 建议数据 {suggestedReply, confidence, needsHumanReview}
    */
   updateReplySuggestion(suggestion) {
-    if (!this.replySection) return;
+    if (!this.replySection) {
+      return;
+    }
 
     const { suggestedReply, confidence, needsHumanReview } = suggestion || {};
     const normalizedReply = (suggestedReply || '')
@@ -278,15 +296,17 @@ export class AiAssistantPanel {
    * @param {Array} steps - 解决步骤列表 [{step, description, status, reference}]
    */
   updateSolutionSteps(steps) {
-    if (!steps || steps.length === 0 || !this.solutionSection) return;
+    if (!steps || steps.length === 0 || !this.solutionSection) {
+      return;
+    }
 
     if (this.elements.solutionContent) {
       this.elements.solutionContent.innerHTML = steps.map((step, index) => {
         const stepNumber = index + 1;
         const statusIcon = step.status === 'completed' ? '✓' :
-                          step.status === 'in_progress' ? '⏳' : '○';
+          step.status === 'in_progress' ? '⏳' : '○';
         const statusClass = step.status === 'completed' ? 'text-green-600' :
-                           step.status === 'in_progress' ? 'text-blue-600' : 'text-gray-400';
+          step.status === 'in_progress' ? 'text-blue-600' : 'text-gray-400';
 
         return `
           <li>
@@ -377,7 +397,7 @@ export class AiAssistantPanel {
       hasTasks,
       knowledgeSection: this.knowledgeSection,
       tasksSection: this.tasksSection,
-      referenceSection: this.referenceSection
+      referenceSection: this.referenceSection,
     });
 
     if (hasKnowledge || hasTasks) {
@@ -392,18 +412,32 @@ export class AiAssistantPanel {
    * 清空所有内容
    */
   clear() {
-    if (this.sentimentSection) this.sentimentSection.classList.add('hidden');
-    if (this.replySection) this.replySection.classList.add('hidden');
-    if (this.solutionSection) this.solutionSection.classList.add('hidden');
-    if (this.referenceSection) this.referenceSection.classList.add('hidden');
-    if (this.knowledgeSection) this.knowledgeSection.classList.add('hidden');
-    if (this.tasksSection) this.tasksSection.classList.add('hidden');
+    if (this.sentimentSection) {
+      this.sentimentSection.classList.add('hidden');
+    }
+    if (this.replySection) {
+      this.replySection.classList.add('hidden');
+    }
+    if (this.solutionSection) {
+      this.solutionSection.classList.add('hidden');
+    }
+    if (this.referenceSection) {
+      this.referenceSection.classList.add('hidden');
+    }
+    if (this.knowledgeSection) {
+      this.knowledgeSection.classList.add('hidden');
+    }
+    if (this.tasksSection) {
+      this.tasksSection.classList.add('hidden');
+    }
     this.syncSuggestionGrid();
     this.hide();
   }
 
   syncSuggestionGrid() {
-    if (!this.replySection || !this.sentimentSection) return;
+    if (!this.replySection || !this.sentimentSection) {
+      return;
+    }
     const replyVisible = !this.replySection.classList.contains('hidden');
     const sentimentVisible = !this.sentimentSection.classList.contains('hidden');
     this.replySection.classList.toggle('full-span', replyVisible && !sentimentVisible);

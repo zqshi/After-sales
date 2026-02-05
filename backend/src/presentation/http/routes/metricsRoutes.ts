@@ -6,7 +6,7 @@ import { FastifyInstance } from 'fastify';
 
 import { metricsCollector } from '../../../infrastructure/monitoring/MetricsCollector';
 
-export default async function metricsRoutes(fastify: FastifyInstance) {
+export default function metricsRoutes(fastify: FastifyInstance): void {
   /**
    * GET /metrics
    * Prometheus指标端点
@@ -17,13 +17,13 @@ export default async function metricsRoutes(fastify: FastifyInstance) {
     try {
       const metrics = await metricsCollector.getMetrics();
 
-      reply
+      await reply
         .code(200)
         .header('Content-Type', metricsCollector.getContentType())
         .send(metrics);
     } catch (err) {
       console.error('[MetricsRoute] Failed to generate metrics:', err);
-      reply.code(500).send({
+      void reply.code(500).send({
         error: 'Failed to generate metrics',
         message: err instanceof Error ? err.message : 'Unknown error',
       });
@@ -37,7 +37,7 @@ export default async function metricsRoutes(fastify: FastifyInstance) {
   fastify.get('/health', {
     config: { auth: false },
   }, async (request, reply) => {
-    reply.code(200).send({
+    void reply.code(200).send({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),

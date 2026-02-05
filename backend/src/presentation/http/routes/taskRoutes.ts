@@ -3,11 +3,11 @@ import { FastifyInstance } from 'fastify';
 import { TaskController } from '../controllers/TaskController';
 import { ResourceAccessMiddleware } from '../middleware/resourceAccessMiddleware';
 
-export async function taskRoutes(
+export function taskRoutes(
   fastify: FastifyInstance,
   controller: TaskController,
   accessMiddleware: ResourceAccessMiddleware,
-): Promise<void> {
+): void {
   fastify.post('/api/tasks', {
     config: { permissions: ['tasks.write'] },
   }, async (request, reply) => {

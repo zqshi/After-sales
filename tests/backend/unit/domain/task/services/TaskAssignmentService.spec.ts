@@ -17,4 +17,13 @@ describe('TaskAssignmentService', () => {
 
     expect(service.bestMatch(candidates)).toBe('agent-2');
   });
+
+  it('returns null when best candidate lacks assigneeId', () => {
+    const candidates = [
+      { assigneeId: undefined, skillMatch: 100, workload: 0 },
+      { assigneeId: 'agent-1', skillMatch: 50, workload: 0 },
+    ];
+
+    expect(service.bestMatch(candidates)).toBeNull();
+  });
 });

@@ -332,7 +332,7 @@ export class MetricsCollector {
       collectDefaultMetrics({ register });
     }
 
-    console.log('[MetricsCollector] Initialized with Prometheus metrics');
+    process.stdout.write('[MetricsCollector] Initialized with Prometheus metrics\n');
   }
 
   // ==================== Agent指标记录方法 ====================

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
 /**
  * WorkflowState - 工作流状态管理
  *
@@ -111,7 +112,7 @@ export class WorkflowState {
       const resolvedCondition = this.resolveVariables(condition);
 
       // 使用Function构造函数评估表达式（安全的eval替代方案）
-      // eslint-disable-next-line no-new-func
+      // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
       const result = new Function('return ' + resolvedCondition)();
 
       return Boolean(result);

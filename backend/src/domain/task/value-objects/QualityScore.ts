@@ -12,7 +12,7 @@ export class QualityScore extends ValueObject<QualityScoreProps> {
   }
 
   static create(data: QualityScoreProps): QualityScore {
-    const clamp = (value: number) => Math.max(0, Math.min(100, value));
+    const clamp = (value: number): number => Math.max(0, Math.min(100, value));
     return new QualityScore({
       timeliness: clamp(data.timeliness),
       completeness: clamp(data.completeness),
