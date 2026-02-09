@@ -18,8 +18,11 @@ export class RolePermissionService {
     const fromDb = await this.roleRepository.findByKey(role);
     if (fromDb?.permissions?.length) {
       const perms = fromDb.permissions as PermissionKey[];
-      this.cache.set(role, perms);
-      return perms;
+      const merged = role === 'admin'
+        ? Array.from(new Set([...perms, ...getDefaultRolePermissions(role)]))
+        : perms;
+      this.cache.set(role, merged);
+      return merged;
     }
     const fallback = getDefaultRolePermissions(role);
     if (fallback.length) {

@@ -64,6 +64,7 @@ export function buildConversationTools(deps: AgentScopeDependencies): MCPToolDef
         senderId: { type: 'string', required: true },
         senderType: { type: 'string', required: true },
         content: { type: 'string', required: true },
+        metadata: { type: 'object', description: '消息元数据' },
       },
       handler: async (params) => {
         return deps.sendMessageUseCase.execute({
@@ -71,6 +72,9 @@ export function buildConversationTools(deps: AgentScopeDependencies): MCPToolDef
           senderId: requireString(params.senderId, 'senderId'),
           senderType: requireString(params.senderType, 'senderType') as 'internal' | 'external',
           content: requireString(params.content, 'content'),
+          metadata: params.metadata && typeof params.metadata === 'object'
+            ? (params.metadata as Record<string, unknown>)
+            : undefined,
         });
       },
     },

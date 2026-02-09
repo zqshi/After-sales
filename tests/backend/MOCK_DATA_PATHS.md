@@ -4,7 +4,7 @@ This document lists mock data files used for demo flows and tests.
 
 ## WeCom (Enterprise WeChat) group chat mock data
 
-These files are used by the demo sync endpoint `POST /im/wecom/mock/sync` to seed conversations and messages.
+These files are retained as test fixtures for WeCom-related parsing and validation.
 
 - Group list: `tests/wecom/groupchat_list.json`
 - Group details: `tests/wecom/groupchat_details.json`

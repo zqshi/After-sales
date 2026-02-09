@@ -9,6 +9,8 @@ import { GetTaskUseCase } from '../../../application/use-cases/task/GetTaskUseCa
 import { ListTasksUseCase } from '../../../application/use-cases/task/ListTasksUseCase';
 import { UpdateTaskStatusUseCase } from '../../../application/use-cases/task/UpdateTaskStatusUseCase';
 import { ValidationError } from '../../../infrastructure/validation/Validator';
+import { WorkorderClient } from '../../../infrastructure/workorder/WorkorderClient';
+import { config } from '../../../config/app.config';
 
 export class TaskController {
   constructor(
@@ -58,6 +60,7 @@ export class TaskController {
         assigneeId?: string;
         conversationId?: string;
         requirementId?: string;
+        type?: string;
         status?: string;
         priority?: string;
         page?: string;
@@ -67,6 +70,7 @@ export class TaskController {
         assigneeId: query.assigneeId,
         conversationId: query.conversationId,
         requirementId: query.requirementId,
+        type: query.type,
         status: query.status,
         priority: query.priority,
         page: query.page ? Number.parseInt(query.page, 10) : undefined,
@@ -182,6 +186,59 @@ export class TaskController {
     } catch (error) {
       this.handleError(error, reply);
     }
+  }
+
+  async createWorkorderTicket(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const payload = request.body as Record<string, unknown>;
+      const result = await this.executeWorkorder(() => this.getWorkorderClient().createTicket(payload), payload);
+      void reply.code(201).send({ success: true, data: result });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  async listWorkorderTickets(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const payload = request.query as Record<string, unknown>;
+      const result = await this.executeWorkorder(() => this.getWorkorderClient().listTickets(payload), payload);
+      void reply.code(200).send({ success: true, data: result });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  async getWorkorderTicket(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id } = request.params as { id: string };
+      const result = await this.executeWorkorder(() => this.getWorkorderClient().getTicketDetail(id), { id });
+      void reply.code(200).send({ success: true, data: result });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  private getWorkorderClient(): WorkorderClient {
+    return new WorkorderClient();
+  }
+
+  private async executeWorkorder(
+    action: () => Promise<any>,
+    fallbackPayload: Record<string, unknown>,
+  ): Promise<any> {
+    if (config.workorder.mode !== 'proxy') {
+      throw new Error('Workorder proxy not enabled. Set WORKORDER_MODE=proxy to enable.');
+    }
+    return await action();
   }
 
   private handleError(error: unknown, reply: FastifyReply): void {

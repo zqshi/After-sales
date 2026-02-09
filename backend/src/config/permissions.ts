@@ -20,7 +20,9 @@ export type PermissionKey =
   | 'monitoring.read'
   | 'monitoring.write'
   | 'session.read'
-  | 'session.write';
+  | 'session.write'
+  | 'permissions.members.manage'
+  | 'permissions.roles.manage';
 
 const ALL_PERMISSIONS: PermissionKey[] = [
   'customers.read',
@@ -45,6 +47,8 @@ const ALL_PERMISSIONS: PermissionKey[] = [
   'monitoring.write',
   'session.read',
   'session.write',
+  'permissions.members.manage',
+  'permissions.roles.manage',
 ];
 
 const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {

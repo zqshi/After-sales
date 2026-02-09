@@ -230,6 +230,7 @@ describe('ConversationTaskCoordinator', () => {
       mockAiService as any,
       mockEventBus as any,
       mockQualityReportRepo as any,
+      { save: async () => ({}) } as any,
       mockWorkflowEngine as any,
     );
     mockCreateReviewRequestUseCase.execute.mockResolvedValue({ id: 'review-001' });

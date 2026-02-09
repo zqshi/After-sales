@@ -162,12 +162,6 @@ export function imRoutes(
     await controller.getConversationStats(request, reply);
   });
 
-  fastify.post('/im/wecom/mock/sync', {
-    config: { permissions: ['im.write'] },
-  }, async (request, reply) => {
-    await controller.syncWecomMockGroupChats(request, reply);
-  });
-
   fastify.get('/im/conversations/:id/messages', {
     config: { permissions: ['im.read'] },
   }, async (request, reply) => {

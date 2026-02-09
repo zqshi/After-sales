@@ -23,6 +23,7 @@ import { QualityReportRepository } from '@infrastructure/repositories/QualityRep
 import { RequirementRepository } from '@infrastructure/repositories/RequirementRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
 import { WorkflowEngine } from '@infrastructure/workflow/WorkflowEngine';
+import { AgentCallRepository } from '@infrastructure/repositories/AgentCallRepository';
 
 import { CloseConversationUseCase } from '../use-cases/CloseConversationUseCase';
 import { CreateConversationUseCase } from '../use-cases/CreateConversationUseCase';
@@ -97,6 +98,7 @@ export class ConversationTaskCoordinator {
   private requirementDetector: RequirementDetectorService;
   private readonly agentScopeClient: AgentScopeChatClient;
   private readonly workflowEngine?: WorkflowEngine;
+  private readonly agentCallRepository: AgentCallRepository;
 
   constructor(
     private readonly conversationRepository: ConversationRepository,
@@ -115,11 +117,16 @@ export class ConversationTaskCoordinator {
     private readonly aiService: AiService,
     private readonly eventBus: EventBus,
     private readonly qualityReportRepository?: QualityReportRepository,
+    agentCallRepository?: AgentCallRepository,
     workflowEngine?: WorkflowEngine,
   ) {
     this.requirementDetector = new RequirementDetectorService();
     this.agentScopeClient = new AgentScopeChatClient();
     this.workflowEngine = workflowEngine;
+    if (!agentCallRepository) {
+      throw new Error('AgentCallRepository is required for persistence');
+    }
+    this.agentCallRepository = agentCallRepository;
 
     // Phase 2: 质检触发改由ProblemResolved事件处理
   }
@@ -467,6 +474,8 @@ export class ConversationTaskCoordinator {
     needsHumanReview?: boolean;
   }> {
     try {
+      const startedAt = new Date();
+      const startMs = Date.now();
       // 1. 获取对话历史
       const conversation = await this.conversationRepository.findById(conversationId);
       const conversationHistory = conversation?.messages?.map((msg: any) => ({
@@ -488,6 +497,7 @@ export class ConversationTaskCoordinator {
         conversationId,
         customerId: incoming.customerId,
         message: userMessage,
+        agentName: 'ConversationTaskCoordinator',
         metadata: {
           ...(incoming.metadata || {}),
           mode: incoming.mode ?? conversation?.mode,
@@ -497,6 +507,25 @@ export class ConversationTaskCoordinator {
       });
 
       if (agentScopeResponse?.success && agentScopeResponse.message) {
+        await this.agentCallRepository.save({
+          conversationId,
+          agentName: agentScopeResponse.agent_name ?? 'AgentScope',
+          agentRole: 'agentscope',
+          mode: agentScopeResponse.mode ?? incoming.mode ?? conversation?.mode ?? null,
+          status: 'success',
+          durationMs: Date.now() - startMs,
+          startedAt,
+          completedAt: new Date(),
+          input: {
+            message: userMessage,
+            requirements,
+          },
+          output: {
+            message: agentScopeResponse.message,
+            confidence: agentScopeResponse.confidence,
+          },
+          metadata: agentScopeResponse.metadata ?? {},
+        });
         return {
           suggestedReply: agentScopeResponse.message,
           confidence: agentScopeResponse.confidence,
@@ -514,6 +543,23 @@ export class ConversationTaskCoordinator {
         reason: agentScopeResponse ? 'response_invalid' : 'service_unavailable',
         timestamp: new Date().toISOString(),
       });
+      await this.agentCallRepository.save({
+        conversationId,
+        agentName: agentScopeResponse?.agent_name ?? 'AgentScope',
+        agentRole: 'agentscope',
+        mode: agentScopeResponse?.mode ?? incoming.mode ?? conversation?.mode ?? null,
+        status: 'error',
+        durationMs: Date.now() - startMs,
+        startedAt,
+        completedAt: new Date(),
+        input: {
+          message: userMessage,
+          requirements,
+        },
+        output: {},
+        errorMessage: agentScopeResponse ? 'response_invalid' : 'service_unavailable',
+        metadata: agentScopeResponse?.metadata ?? {},
+      });
 
       // 5. 使用LLM生成回复
       const llmClient = (this.aiService as any).llmClient;
@@ -524,6 +570,23 @@ export class ConversationTaskCoordinator {
           knowledgeItems,
           conversationHistory.slice(-5), // 只传最近5条
         );
+        await this.agentCallRepository.save({
+          conversationId,
+          agentName: 'LLMClient',
+          agentRole: 'llm',
+          status: 'success',
+          durationMs: Date.now() - startMs,
+          startedAt,
+          completedAt: new Date(),
+          input: {
+            message: userMessage,
+            requirements,
+          },
+          output: {
+            message: result.suggestedReply,
+            confidence: result.confidence,
+          },
+        });
         return {
           suggestedReply: result.suggestedReply,
           confidence: result.confidence,

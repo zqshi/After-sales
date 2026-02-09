@@ -10,6 +10,7 @@ import { ListMembersUseCase } from '../../../application/use-cases/permissions/L
 import { ListRolesUseCase } from '../../../application/use-cases/permissions/ListRolesUseCase';
 import { UpdateMemberUseCase } from '../../../application/use-cases/permissions/UpdateMemberUseCase';
 import { UpdateRoleUseCase } from '../../../application/use-cases/permissions/UpdateRoleUseCase';
+import { PermissionMemberError, PermissionMemberErrorCode, mapPermissionMemberErrorStatus } from '../../../application/errors/PermissionMemberError';
 
 export class PermissionController {
   constructor(
@@ -101,7 +102,11 @@ export class PermissionController {
       const memberId = (request.params as { id: string }).id;
       const currentUserId = (request.user as { sub?: string })?.sub;
       if (currentUserId && currentUserId === memberId) {
-        void reply.code(400).send({ success: false, error: 'cannot delete current user' });
+        void reply.code(403).send({
+          success: false,
+          errorCode: PermissionMemberErrorCode.SELF_DELETE_FORBIDDEN,
+          error: 'cannot delete current user',
+        });
         return;
       }
       await this.deleteMemberUseCase.execute(memberId);
@@ -112,6 +117,14 @@ export class PermissionController {
   }
 
   private handleError(error: unknown, reply: FastifyReply): void {
+    if (error instanceof PermissionMemberError) {
+      void reply.code(mapPermissionMemberErrorStatus(error.code)).send({
+        success: false,
+        errorCode: error.code,
+        error: error.message,
+      });
+      return;
+    }
     const message = error instanceof Error ? error.message : 'Unknown error';
     const status = message.includes('not found') ? 404
       : message.includes('exists') || message.includes('assigned') ? 409

@@ -206,15 +206,33 @@ class TestSupervisedAndHumanModes:
         msg = Msg(name="user", content="测试消息", role="user", metadata={"conversationId": "c1"})
         low_conf = Msg(
             name="AssistantAgent",
-            content="reply",
+            content='{"suggested_reply": "reply", "confidence": 0.5}',
             role="assistant",
-            metadata={"confidence": 0.5},
+            metadata={"confidence": 0.9},
         )
         orchestrator.assistant_agent = AsyncMock(return_value=low_conf)
 
         result = await orchestrator._agent_supervised_mode(msg, async_review=True)
 
         assert result.metadata["needs_review"] is True
+        assert result.metadata["confidence"] == 0.5
+
+    async def test_agent_supervised_invalid_json_triggers_review(
+        self, orchestrator: OrchestratorAgent
+    ) -> None:
+        msg = Msg(name="user", content="测试消息", role="user", metadata={"conversationId": "c1"})
+        invalid = Msg(
+            name="AssistantAgent",
+            content="not-json",
+            role="assistant",
+            metadata={},
+        )
+        orchestrator.assistant_agent = AsyncMock(return_value=invalid)
+
+        result = await orchestrator._agent_supervised_mode(msg, async_review=True)
+
+        assert result.metadata["needs_review"] is True
+        assert result.metadata["confidence"] == 0.0
 
     async def test_human_first_mode_sync(
         self, orchestrator: OrchestratorAgent
@@ -434,3 +452,26 @@ class TestResultAggregation:
         aggregated = await orchestrator._aggregate_results(results, Msg(name="user", content="hi", role="user"))
 
         assert aggregated is not None
+
+    async def test_aggregate_invalid_json_fallback(
+        self, orchestrator: OrchestratorAgent
+    ) -> None:
+        results = {
+            "AssistantAgent": Msg(
+                name="AssistantAgent",
+                content="invalid",
+                role="assistant",
+                metadata={}
+            ),
+            "EngineerAgent": Msg(
+                name="EngineerAgent",
+                content="invalid",
+                role="assistant",
+                metadata={}
+            ),
+        }
+
+        aggregated = await orchestrator._aggregate_results(results, Msg(name="user", content="hi", role="user"))
+
+        assert aggregated.content == "抱歉，系统暂时无法处理您的问题，已转人工客服处理。"
+        assert aggregated.metadata["confidence"] == 0.0

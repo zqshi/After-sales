@@ -16,6 +16,11 @@ import { RequirementRepository } from './infrastructure/repositories/Requirement
 import { ProblemRepository } from './infrastructure/repositories/ProblemRepository';
 import { ReviewRequestRepository } from './infrastructure/repositories/ReviewRequestRepository';
 import { ReviewRequestStream } from './infrastructure/reviews/ReviewRequestStream';
+import { AgentCallRepository } from './infrastructure/repositories/AgentCallRepository';
+import { AgentMemoryRepository } from './infrastructure/repositories/AgentMemoryRepository';
+import { McpToolCallRepository } from './infrastructure/repositories/McpToolCallRepository';
+import { WorkflowRunRepository } from './infrastructure/repositories/WorkflowRunRepository';
+import { WorkflowStepRepository } from './infrastructure/repositories/WorkflowStepRepository';
 import { TaskController } from './presentation/http/controllers/TaskController';
 import { taskRoutes } from './presentation/http/routes/taskRoutes';
 import { CreateTaskUseCase } from './application/use-cases/task/CreateTaskUseCase';
@@ -67,6 +72,8 @@ import { RegisterUseCase } from './application/use-cases/auth/RegisterUseCase';
 import { GetCurrentUserUseCase } from './application/use-cases/auth/GetCurrentUserUseCase';
 import { UserRepository } from './infrastructure/repositories/UserRepository';
 import { RoleRepository } from './infrastructure/repositories/RoleRepository';
+import { PermissionRoleRepository } from './infrastructure/repositories/PermissionRoleRepository';
+import { PermissionMemberRepository } from './infrastructure/repositories/PermissionMemberRepository';
 import { authMiddleware } from './presentation/http/middleware/authMiddleware';
 import { ResourceAccessMiddleware } from './presentation/http/middleware/resourceAccessMiddleware';
 import { config } from './config/app.config';
@@ -146,6 +153,9 @@ import { requirementRoutes } from './presentation/http/routes/requirementRoutes'
 export async function createApp(
   dataSource: DataSource,
 ): Promise<FastifyInstance> {
+  if (config.workorder.mode === 'mock' && process.env.NODE_ENV !== 'test') {
+    throw new Error('WORKORDER_MODE=mock is not allowed. Set WORKORDER_MODE=proxy for real persistence.');
+  }
   const app = fastify({
     logger: process.env.NODE_ENV !== 'test',
   });
@@ -197,16 +207,23 @@ export async function createApp(
   const outboxEventBus = new OutboxEventBus(dataSource);
 
   const conversationRepository = new ConversationRepository(dataSource);
+  const agentCallRepository = new AgentCallRepository(dataSource);
+  const agentMemoryRepository = new AgentMemoryRepository(dataSource);
   const customerProfileRepository = new CustomerProfileRepository(dataSource);
   const requirementRepository = new RequirementRepository(dataSource, outboxEventBus);
   const problemRepository = new ProblemRepository(dataSource);
   const reviewRequestRepository = new ReviewRequestRepository(dataSource);
   const taskRepository = new TaskRepository(dataSource, outboxEventBus);
   const knowledgeRepository = new KnowledgeRepository(dataSource);
+  const mcpToolCallRepository = new McpToolCallRepository(dataSource);
   const userRepository = new UserRepository(dataSource);
   const roleRepository = new RoleRepository(dataSource);
+  const permissionRoleRepository = new PermissionRoleRepository(roleRepository);
+  const permissionMemberRepository = new PermissionMemberRepository(userRepository);
   const auditEventRepository = new AuditEventRepository(dataSource);
   const monitoringAlertRepository = new MonitoringAlertRepository(dataSource);
+  const workflowRunRepository = new WorkflowRunRepository(dataSource);
+  const workflowStepRepository = new WorkflowStepRepository(dataSource);
   const taxkbAdapter = new TaxKBAdapter();
   const taxkbKnowledgeRepository = new TaxKBKnowledgeRepository(taxkbAdapter);
   const accessControl = new ResourceAccessControl(
@@ -427,14 +444,14 @@ export async function createApp(
     getReportSummaryUseCase,
   );
   const sessionController = new SessionController(roleRepository);
-  const listRolesUseCase = new ListRolesUseCase(roleRepository);
-  const createRoleUseCase = new CreateRoleUseCase(roleRepository);
-  const updateRoleUseCase = new UpdateRoleUseCase(roleRepository);
-  const deleteRoleUseCase = new DeleteRoleUseCase(roleRepository, userRepository);
-  const listMembersUseCase = new ListMembersUseCase(userRepository);
-  const createMemberUseCase = new CreateMemberUseCase(userRepository, roleRepository);
-  const updateMemberUseCase = new UpdateMemberUseCase(userRepository, roleRepository);
-  const deleteMemberUseCase = new DeleteMemberUseCase(userRepository);
+  const listRolesUseCase = new ListRolesUseCase(permissionRoleRepository);
+  const createRoleUseCase = new CreateRoleUseCase(permissionRoleRepository);
+  const updateRoleUseCase = new UpdateRoleUseCase(permissionRoleRepository);
+  const deleteRoleUseCase = new DeleteRoleUseCase(permissionRoleRepository, permissionMemberRepository);
+  const listMembersUseCase = new ListMembersUseCase(permissionMemberRepository);
+  const createMemberUseCase = new CreateMemberUseCase(permissionMemberRepository, permissionRoleRepository);
+  const updateMemberUseCase = new UpdateMemberUseCase(permissionMemberRepository, permissionRoleRepository);
+  const deleteMemberUseCase = new DeleteMemberUseCase(permissionMemberRepository);
   const permissionController = new PermissionController(
     listRolesUseCase,
     createRoleUseCase,
@@ -490,7 +507,14 @@ export async function createApp(
         enableLogging: config.workflow.enableLogging,
         enableMetrics: config.workflow.enableMetrics,
       },
-      { actionExecutor, humanInLoopExecutor },
+      {
+        actionExecutor,
+        humanInLoopExecutor,
+        persistence: {
+          runRepository: workflowRunRepository,
+          stepRepository: workflowStepRepository,
+        },
+      },
     );
     await workflowEngine.loadWorkflowsFromDirectory();
 
@@ -542,6 +566,7 @@ export async function createApp(
     aiService,
     eventBus,
     qualityReportRepository,
+    agentCallRepository,
     workflowEngine,
   );
 
@@ -695,6 +720,9 @@ export async function createApp(
     aiService,
     qualityReportRepository,
     surveyRepository,
+    mcpToolCallRepository,
+    agentCallRepository,
+    agentMemoryRepository,
   };
   const agentScopeGateway = new AgentScopeGateway(app, agentScopeDependencies, eventBus);
   await agentScopeGateway.initialize();

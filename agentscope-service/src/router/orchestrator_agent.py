@@ -17,7 +17,9 @@ OrchestratorAgent - 智能协调器
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any
+import time
 
 from agentscope.message import Msg
 from agentscope.pipeline import MsgHub
@@ -26,18 +28,61 @@ from src.agents.assistant_agent import AssistantAgent
 from src.agents.engineer_agent import EngineerAgent
 from src.agents.human_agent_adapter import HumanAgentAdapter
 from src.tools.mcp_tools import BackendMCPClient
+from src.tools.persistence import PersistenceClient
 from src.prompts.loader import prompt_registry
+from src.prompts.agent_prompt import load_agent_stage_config
 
 
 ORCHESTRATOR_AGENT_PROMPT = prompt_registry.get(
-    "orchestrator_agent.md",
+    "agents/orchestrator/base.md",
     fallback="""你是智能协调器，负责路由与编排多个Agent协作。
+
+输入：
+- 用户消息与上下文（可能包含客户画像、情绪、风险、历史记录）
+
 核心任务：
-1. 识别场景与复杂度
+1. 识别场景与复杂度（咨询/故障/投诉/其他）
 2. 选择执行模式（simple/parallel/agent_supervised/human_first）
-3. 汇总结果并输出可执行建议
+3. 规划调用顺序与协作方式
+4. 输出清晰、可执行的路由结果
+
+决策规则（可调整）：
+- 高风险/强负面情绪/投诉 → human_first
+- 故障诊断 → parallel（Assistant + Engineer）
+- 高复杂度 → agent_supervised
+- 低复杂度 → simple
+
+输出要求：
+- 只输出JSON，禁止额外解释或Markdown
+- 字段必须完整，数值范围合理
+
+JSON格式：
+{
+  "mode": "simple|parallel|agent_supervised|human_first",
+  "scenario": "consultation|fault|complaint|other",
+  "routing_plan": ["assistant_agent", "engineer_agent", "inspector_agent", "human_agent"],
+  "rationale": "路由理由（简洁）",
+  "confidence": 0.0-1.0
+}
 """,
 )
+
+_DEFAULT_STAGE_CONFIG: dict[str, Any] = {
+    "assistant": {
+        "default": "reply",
+        "complaint": "handoff",
+        "high_risk": "risk_alert",
+        "fault": "fault_reply",
+        "vip": "vip_reply",
+        "clarify": "clarify",
+    },
+    "engineer": {
+        "parallel": ["diagnosis", "severity", "escalation", "report_summary"],
+    },
+    "inspector": {
+        "quality": ["quality_report", "follow_up", "report_summary"],
+    },
+}
 
 
 class OrchestratorAgent:
@@ -57,6 +102,7 @@ class OrchestratorAgent:
         engineer_agent: EngineerAgent,
         human_agent: HumanAgentAdapter,
         mcp_client: BackendMCPClient,
+        persistence: PersistenceClient | None,
         ws_manager: Any,
     ) -> None:
         # 核心Agent集合（3个独立Agent）
@@ -66,6 +112,7 @@ class OrchestratorAgent:
 
         # 基础设施
         self.mcp_client = mcp_client
+        self.persistence = persistence
         self.ws_manager = ws_manager
 
     async def route(self, user_msg: Msg) -> Msg:
@@ -88,16 +135,45 @@ class OrchestratorAgent:
         if requested_mode in ["agent_auto", "agent_supervised", "human_first"]:
             mode = requested_mode
 
-        # Step 3: 根据模式执行
-        if mode == "human_first":
-            return await self._human_first_mode(user_msg, analysis, async_review)
-        elif mode == "parallel":
-            # 并行模式：辅助+工程师并行处理
-            return await self._execute_parallel(user_msg, analysis)
-        elif mode == "agent_supervised":
-            return await self._agent_supervised_mode(user_msg, async_review)
-        else:  # simple
-            return await self._execute_simple(user_msg)
+        start = time.time()
+        try:
+            # Step 3: 根据模式执行
+            if mode == "human_first":
+                response = await self._human_first_mode(user_msg, analysis, async_review)
+            elif mode == "parallel":
+                # 并行模式：辅助+工程师并行处理
+                response = await self._execute_parallel(user_msg, analysis)
+            elif mode == "agent_supervised":
+                response = await self._agent_supervised_mode(user_msg, analysis, async_review)
+            else:  # simple
+                response = await self._execute_simple(user_msg, analysis)
+            if self.persistence:
+                await self.persistence.record_agent_call(
+                    conversation_id=user_msg.metadata.get("conversationId") if user_msg.metadata else None,
+                    agent_name="OrchestratorAgent",
+                    agent_role="orchestrator",
+                    mode=mode,
+                    status="success",
+                    duration_ms=int((time.time() - start) * 1000),
+                    input_payload={"content": user_msg.content, "analysis": analysis},
+                    output_payload={"content": response.content, "metadata": response.metadata or {}},
+                    metadata=user_msg.metadata or {},
+                )
+            return response
+        except Exception as exc:
+            if self.persistence:
+                await self.persistence.record_agent_call(
+                    conversation_id=user_msg.metadata.get("conversationId") if user_msg.metadata else None,
+                    agent_name="OrchestratorAgent",
+                    agent_role="orchestrator",
+                    mode=mode,
+                    status="error",
+                    duration_ms=int((time.time() - start) * 1000),
+                    input_payload={"content": user_msg.content, "analysis": analysis},
+                    error_message=str(exc),
+                    metadata=user_msg.metadata or {},
+                )
+            raise
 
     async def _analyze_request(self, msg: Msg) -> dict[str, Any]:
         """
@@ -236,13 +312,14 @@ class OrchestratorAgent:
         # Rule 7: 其他 → Supervised模式
         return "agent_supervised"
 
-    async def _execute_simple(self, msg: Msg) -> Msg:
+    async def _execute_simple(self, msg: Msg, analysis: dict[str, Any]) -> Msg:
         """
         Simple模式：单Agent直接处理
 
         适用场景：简单咨询、常见问题
         """
-        response = await self.assistant_agent(msg)
+        stage = self._decide_assistant_stage(msg, analysis)
+        response = await self.assistant_agent(self._clone_msg_with_stage(msg, stage))
         response.metadata = {
             **(response.metadata or {}),
             "mode": "agent_auto",
@@ -264,8 +341,8 @@ class OrchestratorAgent:
         try:
             assistant_result, engineer_result = await asyncio.wait_for(
                 asyncio.gather(
-                    self.assistant_agent(msg),
-                    self.engineer_agent(msg),
+                    self.assistant_agent(self._clone_msg_with_stage(msg, self._decide_assistant_stage(msg, analysis))),
+                    self.engineer_agent(self._clone_msg_with_stage(msg, "diagnosis", self._engineer_parallel_stages())),
                     return_exceptions=True,
                 ),
                 timeout=20.0  # 20秒超时
@@ -332,11 +409,9 @@ class OrchestratorAgent:
         # 提取AssistantAgent的结果
         if "AssistantAgent" in agent_results:
             assistant_result = agent_results["AssistantAgent"]
-            metadata = assistant_result.metadata or {}
 
             # 尝试解析JSON格式的结果
             try:
-                import json
                 assistant_data = json.loads(assistant_result.content)
                 aggregated_metadata["sentiment"] = assistant_data.get("sentiment_analysis")
                 aggregated_metadata["requirements"] = assistant_data.get("requirement_extraction")
@@ -348,18 +423,14 @@ class OrchestratorAgent:
 
                 min_confidence = min(min_confidence, assistant_data.get("confidence", 1.0))
             except Exception:
-                # 如果不是JSON格式，使用原始内容
-                if not final_reply:
-                    final_reply = assistant_result.content
+                aggregated_metadata.setdefault("parse_errors", []).append("AssistantAgent")
 
         # 提取EngineerAgent的结果
         if "EngineerAgent" in agent_results:
             engineer_result = agent_results["EngineerAgent"]
-            metadata = engineer_result.metadata or {}
 
             # 尝试解析JSON格式的结果
             try:
-                import json
                 engineer_data = json.loads(engineer_result.content)
                 aggregated_metadata["fault_diagnosis"] = engineer_data.get("fault_diagnosis")
                 aggregated_metadata["knowledge"] = engineer_data.get("knowledge_results")
@@ -378,9 +449,7 @@ class OrchestratorAgent:
                 if fault_diag.get("need_escalation"):
                     aggregated_metadata["need_escalation"] = True
             except Exception:
-                # 如果不是JSON格式，使用原始内容
-                if engineer_result.content:
-                    final_reply = engineer_result.content
+                aggregated_metadata.setdefault("parse_errors", []).append("EngineerAgent")
 
         # 如果没有任何有效回复，生成降级回复
         if not final_reply:
@@ -403,7 +472,7 @@ class OrchestratorAgent:
             }
         )
 
-    async def _agent_supervised_mode(self, msg: Msg, async_review: bool = False) -> Msg:
+    async def _agent_supervised_mode(self, msg: Msg, analysis: dict[str, Any], async_review: bool = False) -> Msg:
         """
         Supervised模式：Agent处理 + 人工审核
 
@@ -417,9 +486,14 @@ class OrchestratorAgent:
             participants=[self.assistant_agent, self.human_agent],
         ) as hub:
             # Agent生成回复
-            agent_response = await self.assistant_agent(msg)
+            stage = self._decide_assistant_stage(msg, analysis)
+            agent_response = await self.assistant_agent(self._clone_msg_with_stage(msg, stage))
             agent_metadata = agent_response.metadata or {}
-            confidence = agent_metadata.get("confidence", 1.0)
+            confidence = self._extract_confidence_from_content(agent_response)
+            if confidence is None:
+                confidence = agent_metadata.get("confidence")
+            if confidence is None:
+                confidence = 0.0
 
             # 低置信度需要人工审核
             if confidence < 0.7:
@@ -536,6 +610,46 @@ class OrchestratorAgent:
         }
         return response
 
+    def _clone_msg_with_stage(self, msg: Msg, stage: str, stages: list[str] | None = None) -> Msg:
+        metadata = {**(msg.metadata or {})}
+        metadata.setdefault("prompt_stage", stage)
+        if stages:
+            metadata.setdefault("prompt_stages", stages)
+        return Msg(
+            name=msg.name,
+            content=msg.content,
+            role=msg.role,
+            metadata=metadata,
+        )
+
+    def _decide_assistant_stage(self, msg: Msg, analysis: dict[str, Any]) -> str:
+        cfg = self._load_stage_config().get("assistant", _DEFAULT_STAGE_CONFIG["assistant"])
+        if analysis.get("risk_level") == "high":
+            return cfg.get("high_risk", "risk_alert")
+        if analysis.get("customer", {}).get("vip") or analysis.get("customer", {}).get("isVIP"):
+            return cfg.get("vip", "vip_reply")
+        if analysis.get("scenario") == "complaint":
+            return cfg.get("complaint", "handoff")
+        if analysis.get("scenario") == "fault":
+            return cfg.get("fault", "fault_reply")
+        if analysis.get("has_requirement") and analysis.get("complexity", 0.0) >= 0.6:
+            return cfg.get("clarify", "clarify")
+        return cfg.get("default", "reply")
+
+    def _engineer_parallel_stages(self) -> list[str]:
+        cfg = self._load_stage_config().get("engineer", _DEFAULT_STAGE_CONFIG["engineer"])
+        stages = cfg.get("parallel", ["diagnosis", "severity", "escalation", "report_summary"])
+        return stages if isinstance(stages, list) and stages else ["diagnosis"]
+
+    def _inspector_quality_stages(self) -> list[str]:
+        cfg = self._load_stage_config().get("inspector", _DEFAULT_STAGE_CONFIG["inspector"])
+        stages = cfg.get("quality", ["quality_report", "follow_up", "report_summary"])
+        return stages if isinstance(stages, list) and stages else ["quality_report"]
+
+    def _load_stage_config(self) -> dict[str, Any]:
+        data = load_agent_stage_config()
+        return data if isinstance(data, dict) and data else _DEFAULT_STAGE_CONFIG
+
     # ========== 辅助方法 ==========
 
     async def _analyze_sentiment(self, user_msg: Msg) -> dict[str, Any]:
@@ -625,3 +739,14 @@ class OrchestratorAgent:
                 "metadata": msg.metadata,
             },
         )
+
+    @staticmethod
+    def _extract_confidence_from_content(msg: Msg) -> float | None:
+        try:
+            data = json.loads(msg.content)
+        except Exception:
+            return None
+        confidence = data.get("confidence")
+        if isinstance(confidence, (int, float)):
+            return float(confidence)
+        return None

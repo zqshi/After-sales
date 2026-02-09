@@ -1,20 +1,17 @@
-import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
 import { MemberResponseDTO } from '../../dto/permissions/MemberResponseDTO';
+import { IMemberRepository } from '../../../domain/permissions/repositories/IMemberRepository';
 
 export class ListMembersUseCase {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(private readonly memberRepository: IMemberRepository) {}
 
   async execute(): Promise<MemberResponseDTO[]> {
-    const users = await this.userRepository.list();
+    const users = await this.memberRepository.list();
 
     return users.map((user) => ({
       id: user.id,
       name: user.name,
-      email: user.email,
-      phone: user.phone,
-      roleId: user.role,
-      team: (user.metadata?.team as string) || null,
-      badge: (user.metadata?.badge as string) || null,
+      email: user.email ?? '',
+      roleId: user.roleId,
       status: user.status,
       lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
       createdAt: user.createdAt.toISOString(),

@@ -104,6 +104,14 @@ export const config = {
     },
   },
 
+  workorder: {
+    mode: (process.env.WORKORDER_MODE || 'proxy') as 'proxy' | 'mock',
+    baseUrl: process.env.WORKORDER_BASE_URL || '',
+    appId: process.env.WORKORDER_APP_ID || '',
+    appSecret: process.env.WORKORDER_APP_SECRET || '',
+    timeout: parseInt(process.env.WORKORDER_TIMEOUT || '10000', 10),
+  },
+
   outbox: {
     enabled: process.env.OUTBOX_PROCESSOR_ENABLED !== 'false',
     intervalMs: parseInt(process.env.OUTBOX_PROCESSOR_INTERVAL || '5000', 10),

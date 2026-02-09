@@ -67,6 +67,11 @@
 
 #### 1.3 系统提示词 (System Prompt)
 
+**提示词来源（运行时）**：
+- 角色基座：`docs/prompts/agents/orchestrator/base.md`
+- 路由阶段配置（优先）：`docs/prompts/agents/orchestrator/stage_config.yaml`
+- 路由阶段配置（回退）：`docs/prompts/agents/orchestrator/stage_config.md`
+
 ```markdown
 # 角色定义
 你是Orchestrator Agent，智能售后工作台的核心路由器。你的职责是：

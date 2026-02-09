@@ -1,11 +1,11 @@
 import { PermissionKey } from '../../../config/permissions';
 import { resolvePermissionsFromUiKeys, resolveUiPermissions } from '../../../config/uiPermissions';
-import { RoleRepository } from '../../../infrastructure/repositories/RoleRepository';
 import { UpdateRoleRequestDTO } from '../../dto/permissions/RoleRequestDTO';
 import { RoleResponseDTO } from '../../dto/permissions/RoleResponseDTO';
+import { IRoleRepository } from '../../../domain/permissions/repositories/IRoleRepository';
 
 export class UpdateRoleUseCase {
-  constructor(private readonly roleRepository: RoleRepository) {}
+  constructor(private readonly roleRepository: IRoleRepository) {}
 
   async execute(roleKey: string, payload: UpdateRoleRequestDTO): Promise<RoleResponseDTO> {
     const role = await this.roleRepository.findByKey(roleKey);

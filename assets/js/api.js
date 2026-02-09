@@ -332,6 +332,21 @@ export async function createTask(payload) {
   });
 }
 
+export async function createWorkorder(payload) {
+  return safeRequest('/api/workorders', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchWorkorders(params) {
+  return safeRequest('/api/workorders', { params });
+}
+
+export async function fetchWorkorderDetail(id) {
+  return safeRequest(`/api/workorders/${id}`);
+}
+
 export async function actionTask(taskId, action, payload = {}) {
   return safeRequest(`/api/tasks/${taskId}/actions`, {
     method: 'POST',

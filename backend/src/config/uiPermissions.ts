@@ -72,7 +72,8 @@ const UI_PERMISSIONS: UiPermissionDefinition[] = [
     key: 'dock.permissions',
     label: '权限入口',
     group: 'dock',
-    required: ['session.read'],
+    required: ['permissions.members.manage', 'permissions.roles.manage'],
+    mode: 'any',
   },
   {
     key: 'knowledge.management.view',
@@ -450,13 +451,13 @@ const UI_PERMISSIONS: UiPermissionDefinition[] = [
     key: 'permissions.members.manage',
     label: '成员管理',
     group: 'permissions',
-    required: ['session.write'],
+    required: ['permissions.members.manage'],
   },
   {
     key: 'permissions.roles.manage',
     label: '角色管理',
     group: 'permissions',
-    required: ['session.write'],
+    required: ['permissions.roles.manage'],
   },
 ];
 

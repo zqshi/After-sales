@@ -44,6 +44,7 @@ async def handle_chat_message(request: ChatRequest) -> ChatResponse:
         metadata={
             "conversationId": request.conversation_id,
             "customerId": request.customer_id,
+            "agentName": request.metadata.get("agentName") if request.metadata else None,
             **request.metadata,
         },
     )

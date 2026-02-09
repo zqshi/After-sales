@@ -27,6 +27,24 @@ export function taskRoutes(
     await controller.listTasks(request, reply);
   });
 
+  fastify.get('/api/workorders/:id', {
+    config: { permissions: ['tasks.read'] },
+  }, async (request, reply) => {
+    await controller.getWorkorderTicket(request, reply);
+  });
+
+  fastify.get('/api/workorders', {
+    config: { permissions: ['tasks.read'] },
+  }, async (request, reply) => {
+    await controller.listWorkorderTickets(request, reply);
+  });
+
+  fastify.post('/api/workorders', {
+    config: { permissions: ['tasks.write'] },
+  }, async (request, reply) => {
+    await controller.createWorkorderTicket(request, reply);
+  });
+
   fastify.post('/api/tasks/:id/assign', {
     config: { permissions: ['tasks.assign'] },
     preHandler: [accessMiddleware.checkTaskAccess('write')],

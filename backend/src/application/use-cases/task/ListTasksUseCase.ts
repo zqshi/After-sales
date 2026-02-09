@@ -30,6 +30,7 @@ export class ListTasksUseCase {
       assigneeId: request.assigneeId,
       conversationId: request.conversationId,
       requirementId: request.requirementId,
+      type: request.type,
       status: request.status,
       priority: request.priority,
     };

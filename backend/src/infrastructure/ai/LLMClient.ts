@@ -7,6 +7,7 @@
  */
 
 import { config } from '@config/app.config';
+import { loadPrompt } from '@/prompts/loader';
 
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
@@ -34,6 +35,81 @@ export interface ReplyGenerationResult {
   confidence: number;
   reasoning: string;
 }
+
+const SENTIMENT_SYSTEM_PROMPT = loadPrompt(
+  'backend/llm/analyze_sentiment_system.md',
+  `你是一个专业的客服对话情绪分析专家。分析客户消息的情绪，返回JSON格式：
+{
+  "overallSentiment": "positive|neutral|negative",
+  "score": 0.0-1.0,
+  "confidence": 0.0-1.0,
+  "emotions": ["具体情绪标签"],
+  "reasoning": "分析理由"
+}
+
+情绪分类规则：
+- positive（正面）：感谢、满意、表扬、解决了问题
+- neutral（中性）：普通咨询、陈述事实、无明显情绪
+- negative（负面）：投诉、不满、愤怒、焦虑、失望
+
+注意：
+1. 要理解上下文，"我的问题解决了，谢谢"是positive而非negative
+2. 识别反讽和双重否定："不是不好"是正面倾向
+3. 情绪标签示例：满意、感谢、焦虑、不满、愤怒、失望、困惑、急迫`,
+);
+
+const INTENT_SYSTEM_PROMPT = loadPrompt(
+  'backend/llm/extract_intent_system.md',
+  `你是一个专业的客服对话意图识别专家。分析客户消息的意图，返回JSON格式：
+{
+  "isQuestion": true/false,
+  "intent": "inquiry|complaint|request|feedback|chitchat|urgent",
+  "keywords": ["关键词1", "关键词2"],
+  "entities": {"实体类型": "实体值"},
+  "confidence": 0.0-1.0
+}
+
+意图分类：
+- inquiry（咨询）：询问信息、使用方法、流程说明
+- complaint（投诉）：表达不满、质疑、要求赔偿
+- request（需求）：请求功能、申请服务、要求处理
+- feedback（反馈）：建议、意见、体验分享
+- chitchat（闲聊）：寒暄、感谢、无实质需求
+- urgent（紧急）：系统故障、业务受阻、需立即处理
+
+实体提取示例：
+- 订单号：ORD123456
+- 产品名称：退款功能、登录模块
+- 时间：昨天、上个月
+- 金额：100元、退款`,
+);
+
+const REPLY_SYSTEM_PROMPT = loadPrompt(
+  'backend/llm/generate_reply_system.md',
+  `你是一个专业的客服回复助手。根据客户消息、情绪分析和知识库，生成合适的回复建议。
+
+回复原则：
+1. 根据情绪调整语气：
+   - negative（负面）：先安抚情绪，表达理解和歉意，再提供解决方案
+   - neutral（中性）：专业、简洁、直接提供信息
+   - positive（正面）：表达感谢，保持积极态度
+
+2. 引用知识库：
+   - 如果知识库有相关内容，在回复中自然引用
+   - 格式：您可以参考 [文档标题](URL) 了解详情
+
+3. 回复结构：
+   - 第一句：安抚/确认/感谢（根据情绪）
+   - 第二句：解决方案/信息提供
+   - 第三句：后续引导/知识库链接
+
+返回JSON格式：
+{
+  "suggestedReply": "建议回复内容",
+  "confidence": 0.0-1.0,
+  "reasoning": "生成理由"
+}`,
+);
 
 export class LLMClient {
   private readonly baseUrl: string;
@@ -76,24 +152,7 @@ export class LLMClient {
     const messages: LLMMessage[] = [
       {
         role: 'system',
-        content: `你是一个专业的客服对话情绪分析专家。分析客户消息的情绪，返回JSON格式：
-{
-  "overallSentiment": "positive|neutral|negative",
-  "score": 0.0-1.0,
-  "confidence": 0.0-1.0,
-  "emotions": ["具体情绪标签"],
-  "reasoning": "分析理由"
-}
-
-情绪分类规则：
-- positive（正面）：感谢、满意、表扬、解决了问题
-- neutral（中性）：普通咨询、陈述事实、无明显情绪
-- negative（负面）：投诉、不满、愤怒、焦虑、失望
-
-注意：
-1. 要理解上下文，"我的问题解决了，谢谢"是positive而非negative
-2. 识别反讽和双重否定："不是不好"是正面倾向
-3. 情绪标签示例：满意、感谢、焦虑、不满、愤怒、失望、困惑、急迫`,
+        content: SENTIMENT_SYSTEM_PROMPT,
       },
     ];
 
@@ -130,28 +189,7 @@ export class LLMClient {
     const messages: LLMMessage[] = [
       {
         role: 'system',
-        content: `你是一个专业的客服对话意图识别专家。分析客户消息的意图，返回JSON格式：
-{
-  "isQuestion": true/false,
-  "intent": "inquiry|complaint|request|feedback|chitchat|urgent",
-  "keywords": ["关键词1", "关键词2"],
-  "entities": {"实体类型": "实体值"},
-  "confidence": 0.0-1.0
-}
-
-意图分类：
-- inquiry（咨询）：询问信息、使用方法、流程说明
-- complaint（投诉）：表达不满、质疑、要求赔偿
-- request（需求）：请求功能、申请服务、要求处理
-- feedback（反馈）：建议、意见、体验分享
-- chitchat（闲聊）：寒暄、感谢、无实质需求
-- urgent（紧急）：系统故障、业务受阻、需立即处理
-
-实体提取示例：
-- 订单号：ORD123456
-- 产品名称：退款功能、登录模块
-- 时间：昨天、上个月
-- 金额：100元、退款`,
+        content: INTENT_SYSTEM_PROMPT,
       },
     ];
 
@@ -189,29 +227,7 @@ export class LLMClient {
     const messages: LLMMessage[] = [
       {
         role: 'system',
-        content: `你是一个专业的客服回复助手。根据客户消息、情绪分析和知识库，生成合适的回复建议。
-
-回复原则：
-1. 根据情绪调整语气：
-   - negative（负面）：先安抚情绪，表达理解和歉意，再提供解决方案
-   - neutral（中性）：专业、简洁、直接提供信息
-   - positive（正面）：表达感谢，保持积极态度
-
-2. 引用知识库：
-   - 如果知识库有相关内容，在回复中自然引用
-   - 格式：您可以参考 [文档标题](URL) 了解详情
-
-3. 回复结构：
-   - 第一句：安抚/确认/感谢（根据情绪）
-   - 第二句：解决方案/信息提供
-   - 第三句：后续引导/知识库链接
-
-返回JSON格式：
-{
-  "suggestedReply": "建议回复内容",
-  "confidence": 0.0-1.0,
-  "reasoning": "生成理由"
-}`,
+        content: REPLY_SYSTEM_PROMPT,
       },
     ];
 

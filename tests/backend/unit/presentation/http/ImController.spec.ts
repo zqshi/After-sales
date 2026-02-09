@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { promises as fs } from 'fs';
 import { ImController } from '@presentation/http/controllers/ImController';
 import { WorkflowRegistry } from '@infrastructure/workflow/WorkflowRegistry';
 import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
@@ -1333,103 +1332,6 @@ describe('ImController', () => {
     expect(reply.payload.data.replySuggestion.reason).toBe('assistant_unavailable');
   });
 
-  it('syncs wecom mock group chats with reset and mixed messages', async () => {
-    const controller = makeController();
-    const reply = createReply();
-    const assignAgent = vi.fn();
-
-    coordinator.processCustomerMessage.mockResolvedValue({
-      conversationId: 'conv-1',
-    });
-    conversationRepository.findById.mockResolvedValue({
-      id: 'conv-1',
-      agentId: null,
-      assignAgent,
-      messages: [],
-    });
-    customerProfileRepository.findById.mockResolvedValue(null);
-
-    vi.spyOn(controller as any, 'loadWecomMockData').mockResolvedValue({
-      groupChatList: {
-        group_chat_list: [{ chat_id: 'chat1', status: 1 }],
-      },
-      groupChatDetails: {
-        group_chat_details: {
-          chat1: {
-            group_chat: {
-              name: '群1',
-              member_list: [
-                { userid: 'u1', name: '张三', type: 1 },
-                { userid: 'u2', name: '李四', type: 2 },
-              ],
-            },
-          },
-        },
-      },
-      groupChatMessages: {
-        group_chat_messages: {
-          chat1: [
-            {
-              sender_id: 'u2',
-              sender_type: 'customer',
-              content: '无法登录',
-              sent_at: 2,
-              issue_product: 'login',
-              fault_level: 'high',
-            },
-            {
-              sender_id: 'u1',
-              sender_type: 'agent',
-              content: '好的',
-              sent_at: 3,
-            },
-            {
-              sender_id: 'u2',
-              sender_type: 'customer',
-              content: '',
-              sent_at: 4,
-            },
-          ],
-        },
-      },
-    });
-
-    await controller.syncWecomMockGroupChats(
-      { body: { limit: 1, reset: true } } as any,
-      reply,
-    );
-
-    expect(conversationRepository.deleteByChannel).toHaveBeenCalledWith('wecom');
-    expect(conversationRepository.deleteByCustomerId).toHaveBeenCalledWith('wecom-chat1');
-    expect(customerProfileRepository.save).toHaveBeenCalled();
-    expect(assignAgent).toHaveBeenCalled();
-    expect(sendMessageUseCase.execute).toHaveBeenCalled();
-    expect(reply.payload.data.customersCreated).toBe(1);
-    expect(reply.payload.data.messagesImported).toBe(2);
-  });
-
-  it('syncs wecom mock group chats and skips missing details', async () => {
-    const controller = makeController();
-    const reply = createReply();
-
-    vi.spyOn(controller as any, 'loadWecomMockData').mockResolvedValue({
-      groupChatList: {
-        group_chat_list: [{ chat_id: 'chat-missing', status: 1 }],
-      },
-      groupChatDetails: { group_chat_details: {} },
-      groupChatMessages: { group_chat_messages: {} },
-    });
-
-    await controller.syncWecomMockGroupChats(
-      { body: { limit: 1 } } as any,
-      reply,
-    );
-
-    expect(reply.statusCode).toBe(200);
-    expect(reply.payload.data.groupChats).toBe(1);
-    expect(reply.payload.data.customersCreated).toBe(0);
-    expect(reply.payload.data.messagesImported).toBe(0);
-  });
 
   it('returns 404 when customer profile is missing', async () => {
     const controller = makeController();
@@ -1485,16 +1387,4 @@ describe('ImController', () => {
     expect(reply.payload.data.sentiment.label).toBe('未知');
   });
 
-  it('throws when wecom mock json missing in all paths', async () => {
-    const controller = makeController();
-    const readSpy = vi
-      .spyOn(fs, 'readFile')
-      .mockRejectedValue(new Error('missing'));
-
-    await expect((controller as any).readWecomMockJson('missing.json')).rejects.toThrow(
-      'WeCom mock data file not found: missing.json',
-    );
-    expect(readSpy).toHaveBeenCalledTimes(2);
-    readSpy.mockRestore();
-  });
 });

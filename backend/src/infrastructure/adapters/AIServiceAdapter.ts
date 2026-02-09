@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any, @typescript-eslint/no-floating-promises, @typescript-eslint/require-await, @typescript-eslint/explicit-function-return-type, @typescript-eslint/no-unused-vars, no-console */
 import { config } from '@config/app.config';
+import { loadPrompt, renderPrompt } from '@/prompts/loader';
 
 /**
  * 金山云 DeepSeek AI 服务适配器
@@ -49,6 +50,41 @@ export interface AIRecommendResponse {
   }>;
 }
 
+const ANALYZE_SYSTEM_PROMPT = loadPrompt(
+  'backend/ai-adapter/analyze_conversation_system.md',
+  '你是一个专业的客服对话分析助手，擅长分析对话质量、识别问题并提供改进建议。',
+);
+const ANALYZE_USER_TEMPLATE = loadPrompt(
+  'backend/ai-adapter/analyze_conversation_user.md',
+  `请分析以下客服对话的质量：\n\n{{context_section}}{{keywords_section}}{{messages_section}}{{conversation_id_section}}请以JSON格式返回分析结果，包含以下字段：
+{
+  "summary": "对话摘要",
+  "sentiment": "positive/neutral/negative",
+  "score": 0-1之间的分数,
+  "confidence": 0-1之间的置信度,
+  "issues": [{"type": "问题类型", "severity": "low/medium/high", "description": "问题描述"}],
+  "suggestions": ["改进建议1", "改进建议2"],
+  "keyPhrases": ["关键词1", "关键词2"]
+}`,
+);
+const RECOMMEND_SYSTEM_PROMPT = loadPrompt(
+  'backend/ai-adapter/recommend_knowledge_system.md',
+  '你是一个智能知识推荐助手，根据用户问题推荐相关的知识库内容。',
+);
+const RECOMMEND_USER_TEMPLATE = loadPrompt(
+  'backend/ai-adapter/recommend_knowledge_user.md',
+  `用户问题：{{query}}\n\n{{context_section}}请推荐{{topK}}个最相关的知识库内容，以JSON格式返回：
+{
+  "recommendations": [
+    {
+      "title": "知识标题",
+      "content": "知识摘要",
+      "relevance": 0-1之间的相关度分数
+    }
+  ]
+}`,
+);
+
 export class AIServiceAdapter {
   private baseUrl: string;
   private apiKey: string;
@@ -86,7 +122,7 @@ export class AIServiceAdapter {
       messages: [
         {
           role: 'system',
-          content: '你是一个专业的客服对话分析助手，擅长分析对话质量、识别问题并提供改进建议。',
+          content: ANALYZE_SYSTEM_PROMPT,
         },
         {
           role: 'user',
@@ -114,7 +150,7 @@ export class AIServiceAdapter {
       messages: [
         {
           role: 'system',
-          content: '你是一个智能知识推荐助手，根据用户问题推荐相关的知识库内容。',
+          content: RECOMMEND_SYSTEM_PROMPT,
         },
         {
           role: 'user',
@@ -193,38 +229,19 @@ export class AIServiceAdapter {
    */
   private buildAnalyzePrompt(request: AIAnalyzeRequest): string {
     const { conversationId, messages, context, keywords } = request;
+    const contextSection = context ? `对话背景：${context}\n\n` : '';
+    const keywordsSection = keywords && keywords.length > 0 ? `关键词：${keywords.join('、')}\n\n` : '';
+    const messagesSection = messages && messages.length > 0
+      ? `对话内容：\n${messages.map((msg, index) => `${index + 1}. [${msg.role}]: ${msg.content}`).join('\n')}\n`
+      : '';
+    const conversationIdSection = !messages || messages.length === 0 ? `对话ID：${conversationId}\n` : '';
 
-    let prompt = `请分析以下客服对话的质量：\n\n`;
-
-    if (context) {
-      prompt += `对话背景：${context}\n\n`;
-    }
-
-    if (keywords && keywords.length > 0) {
-      prompt += `关键词：${keywords.join('、')}\n\n`;
-    }
-
-    if (messages && messages.length > 0) {
-      prompt += `对话内容：\n`;
-      messages.forEach((msg, index) => {
-        prompt += `${index + 1}. [${msg.role}]: ${msg.content}\n`;
-      });
-    } else {
-      prompt += `对话ID：${conversationId}\n`;
-    }
-
-    prompt += `\n请以JSON格式返回分析结果，包含以下字段：
-{
-  "summary": "对话摘要",
-  "sentiment": "positive/neutral/negative",
-  "score": 0-1之间的分数,
-  "confidence": 0-1之间的置信度,
-  "issues": [{"type": "问题类型", "severity": "low/medium/high", "description": "问题描述"}],
-  "suggestions": ["改进建议1", "改进建议2"],
-  "keyPhrases": ["关键词1", "关键词2"]
-}`;
-
-    return prompt;
+    return renderPrompt(ANALYZE_USER_TEMPLATE, {
+      context_section: contextSection,
+      keywords_section: keywordsSection,
+      messages_section: messagesSection,
+      conversation_id_section: conversationIdSection,
+    });
   }
 
   /**
@@ -232,25 +249,12 @@ export class AIServiceAdapter {
    */
   private buildRecommendPrompt(request: AIRecommendRequest): string {
     const { query, context, topK = 3 } = request;
-
-    let prompt = `用户问题：${query}\n\n`;
-
-    if (context) {
-      prompt += `上下文：${context}\n\n`;
-    }
-
-    prompt += `请推荐${topK}个最相关的知识库内容，以JSON格式返回：
-{
-  "recommendations": [
-    {
-      "title": "知识标题",
-      "content": "知识摘要",
-      "relevance": 0-1之间的相关度分数
-    }
-  ]
-}`;
-
-    return prompt;
+    const contextSection = context ? `上下文：${context}\n\n` : '';
+    return renderPrompt(RECOMMEND_USER_TEMPLATE, {
+      query,
+      topK,
+      context_section: contextSection,
+    });
   }
 
   /**

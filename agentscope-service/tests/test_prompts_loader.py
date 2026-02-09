@@ -14,7 +14,7 @@ def test_load_prompt_fallback() -> None:
 
 def test_load_prompt_from_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(loader, "_repo_root", lambda: tmp_path)
-    prompt_dir = tmp_path / "docs" / "prd" / "2-baseline" / "3-agents" / "prompt"
+    prompt_dir = tmp_path / "docs" / "prompts"
     prompt_dir.mkdir(parents=True, exist_ok=True)
     prompt_file = prompt_dir / "test_prompt.md"
     prompt_file.write_text("```prompt\nhello\n```", encoding="utf-8")
@@ -26,7 +26,7 @@ def test_load_prompt_from_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 
 def test_prompt_registry_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(loader, "_repo_root", lambda: tmp_path)
-    prompt_dir = tmp_path / "docs" / "prd" / "2-baseline" / "3-agents" / "prompt"
+    prompt_dir = tmp_path / "docs" / "prompts"
     prompt_dir.mkdir(parents=True, exist_ok=True)
     prompt_file = prompt_dir / "cache.md"
     prompt_file.write_text("first", encoding="utf-8")

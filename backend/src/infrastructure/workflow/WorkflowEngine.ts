@@ -19,6 +19,8 @@ import * as yaml from 'yaml';
 import { ActionStepExecutor } from './executors/ActionStepExecutor';
 import { HumanInLoopExecutor } from './executors/HumanInLoopExecutor';
 import { ParallelStepExecutor } from './executors/ParallelStepExecutor';
+import { WorkflowRunRepository } from '@infrastructure/repositories/WorkflowRunRepository';
+import { WorkflowStepRepository } from '@infrastructure/repositories/WorkflowStepRepository';
 import {
   WorkflowDefinition,
   WorkflowContext,
@@ -38,6 +40,10 @@ export class WorkflowEngine {
   private eventEmitter: EventEmitter;
   private actionExecutor: ActionStepExecutor;
   private humanInLoopExecutor: HumanInLoopExecutor;
+  private persistence?: {
+    runRepository: WorkflowRunRepository;
+    stepRepository: WorkflowStepRepository;
+  };
 
   constructor(
     config: WorkflowEngineConfig,
@@ -45,6 +51,10 @@ export class WorkflowEngine {
       actionExecutor?: ActionStepExecutor;
       humanInLoopExecutor?: HumanInLoopExecutor;
       parallelExecutor?: ParallelStepExecutor;
+      persistence?: {
+        runRepository: WorkflowRunRepository;
+        stepRepository: WorkflowStepRepository;
+      };
     },
   ) {
     this.config = config;
@@ -58,6 +68,7 @@ export class WorkflowEngine {
       overrides?.parallelExecutor ?? new ParallelStepExecutor(config.maxParallelSteps);
 
     this.executors = [this.actionExecutor, parallelExecutor, this.humanInLoopExecutor];
+    this.persistence = overrides?.persistence;
 
     console.log('[WorkflowEngine] Initialized with config:', {
       workflowsDir: config.workflowsDir,
@@ -159,6 +170,16 @@ export class WorkflowEngine {
     };
 
     const state = new WorkflowState(context);
+    const startedAt = new Date();
+    const startMs = Date.now();
+    await this.persistence?.runRepository.createOrUpdate({
+      executionId: context.executionId,
+      workflowName: context.workflowName,
+      status: 'running',
+      conversationId: triggerData?.conversation?.id ?? triggerData?.conversationId ?? null,
+      trigger: context.trigger,
+      startedAt,
+    });
 
     console.log(
       `[WorkflowEngine] Starting execution: ${workflowName} (${context.executionId})`,
@@ -197,6 +218,16 @@ export class WorkflowEngine {
     }
 
     const result = state.getResult();
+    await this.persistence?.runRepository.createOrUpdate({
+      executionId: context.executionId,
+      workflowName: context.workflowName,
+      status: result.status,
+      conversationId: triggerData?.conversation?.id ?? triggerData?.conversationId ?? null,
+      result: result as unknown as Record<string, unknown>,
+      errorMessage: result.error?.message ?? null,
+      completedAt: new Date(),
+      durationMs: Date.now() - startMs,
+    });
 
     // 发出执行完成事件
     this.eventEmitter.emit('workflow_completed', result);
@@ -214,6 +245,7 @@ export class WorkflowEngine {
    */
   private async executeStep(step: WorkflowStep, state: WorkflowState): Promise<void> {
     const stepStartTime = Date.now();
+    const stepStartedAt = new Date(stepStartTime);
 
     // 检查条件
     if (step.condition && !state.evaluateCondition(step.condition)) {
@@ -221,9 +253,19 @@ export class WorkflowEngine {
       state.recordStepResult({
         stepName: step.name,
         status: 'skipped',
-        startedAt: new Date(stepStartTime),
+        startedAt: stepStartedAt,
         completedAt: new Date(),
         duration: 0,
+      });
+      await this.persistence?.stepRepository.save({
+        executionId: state.getContext().executionId,
+        stepName: step.name,
+        stepType: step.type,
+        status: 'skipped',
+        input: state.resolveInput(step.input),
+        startedAt: stepStartedAt,
+        completedAt: new Date(),
+        durationMs: 0,
       });
       return;
     }
@@ -291,7 +333,7 @@ export class WorkflowEngine {
       const stepResult: StepResult = {
         stepName: step.name,
         status: 'completed',
-        startedAt: new Date(stepStartTime),
+        startedAt: stepStartedAt,
         completedAt: new Date(),
         duration: Date.now() - stepStartTime,
         input: resolvedInput,
@@ -304,6 +346,17 @@ export class WorkflowEngine {
       if (step.output) {
         state.set(step.output, output);
       }
+      await this.persistence?.stepRepository.save({
+        executionId: state.getContext().executionId,
+        stepName: step.name,
+        stepType: step.type,
+        status: 'success',
+        input: resolvedInput,
+        output: output ?? {},
+        startedAt: stepStartedAt,
+        completedAt: new Date(),
+        durationMs: Date.now() - stepStartTime,
+      });
     } catch (err) {
       console.error(`[WorkflowEngine] Step ${step.name} failed:`, err);
 
@@ -311,7 +364,7 @@ export class WorkflowEngine {
       const stepResult: StepResult = {
         stepName: step.name,
         status: 'failed',
-        startedAt: new Date(stepStartTime),
+        startedAt: stepStartedAt,
         completedAt: new Date(),
         duration: Date.now() - stepStartTime,
         input: resolvedInput,
@@ -319,6 +372,17 @@ export class WorkflowEngine {
       };
 
       state.recordStepResult(stepResult);
+      await this.persistence?.stepRepository.save({
+        executionId: state.getContext().executionId,
+        stepName: step.name,
+        stepType: step.type,
+        status: 'error',
+        input: resolvedInput,
+        errorMessage: (err as Error).message,
+        startedAt: stepStartedAt,
+        completedAt: new Date(),
+        durationMs: Date.now() - stepStartTime,
+      });
 
       // 如果有降级策略，使用降级值
       if (step.fallback) {
@@ -333,6 +397,7 @@ export class WorkflowEngine {
 
   private async executeParallelStep(step: WorkflowStep, state: WorkflowState): Promise<void> {
     const stepStartTime = Date.now();
+    const stepStartedAt = new Date(stepStartTime);
     if (!step.steps || step.steps.length === 0) {
       throw new Error(`Parallel step ${step.name} has no sub-steps`);
     }
@@ -363,7 +428,7 @@ export class WorkflowEngine {
       const stepResult: StepResult = {
         stepName: step.name,
         status: 'completed',
-        startedAt: new Date(stepStartTime),
+        startedAt: stepStartedAt,
         completedAt: new Date(),
         duration: Date.now() - stepStartTime,
         input: state.resolveInput(step.input),
@@ -373,17 +438,39 @@ export class WorkflowEngine {
       if (step.output) {
         state.set(step.output, results);
       }
+      await this.persistence?.stepRepository.save({
+        executionId: state.getContext().executionId,
+        stepName: step.name,
+        stepType: step.type,
+        status: 'success',
+        input: state.resolveInput(step.input),
+        output: results,
+        startedAt: stepStartedAt,
+        completedAt: new Date(),
+        durationMs: Date.now() - stepStartTime,
+      });
     } catch (err) {
       const stepResult: StepResult = {
         stepName: step.name,
         status: 'failed',
-        startedAt: new Date(stepStartTime),
+        startedAt: stepStartedAt,
         completedAt: new Date(),
         duration: Date.now() - stepStartTime,
         input: state.resolveInput(step.input),
         error: (err as Error).message,
       };
       state.recordStepResult(stepResult);
+      await this.persistence?.stepRepository.save({
+        executionId: state.getContext().executionId,
+        stepName: step.name,
+        stepType: step.type,
+        status: 'error',
+        input: state.resolveInput(step.input),
+        errorMessage: (err as Error).message,
+        startedAt: stepStartedAt,
+        completedAt: new Date(),
+        durationMs: Date.now() - stepStartTime,
+      });
       throw err;
     }
   }

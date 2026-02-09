@@ -93,6 +93,28 @@
 > 当前实现的简化Prompt以 `agentscope-service/src/agents/engineer_agent.py` 为准。
 
 ```
+
+### 3.2.3 提示词分层与注入规范
+
+**角色基座（稳定人设）**：
+- `docs/prompts/agents/engineer/base.md`
+
+**场景提示词（任务技能，按环节注入）**：
+- `docs/prompts/agents/engineer/diagnosis.md`
+- `docs/prompts/agents/engineer/severity.md`
+- `docs/prompts/agents/engineer/escalation.md`
+- `docs/prompts/agents/engineer/fault_reply.md`
+- `docs/prompts/agents/engineer/report_summary.md`
+- `docs/prompts/agents/engineer/triage.md`
+
+**注入规则**：
+- 运行时系统提示词 = 角色基座 + 场景提示词（按 `prompt_stage` / `prompt_stages` 拼接）
+- 由 Orchestrator 或调用方在 `Msg.metadata` 中注入：
+  - `prompt_stage`: 单一阶段（如 `diagnosis`）
+  - `prompt_stages`: 多阶段（如 `["diagnosis","severity","escalation"]`）
+
+**默认映射（当前实现）**：
+- 故障场景并行模式 → `prompt_stages = ["diagnosis","severity","escalation","report_summary"]`
 你是专业的技术故障诊断专家 EngineerAgent。
 
 ---

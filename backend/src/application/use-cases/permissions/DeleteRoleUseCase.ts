@@ -1,10 +1,10 @@
-import { RoleRepository } from '../../../infrastructure/repositories/RoleRepository';
-import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
+import { IMemberRepository } from '../../../domain/permissions/repositories/IMemberRepository';
+import { IRoleRepository } from '../../../domain/permissions/repositories/IRoleRepository';
 
 export class DeleteRoleUseCase {
   constructor(
-    private readonly roleRepository: RoleRepository,
-    private readonly userRepository: UserRepository,
+    private readonly roleRepository: IRoleRepository,
+    private readonly memberRepository: IMemberRepository,
   ) {}
 
   async execute(roleKey: string): Promise<void> {
@@ -15,8 +15,8 @@ export class DeleteRoleUseCase {
     if (role.isSystem) {
       throw new Error('system role cannot be deleted');
     }
-    const users = await this.userRepository.list();
-    if (users.some((user) => user.role === roleKey)) {
+    const users = await this.memberRepository.list();
+    if (users.some((user) => user.roleId === roleKey)) {
       throw new Error('role is assigned to members');
     }
     await this.roleRepository.deleteById(role.id);

@@ -98,6 +98,9 @@ export class TaskRepository implements ITaskRepository {
     if (filters.requirementId) {
       qb.andWhere("task.metadata ->> 'requirementId' = :requirementId", { requirementId: filters.requirementId });
     }
+    if (filters.type) {
+      qb.andWhere("task.metadata ->> 'type' = :type", { type: filters.type });
+    }
     if (filters.status) {
       qb.andWhere('task.status = :status', { status: filters.status });
     }
@@ -125,6 +128,9 @@ export class TaskRepository implements ITaskRepository {
     }
     if (filters.requirementId) {
       qb.andWhere("task.metadata ->> 'requirementId' = :requirementId", { requirementId: filters.requirementId });
+    }
+    if (filters.type) {
+      qb.andWhere("task.metadata ->> 'type' = :type", { type: filters.type });
     }
     if (filters.status) {
       qb.andWhere('task.status = :status', { status: filters.status });

@@ -9,13 +9,17 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
+def _prompt_root() -> Path:
+    return _repo_root() / "docs" / "prompts"
+
+
 def load_prompt(filename: str, fallback: Optional[str] = None) -> str:
     """
     Load prompt text from markdown file.
     If markdown contains a ```prompt code block, use its content.
     Otherwise return full file content.
     """
-    prompt_path = _repo_root() / "docs" / "prd" / "2-baseline" / "3-agents" / "prompt" / filename
+    prompt_path = _prompt_root() / filename
     if not prompt_path.exists():
         return fallback or ""
 
@@ -37,7 +41,7 @@ class PromptRegistry:
         self._cache: Dict[str, Tuple[float, str]] = {}
 
     def get(self, filename: str, fallback: Optional[str] = None) -> str:
-        prompt_path = _repo_root() / "docs" / "prd" / "2-baseline" / "3-agents" / "prompt" / filename
+        prompt_path = _prompt_root() / filename
         if not prompt_path.exists():
             return fallback or ""
 

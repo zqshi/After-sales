@@ -13,7 +13,9 @@ import {
   fetchConversationAiAnalysis,
   fetchSentimentAnalysis,
   fetchConversationStats,
+  createWorkorder,
   createTask,
+  fetchWorkorders,
   fetchTasks,
   fetchQualityProfile,
   isApiEnabled,
@@ -623,99 +625,191 @@ export function openTicket() {
     descText: '自动填充工单信息，支持快速提交。',
     contentHtml: `
     <div class="ai-panel-stack ai-panel-stack-tight">
-      <div class="flex justify-end">
+      <div class="flex items-center justify-between">
+        <div class="ai-panel-meta">* 为必填字段</div>
         <button class="ai-panel-chip" data-action="open-ticket-management">工单管理</button>
       </div>
       <div class="ai-panel-form text-sm text-gray-700">
-        <div class="ai-form-block">
-          <div class="ai-form-row">
-            <label class="w-16" for="ticket-title">标题</label>
-            <input id="ticket-title" class="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="请输入标题">
+        <div class="ai-form-group">
+          <div class="ai-form-group-title">基础信息</div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label class="w-16" for="ticket-title">标题 *</label>
+              <input id="ticket-title" class="flex-1 border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="请输入标题">
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-title"></div>
           </div>
-          <div class="ai-form-error hidden" data-error-for="ticket-title"></div>
-        </div>
-        <div class="ai-form-block">
-          <div class="ai-form-row ai-form-split">
-            <label class="w-16" for="ticket-detail">详情</label>
-            <textarea id="ticket-detail" rows="3" class="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="请输入问题详情与排查结果"></textarea>
+          <div class="ai-form-block">
+            <div class="ai-form-row ai-form-split">
+              <label class="w-16" for="ticket-detail">详情 *</label>
+              <textarea id="ticket-detail" rows="3" class="flex-1 border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="请输入问题详情与排查结果"></textarea>
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-detail"></div>
           </div>
-          <div class="ai-form-error hidden" data-error-for="ticket-detail"></div>
-        </div>
-        <div class="ai-form-block">
-          <div class="ai-form-row">
-            <label for="ticket-tags">添加标签</label>
-            <select id="ticket-tags" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
-              <option value="">暂未添加</option>
-              <option value="network">网络异常</option>
-              <option value="auth">认证问题</option>
-              <option value="timeout">超时故障</option>
-            </select>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label>问题反馈时间 *</label>
+              <div class="ai-form-inline">
+                <input id="ticket-date" type="date" class="px-3 py-1 border border-gray-200 rounded-md text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+                <input id="ticket-time" type="time" class="px-3 py-1 border border-gray-200 rounded-md text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+              </div>
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-datetime"></div>
           </div>
-          <div class="ai-form-error hidden" data-error-for="ticket-tags"></div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-type">问题类型 *</label>
+              <select id="ticket-type" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="">请选择</option>
+                <option value="1">问题排查</option>
+                <option value="2">需求反馈</option>
+                <option value="3">咨询</option>
+              </select>
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-type"></div>
+          </div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-priority">优先级 *</label>
+              <select id="ticket-priority" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="">请选择</option>
+                <option value="1">紧急</option>
+                <option value="2">高级</option>
+                <option value="3">普通</option>
+              </select>
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-priority"></div>
+          </div>
         </div>
-        <div class="ai-form-block">
-          <div class="ai-form-row">
-            <label>问题反馈时间</label>
-            <div class="ai-form-inline">
-              <input id="ticket-date" type="date" class="px-3 py-1 border border-gray-200 rounded-md text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
-              <input id="ticket-time" type="time" class="px-3 py-1 border border-gray-200 rounded-md text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+
+        <div class="ai-form-group">
+          <div class="ai-form-group-title">客户与创建人</div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-customer-id">客户ID *</label>
+              <input id="ticket-customer-id" type="number" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="客户组织ID">
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-customer-id"></div>
+          </div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-customer-name">客户名称 *</label>
+              <input id="ticket-customer-name" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="客户公司名称">
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-customer-name"></div>
+          </div>
+          <div class="ai-form-block">
+            <div class="ai-form-row ai-form-split">
+              <label for="ticket-customer-info">客户信息</label>
+              <textarea id="ticket-customer-info" rows="2" class="border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="JSON数组，可选"></textarea>
             </div>
           </div>
-          <div class="ai-form-error hidden" data-error-for="ticket-datetime"></div>
-        </div>
-        <div class="ai-form-block">
-          <div class="ai-form-row">
-            <label for="ticket-type">问题类型</label>
-            <select id="ticket-type" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
-              <option value="">请选择</option>
-              <option value="investigation">问题排查</option>
-              <option value="bug">故障修复</option>
-              <option value="consult">咨询</option>
-            </select>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-creator-id">创建人ID *</label>
+              <input id="ticket-creator-id" type="number" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="创建人长工号">
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-creator-id"></div>
           </div>
-          <div class="ai-form-error hidden" data-error-for="ticket-type"></div>
-        </div>
-        <div class="ai-form-block">
-          <div class="ai-form-row">
-            <label for="ticket-product">产品线</label>
-            <select id="ticket-product" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
-              <option value="">请选择</option>
-              <option value="cloud">云主机</option>
-              <option value="storage">存储</option>
-              <option value="network">网络</option>
-              <option value="security">安全</option>
-            </select>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-creator-name">创建人姓名 *</label>
+              <input id="ticket-creator-name" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="创建人姓名">
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-creator-name"></div>
           </div>
-          <div class="ai-form-error hidden" data-error-for="ticket-product"></div>
         </div>
-        <div class="ai-form-block">
-          <div class="ai-form-row">
-            <label for="ticket-impact">受影响程度</label>
-            <select id="ticket-impact" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
-              <option value="">请选择</option>
-              <option value="low">低</option>
-              <option value="medium">中</option>
-              <option value="high">高</option>
-            </select>
+
+        <div class="ai-form-group">
+          <div class="ai-form-group-title">产品与分类</div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-product-id">产品线ID *</label>
+              <input id="ticket-product-id" type="number" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="产品线ID">
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-product-id"></div>
           </div>
-          <div class="ai-form-error hidden" data-error-for="ticket-impact"></div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-product-group">自有产品线</label>
+              <select id="ticket-product-group" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="">请选择</option>
+                <option value="false">否</option>
+                <option value="true">是</option>
+              </select>
+            </div>
+          </div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-sub-type">子类型ID</label>
+              <input id="ticket-sub-type" type="number" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="可选">
+            </div>
+          </div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-second-subtype">二级子类型ID</label>
+              <input id="ticket-second-subtype" type="number" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="可选">
+            </div>
+          </div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-tags">标签ID</label>
+              <input id="ticket-tags" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="多个ID用逗号分隔">
+            </div>
+            <div class="ai-form-error hidden" data-error-for="ticket-tags"></div>
+          </div>
         </div>
-        <div class="ai-form-block">
-          <div class="ai-form-row">
-            <label for="ticket-incident">是否故障</label>
-            <select id="ticket-incident" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
-              <option value="yes" selected>是</option>
-              <option value="no">否</option>
-            </select>
+
+        <div class="ai-form-group">
+          <div class="ai-form-group-title">流程与关联</div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-need-process">是否流转</label>
+              <select id="ticket-need-process" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="">请选择</option>
+                <option value="true">是</option>
+                <option value="false">否</option>
+              </select>
+            </div>
           </div>
-          <div class="ai-form-error hidden" data-error-for="ticket-incident"></div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-relate-id">关联工单ID</label>
+              <input id="ticket-relate-id" type="number" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="可选">
+            </div>
+          </div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-use-relate">共用关联状态</label>
+              <select id="ticket-use-relate" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary">
+                <option value="">请选择</option>
+                <option value="false">否</option>
+                <option value="true">是</option>
+              </select>
+            </div>
+          </div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-attachment">附件</label>
+              <input id="ticket-attachment" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="上传接口返回值，多个用逗号分隔">
+            </div>
+          </div>
         </div>
-        <div class="ai-form-block">
-          <div class="ai-form-row">
-            <label for="ticket-company">客户公司名称</label>
-            <input id="ticket-company" class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-primary" placeholder="请选择或输入">
+
+        <div class="ai-form-group">
+          <div class="ai-form-group-title">自定义表单（暂不支持）</div>
+          <div class="ai-form-block">
+            <div class="ai-form-row">
+              <label for="ticket-form-id">自定义表单ID</label>
+              <input id="ticket-form-id" type="number" disabled class="border border-gray-200 rounded-md px-3 py-1.5 text-sm text-gray-400 bg-gray-50 focus:outline-none" placeholder="暂不支持">
+            </div>
           </div>
-          <div class="ai-form-error hidden" data-error-for="ticket-company"></div>
+          <div class="ai-form-block">
+            <div class="ai-form-row ai-form-split">
+              <label for="ticket-form-values">自定义表单值</label>
+              <textarea id="ticket-form-values" rows="2" disabled class="border border-gray-200 rounded-md px-3 py-2 text-sm text-gray-400 bg-gray-50 focus:outline-none" placeholder="暂不支持"></textarea>
+            </div>
+          </div>
         </div>
       </div>
       <div class="mt-3">
@@ -731,10 +825,20 @@ export function openTicket() {
     const dateInput = qs('#ticket-date');
     const timeInput = qs('#ticket-time');
     const typeSelect = qs('#ticket-type');
-    const productSelect = qs('#ticket-product');
-    const impactSelect = qs('#ticket-impact');
-    const incidentSelect = qs('#ticket-incident');
-    const companyInput = qs('#ticket-company');
+    const subTypeInput = qs('#ticket-sub-type');
+    const secondSubtypeInput = qs('#ticket-second-subtype');
+    const prioritySelect = qs('#ticket-priority');
+    const customerIdInput = qs('#ticket-customer-id');
+    const customerNameInput = qs('#ticket-customer-name');
+    const customerInfoInput = qs('#ticket-customer-info');
+    const productIdInput = qs('#ticket-product-id');
+    const productGroupSelect = qs('#ticket-product-group');
+    const attachmentInput = qs('#ticket-attachment');
+    const needProcessSelect = qs('#ticket-need-process');
+    const relateIdInput = qs('#ticket-relate-id');
+    const useRelateSelect = qs('#ticket-use-relate');
+    const creatorIdInput = qs('#ticket-creator-id');
+    const creatorNameInput = qs('#ticket-creator-name');
     const managementBtn = qs('[data-action="open-ticket-management"]');
 
     if (titleInput) {
@@ -755,17 +859,47 @@ export function openTicket() {
     if (typeSelect) {
       typeSelect.value = '';
     }
-    if (productSelect) {
-      productSelect.value = '';
+    if (subTypeInput) {
+      subTypeInput.value = '';
     }
-    if (impactSelect) {
-      impactSelect.value = '';
+    if (secondSubtypeInput) {
+      secondSubtypeInput.value = '';
     }
-    if (incidentSelect) {
-      incidentSelect.value = '';
+    if (prioritySelect) {
+      prioritySelect.value = '';
     }
-    if (companyInput) {
-      companyInput.value = '';
+    if (customerIdInput) {
+      customerIdInput.value = '';
+    }
+    if (customerNameInput) {
+      customerNameInput.value = '';
+    }
+    if (customerInfoInput) {
+      customerInfoInput.value = '';
+    }
+    if (productIdInput) {
+      productIdInput.value = '';
+    }
+    if (productGroupSelect) {
+      productGroupSelect.value = '';
+    }
+    if (attachmentInput) {
+      attachmentInput.value = '';
+    }
+    if (needProcessSelect) {
+      needProcessSelect.value = '';
+    }
+    if (relateIdInput) {
+      relateIdInput.value = '';
+    }
+    if (useRelateSelect) {
+      useRelateSelect.value = '';
+    }
+    if (creatorIdInput) {
+      creatorIdInput.value = '';
+    }
+    if (creatorNameInput) {
+      creatorNameInput.value = '';
     }
     if (managementBtn) {
       managementBtn.addEventListener('click', () => {
@@ -775,6 +909,7 @@ export function openTicket() {
 
     bindTicketFormValidation();
     bindTicketClarifyAction();
+    autofillTicketForm();
   }, 0);
 }
 
@@ -794,14 +929,30 @@ function bindTicketFormValidation() {
   const fields = [
     { el: qs('#ticket-title'), name: '标题', errorKey: 'ticket-title' },
     { el: qs('#ticket-detail'), name: '详情', errorKey: 'ticket-detail' },
-    { el: qs('#ticket-tags'), name: '标签', errorKey: 'ticket-tags' },
     { el: qs('#ticket-date'), name: '问题反馈时间（日期）', errorKey: 'ticket-datetime' },
     { el: qs('#ticket-time'), name: '问题反馈时间（时间）', errorKey: 'ticket-datetime' },
     { el: qs('#ticket-type'), name: '问题类型', errorKey: 'ticket-type' },
-    { el: qs('#ticket-product'), name: '产品线', errorKey: 'ticket-product' },
-    { el: qs('#ticket-impact'), name: '受影响程度', errorKey: 'ticket-impact' },
-    { el: qs('#ticket-incident'), name: '是否故障', errorKey: 'ticket-incident' },
-    { el: qs('#ticket-company'), name: '客户公司名称', errorKey: 'ticket-company' },
+    { el: qs('#ticket-priority'), name: '优先级', errorKey: 'ticket-priority' },
+    {
+      el: qs('#ticket-customer-id'),
+      name: '客户ID',
+      errorKey: 'ticket-customer-id',
+      validator: (value) => (parseNumberValue(value) === undefined ? '请输入有效数字' : ''),
+    },
+    { el: qs('#ticket-customer-name'), name: '客户名称', errorKey: 'ticket-customer-name' },
+    {
+      el: qs('#ticket-product-id'),
+      name: '产品线ID',
+      errorKey: 'ticket-product-id',
+      validator: (value) => (parseNumberValue(value) === undefined ? '请输入有效数字' : ''),
+    },
+    {
+      el: qs('#ticket-creator-id'),
+      name: '创建人ID',
+      errorKey: 'ticket-creator-id',
+      validator: (value) => (parseNumberValue(value) === undefined ? '请输入有效数字' : ''),
+    },
+    { el: qs('#ticket-creator-name'), name: '创建人姓名', errorKey: 'ticket-creator-name' },
   ];
 
   const clearError = (el, errorKey) => {
@@ -843,13 +994,23 @@ function bindTicketFormValidation() {
 
   createBtn.addEventListener('click', async () => {
     let hasError = false;
-    fields.forEach(({ el, name, errorKey }) => {
+    fields.forEach(({ el, name, errorKey, validator }) => {
       const value = el?.value?.trim?.() ?? '';
       if (!value) {
         markError(el, errorKey, `${name}不能为空`);
         hasError = true;
+        return;
       } else {
         clearError(el, errorKey);
+      }
+      if (validator) {
+        const message = validator(value);
+        if (message) {
+          markError(el, errorKey, message);
+          hasError = true;
+        } else {
+          clearError(el, errorKey);
+        }
       }
     });
 
@@ -863,8 +1024,25 @@ function bindTicketFormValidation() {
     }
 
     try {
-      await createTask(buildTicketPayload());
+      const payload = buildTicketPayload();
+      const workorderPayload = buildWorkorderPayload(payload);
+      const response = await createWorkorder(workorderPayload);
       showNotification('工单已创建', 'success');
+      const ticketResult = normalizeWorkorderCreateResponse(response);
+      if (ticketResult?.id) {
+        await createTask({
+          title: payload.title,
+          description: payload.description,
+          priority: payload.priority,
+          type: 'workorder',
+          conversationId: payload.conversationId,
+          metadata: {
+            ...payload.metadata,
+            workorder_ticket_id: ticketResult.id,
+            workorder_ticket_no: ticketResult.ticketNo,
+          },
+        });
+      }
       const tickets = await fetchTicketList();
       renderTicketManagementPanel(tickets, { showCreateButton: true });
     } catch (err) {
@@ -884,22 +1062,13 @@ async function fetchTicketList() {
     return [];
   }
   try {
-    const response = await fetchTasks({ limit: 20, conversationId });
+    const response = await fetchTasks({ limit: 20, conversationId, type: 'workorder' });
     const payload = response?.data ?? response;
     const items = payload?.items ?? payload?.tasks ?? payload ?? [];
     if (!Array.isArray(items)) {
       return [];
     }
-    return items.map((task) => ({
-      id: task.id || task.taskId,
-      title: task.title || task.name || '',
-      summary: task.description || task.summary || '',
-      customer: task.customerId || '',
-      createdAt: task.createdAt || '',
-      status: task.status || '',
-      owner: task.assigneeName || task.assigneeId || '',
-      priority: task.priority || '',
-    }));
+    return items.map((task) => normalizeTicketFromTask(task));
   } catch (err) {
     console.warn('[ticket] list failed', err);
     return [];
@@ -909,20 +1078,413 @@ async function fetchTicketList() {
 function buildTicketPayload() {
   const title = qs('#ticket-title')?.value?.trim() || '客户问题';
   const detail = qs('#ticket-detail')?.value?.trim() || '';
-  const impact = qs('#ticket-impact')?.value || 'medium';
-  const type = qs('#ticket-type')?.value || 'investigation';
+  const tagsRaw = qs('#ticket-tags')?.value?.trim() || '';
+  const dateValue = qs('#ticket-date')?.value || '';
+  const timeValue = qs('#ticket-time')?.value || '';
+  const typeValue = qs('#ticket-type')?.value || '';
+  const subTypeValue = qs('#ticket-sub-type')?.value || '';
+  const secondSubtypeValue = qs('#ticket-second-subtype')?.value || '';
+  const priorityValue = qs('#ticket-priority')?.value || '';
+  const customerIdValue = qs('#ticket-customer-id')?.value || '';
+  const customerNameValue = qs('#ticket-customer-name')?.value?.trim() || '';
+  const customerInfoValue = qs('#ticket-customer-info')?.value?.trim() || '';
+  const productIdValue = qs('#ticket-product-id')?.value || '';
+  const productGroupValue = qs('#ticket-product-group')?.value || '';
+  const attachmentValue = qs('#ticket-attachment')?.value?.trim() || '';
+  const needProcessValue = qs('#ticket-need-process')?.value || '';
+  const relateIdValue = qs('#ticket-relate-id')?.value || '';
+  const useRelateValue = qs('#ticket-use-relate')?.value || '';
+  const creatorIdValue = qs('#ticket-creator-id')?.value || '';
+  const creatorNameValue = qs('#ticket-creator-name')?.value?.trim() || '';
   const activeConversation = document.querySelector('.conversation-item.is-active');
-  const customerId = activeConversation?.getAttribute('data-customer-id') || '';
+  const customerId = customerIdValue || activeConversation?.getAttribute('data-customer-id') || '';
   const conversationId = activeConversation?.getAttribute('data-id') || '';
+
+  const reportedTime = buildReportedTimestamp(dateValue, timeValue);
+  const tags = parseCommaList(tagsRaw).map((value) => parseNumberValue(value) ?? value).filter((value) => value !== undefined && value !== '');
+  const attachments = parseCommaList(attachmentValue).filter((value) => value);
+  const customerInfo = parseJsonValue(customerInfoValue);
+
+  const priorityLabel = priorityValue || '';
+  const taskPriority = mapPriorityToTask(priorityLabel);
+
+  const metadata = {
+    title,
+    detail,
+    tags,
+    reported_time: reportedTime,
+    type: parseNumberValue(typeValue),
+    sub_type: parseNumberValue(subTypeValue),
+    second_subtype: parseNumberValue(secondSubtypeValue),
+    priority: parseNumberValue(priorityValue),
+    customer_organization_id: parseNumberValue(customerIdValue),
+    customer_organization_name: customerNameValue,
+    customer_info: customerInfo,
+    repository_product_id: parseNumberValue(productIdValue),
+    whether_product_group_id: parseBooleanValue(productGroupValue),
+    attachment: attachments,
+    need_process: parseBooleanValue(needProcessValue),
+    relate_to_ticket_id: parseNumberValue(relateIdValue),
+    use_relate_status: parseBooleanValue(useRelateValue),
+    creator_id: parseNumberValue(creatorIdValue),
+    creator_name: creatorNameValue,
+  };
 
   return {
     title,
     description: detail,
-    priority: impact,
-    type,
+    priority: taskPriority,
+    type: 'workorder',
     customerId,
     conversationId,
+    metadata,
   };
+}
+
+const TICKET_STATUS_LABELS = {
+  1: '待处理',
+  2: '处理中',
+  3: '已关闭',
+  4: '已取消',
+  pending: '待处理',
+  in_progress: '处理中',
+  completed: '已关闭',
+  cancelled: '已取消',
+};
+
+const TICKET_PRIORITY_LABELS = {
+  1: '紧急',
+  2: '高级',
+  3: '普通',
+  urgent: '紧急',
+  high: '紧急',
+  medium: '高级',
+  low: '普通',
+};
+
+const TICKET_TYPE_LABELS = {
+  1: '问题排查',
+  2: '需求反馈',
+  3: '咨询',
+  investigation: '问题排查',
+  bug: '问题排查',
+  consult: '咨询',
+};
+
+function parseCommaList(value) {
+  if (!value) {
+    return [];
+  }
+  return value.split(',').map((item) => item.trim()).filter((item) => item);
+}
+
+function parseNumberValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+  const num = Number(value);
+  return Number.isFinite(num) ? num : undefined;
+}
+
+function parseBooleanValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+  if (value === true || value === false) {
+    return value;
+  }
+  const normalized = String(value).toLowerCase();
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+    return true;
+  }
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+    return false;
+  }
+  return undefined;
+}
+
+function parseJsonValue(value) {
+  if (!value) {
+    return undefined;
+  }
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    return value;
+  }
+}
+
+function formatTimestamp(value) {
+  if (!value) {
+    return '';
+  }
+  let date;
+  if (value instanceof Date) {
+    date = value;
+  } else if (typeof value === 'number') {
+    const ms = value > 1e12 ? value : value > 1e10 ? value : value * 1000;
+    date = new Date(ms);
+  } else if (typeof value === 'string') {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      const ms = numeric > 1e12 ? numeric : numeric > 1e10 ? numeric : numeric * 1000;
+      date = new Date(ms);
+    } else {
+      date = new Date(value);
+    }
+  }
+  if (!date || Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const pad = (val) => String(val).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
+}
+
+function buildReportedTimestamp(dateValue, timeValue) {
+  if (!dateValue || !timeValue) {
+    return undefined;
+  }
+  const timestamp = new Date(`${dateValue}T${timeValue}:00`).getTime();
+  if (!Number.isFinite(timestamp)) {
+    return undefined;
+  }
+  return Math.floor(timestamp / 1000);
+}
+
+function mapPriorityToTask(priorityValue) {
+  const normalized = String(priorityValue || '').trim();
+  if (normalized === '1') {
+    return 'high';
+  }
+  if (normalized === '2') {
+    return 'medium';
+  }
+  if (normalized === '3') {
+    return 'low';
+  }
+  return 'medium';
+}
+
+function mapTicketLabel(map, value) {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+  const key = typeof value === 'number' ? value : String(value).trim();
+  return map[key] || String(value);
+}
+
+function normalizeTicketFromTask(task) {
+  const metadata = task?.metadata ?? {};
+  const id = task.id || task.taskId || metadata.id || '';
+  const title = metadata.title || task.title || task.name || '';
+  const detail = metadata.detail || task.description || task.summary || '';
+  const status = mapTicketLabel(TICKET_STATUS_LABELS, metadata.status ?? task.status);
+  const priority = mapTicketLabel(TICKET_PRIORITY_LABELS, metadata.priority ?? task.priority);
+  const type = mapTicketLabel(TICKET_TYPE_LABELS, metadata.type ?? task.type);
+  const createdAt = formatTimestamp(metadata.created_time ?? task.createdAt);
+  const reportedTime = formatTimestamp(metadata.reported_time);
+  const customer = metadata.customer_organization_name || task.customerId || '';
+  const productGroup = metadata.product_group || metadata.product_group_name || '';
+  const handler = metadata.handler || '';
+  const manager = metadata.manager || '';
+  const tags = Array.isArray(metadata.tags) ? metadata.tags.join(', ') : (metadata.tags || '');
+  const subType = metadata.sub_type;
+  const secondSubtype = metadata.second_subtype;
+  const needProcess = metadata.need_process;
+
+  return {
+    id,
+    title,
+    detail,
+    status,
+    priority,
+    type,
+    createdAt,
+    reportedTime,
+    customer,
+    productGroup,
+    handler,
+    manager,
+    tags,
+    subType,
+    secondSubtype,
+    needProcess,
+    metadata,
+  };
+}
+
+function buildWorkorderPayload(payload) {
+  if (!payload) {
+    return {};
+  }
+  const metadata = payload.metadata || {};
+  return {
+    title: metadata.title || payload.title,
+    detail: metadata.detail || payload.description || '',
+    tags: metadata.tags || [],
+    reported_time: metadata.reported_time,
+    type: metadata.type,
+    sub_type: metadata.sub_type,
+    second_subtype: metadata.second_subtype,
+    priority: metadata.priority,
+    customer_organization_id: metadata.customer_organization_id,
+    customer_organization_name: metadata.customer_organization_name,
+    customer_info: metadata.customer_info,
+    repository_product_id: metadata.repository_product_id,
+    whether_product_group_id: metadata.whether_product_group_id,
+    attachment: metadata.attachment,
+    need_process: metadata.need_process,
+    relate_to_ticket_id: metadata.relate_to_ticket_id,
+    use_relate_status: metadata.use_relate_status,
+    form_id: metadata.form_id,
+    form_values: metadata.form_values,
+    creator_id: metadata.creator_id,
+    creator_name: metadata.creator_name,
+  };
+}
+
+function normalizeWorkorderCreateResponse(response) {
+  const payload = response?.data ?? response ?? {};
+  const data = payload?.data ?? payload ?? {};
+  return {
+    id: data.ticket_id || data.id || data.ticketId || '',
+    ticketNo: data.ticket_no || data.ticketNo || '',
+  };
+}
+
+function padTwo(value) {
+  return String(value).padStart(2, '0');
+}
+
+function getNowDateTime() {
+  const now = new Date();
+  return {
+    date: `${now.getFullYear()}-${padTwo(now.getMonth() + 1)}-${padTwo(now.getDate())}`,
+    time: `${padTwo(now.getHours())}:${padTwo(now.getMinutes())}`,
+  };
+}
+
+function getTicketPrefillContext() {
+  const activeConversation = document.querySelector('.conversation-item.is-active');
+  if (!activeConversation) {
+    return {};
+  }
+  const titleNode = activeConversation.querySelector('.text-sm.font-medium');
+  const previewNode = activeConversation.querySelector('.line-clamp-2');
+  const summary = previewNode?.textContent?.trim() || '';
+  return {
+    customerId: activeConversation.getAttribute('data-customer-id') || '',
+    customerName: titleNode?.textContent?.trim() || '',
+    summary,
+  };
+}
+
+function fillTicketFormDefaults() {
+  const { date, time } = getNowDateTime();
+  const dateInput = qs('#ticket-date');
+  const timeInput = qs('#ticket-time');
+  if (dateInput && !dateInput.value) {
+    dateInput.value = date;
+  }
+  if (timeInput && !timeInput.value) {
+    timeInput.value = time;
+  }
+  const creatorIdInput = qs('#ticket-creator-id');
+  if (creatorIdInput && !creatorIdInput.value && window.config?.userId) {
+    creatorIdInput.value = window.config.userId;
+  }
+  const creatorNameInput = qs('#ticket-creator-name');
+  if (creatorNameInput && !creatorNameInput.value) {
+    const cachedUser = localStorage.getItem('authUser');
+    if (cachedUser) {
+      try {
+        const parsed = JSON.parse(cachedUser);
+        creatorNameInput.value = parsed?.name || parsed?.displayName || parsed?.email || '';
+      } catch (_err) {
+        creatorNameInput.value = '';
+      }
+    }
+  }
+}
+
+async function autofillTicketForm() {
+  fillTicketFormDefaults();
+  const context = getTicketPrefillContext();
+  const customerIdInput = qs('#ticket-customer-id');
+  if (customerIdInput && !customerIdInput.value && context.customerId) {
+    customerIdInput.value = context.customerId;
+  }
+  const customerNameInput = qs('#ticket-customer-name');
+  if (customerNameInput && !customerNameInput.value && context.customerName) {
+    customerNameInput.value = context.customerName;
+  }
+  const titleInput = qs('#ticket-title');
+  if (titleInput && !titleInput.value && context.summary) {
+    titleInput.value = context.summary.slice(0, 80);
+  }
+  const detailInput = qs('#ticket-detail');
+  if (detailInput && !detailInput.value) {
+    const latest = getLatestCustomerMessageText();
+    if (latest) {
+      detailInput.value = latest;
+    }
+  }
+
+  if (!currentConversationId) {
+    return;
+  }
+
+  try {
+    const aiResponse = await fetchConversationAiAnalysis(currentConversationId);
+    const aiPayload = aiResponse?.data ?? aiResponse ?? {};
+    const issueProduct = aiPayload.issueProduct || aiPayload.issue_product || '';
+    const faultLevel = aiPayload.faultLevel || aiPayload.fault_level || '';
+    const detectedIssues = aiPayload.detectedIssues || aiPayload.issues || [];
+
+    const detailCurrent = detailInput?.value?.trim() || '';
+    const issueLines = [];
+    if (issueProduct) {
+      issueLines.push(`问题定位：${issueProduct}`);
+    }
+    if (faultLevel) {
+      issueLines.push(`故障等级：${faultLevel}`);
+    }
+    if (detectedIssues.length) {
+      const first = detectedIssues[0];
+      if (typeof first === 'string') {
+        issueLines.push(`问题描述：${first}`);
+      } else {
+        if (first.description) {
+          issueLines.push(`问题描述：${first.description}`);
+        }
+        if (first.suggestedAction) {
+          issueLines.push(`建议动作：${first.suggestedAction}`);
+        }
+      }
+    }
+    if (detailInput && issueLines.length && !detailCurrent.includes(issueLines[0])) {
+      detailInput.value = detailCurrent ? `${detailCurrent}\n${issueLines.join('\n')}` : issueLines.join('\n');
+    }
+
+    const prioritySelect = qs('#ticket-priority');
+    if (prioritySelect && !prioritySelect.value) {
+      const normalized = String(faultLevel || '').toUpperCase();
+      if (normalized.includes('P0') || normalized.includes('P1')) {
+        prioritySelect.value = '1';
+      } else if (normalized.includes('P2')) {
+        prioritySelect.value = '2';
+      } else if (normalized.includes('P3') || normalized.includes('P4')) {
+        prioritySelect.value = '3';
+      }
+    }
+  } catch (err) {
+    console.warn('[ticket] autofill ai failed', err);
+  }
 }
 
 function renderTicketManagementPanel(tickets, options = {}) {
@@ -943,7 +1505,7 @@ function renderTicketManagementPanel(tickets, options = {}) {
               <div>
                 <div class="ai-panel-title">${ticket.title || '暂无数据'}</div>
                 <div class="text-xs text-gray-500 mt-1">客户：${ticket.customer || '暂无数据'} · 创建时间：${ticket.createdAt || '暂无数据'}</div>
-                <div class="text-xs text-gray-600 mt-2">${ticket.summary || '暂无数据'}</div>
+                <div class="text-xs text-gray-600 mt-2">类型：${ticket.type || '暂无数据'} · 优先级：${ticket.priority || '暂无数据'} · 产品线：${ticket.productGroup || '暂无数据'}</div>
               </div>
               <span class="ticket-status-chip ${getTicketStatusClass(ticket.status || '')}">${ticket.status || '暂无数据'}</span>
             </div>
@@ -968,6 +1530,9 @@ function getTicketStatusClass(status) {
     return 'status-progress';
   }
   if (status.includes('待确认')) {
+    return 'status-warn';
+  }
+  if (status.includes('待处理')) {
     return 'status-warn';
   }
   return 'status-open';
@@ -1002,9 +1567,18 @@ function bindTicketListActions(tickets) {
           <div><strong>客户：</strong>${ticket.customer || '暂无数据'}</div>
           <div><strong>状态：</strong>${ticket.status || '暂无数据'}</div>
           <div><strong>优先级：</strong>${ticket.priority || '暂无数据'}</div>
-          <div><strong>负责人：</strong>${ticket.owner || '暂无数据'}</div>
+          <div><strong>类型：</strong>${ticket.type || '暂无数据'}</div>
+          <div><strong>子类型ID：</strong>${ticket.subType || '暂无数据'}</div>
+          <div><strong>二级子类型ID：</strong>${ticket.secondSubtype || '暂无数据'}</div>
+          <div><strong>产品线：</strong>${ticket.productGroup || '暂无数据'}</div>
+          <div><strong>创建人：</strong>${ticket.metadata?.creator_name || '暂无数据'}</div>
+          <div><strong>处理人：</strong>${ticket.handler || '暂无数据'}</div>
+          <div><strong>负责人：</strong>${ticket.manager || '暂无数据'}</div>
           <div><strong>创建时间：</strong>${ticket.createdAt || '暂无数据'}</div>
-          <div><strong>摘要：</strong>${ticket.summary || '暂无数据'}</div>
+          <div><strong>反馈时间：</strong>${ticket.reportedTime || '暂无数据'}</div>
+          <div><strong>标签：</strong>${ticket.tags || '暂无数据'}</div>
+          <div><strong>是否流转：</strong>${ticket.needProcess === undefined ? '暂无数据' : ticket.needProcess ? '是' : '否'}</div>
+          <div><strong>详情：</strong>${ticket.detail || '暂无数据'}</div>
         </div>
       `,
     });

@@ -5,6 +5,7 @@ import { buildAITools } from './tools/AITools';
 import { buildConversationTools } from './tools/ConversationTools';
 import { buildCustomerTools } from './tools/CustomerTools';
 import { buildKnowledgeTools } from './tools/KnowledgeTools';
+import { buildPersistenceTools } from './tools/PersistenceTools';
 import { buildRequirementTools } from './tools/RequirementTools';
 import { buildTaskTools } from './tools/TaskTools';
 import { AgentScopeDependencies, MCPToolDefinition } from './types';
@@ -20,6 +21,9 @@ interface MCPRequestPayload {
 export class MCPServer {
   private readonly tools = new Map<string, MCPToolDefinition>();
   private readonly allowedTools = new Set([
+    'recordAgentCall',
+    'recordAgentMemory',
+    'getAgentMemory',
     'analyzeConversation',
     'createSurvey',
     'createTask',
@@ -55,6 +59,7 @@ export class MCPServer {
       buildRequirementTools(this.dependencies),
       buildTaskTools(this.dependencies),
       buildAITools(this.dependencies),
+      buildPersistenceTools(this.dependencies),
     ];
 
     for (const set of collections) {
@@ -118,10 +123,23 @@ export class MCPServer {
       }, '[MCP] tool call start');
       try {
         const result = await tool.handler(args);
+        const resultPayload = (result && typeof result === 'object' && !Array.isArray(result))
+          ? (result as Record<string, unknown>)
+          : { data: result };
         request.log.info({
           tool: toolName,
           durationMs: Date.now() - startedAt,
         }, '[MCP] tool call success');
+        await this.dependencies.mcpToolCallRepository.save({
+          toolName,
+          conversationId: typeof (args as any).conversationId === 'string' ? (args as any).conversationId : undefined,
+          customerId: typeof (args as any).customerId === 'string' ? (args as any).customerId : undefined,
+          agentName: typeof (args as any).agentName === 'string' ? (args as any).agentName : undefined,
+          status: 'success',
+          durationMs: Date.now() - startedAt,
+          args: args as Record<string, unknown>,
+          result: resultPayload,
+        });
         return { result };
       } catch (err) {
         request.log.error({
@@ -129,6 +147,16 @@ export class MCPServer {
           durationMs: Date.now() - startedAt,
           error: err instanceof Error ? err.message : String(err),
         }, '[MCP] tool call failed');
+        await this.dependencies.mcpToolCallRepository.save({
+          toolName,
+          conversationId: typeof (args as any).conversationId === 'string' ? (args as any).conversationId : undefined,
+          customerId: typeof (args as any).customerId === 'string' ? (args as any).customerId : undefined,
+          agentName: typeof (args as any).agentName === 'string' ? (args as any).agentName : undefined,
+          status: 'error',
+          durationMs: Date.now() - startedAt,
+          args: args as Record<string, unknown>,
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
         reply.status(500);
         return { error: err instanceof Error ? err.message : 'tool execution failed' };
       }

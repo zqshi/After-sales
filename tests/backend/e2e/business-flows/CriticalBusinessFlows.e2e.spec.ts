@@ -119,6 +119,8 @@ describeWithDb('E2E: Critical Business Flows', () => {
       createReviewRequestUseCase as any,
       aiService,
       eventBus,
+      undefined,
+      { save: async () => ({}) } as any,
     );
   });
 

@@ -118,7 +118,7 @@ class TestAnalyzeSentiment:
         assistant_agent: AssistantAgent,
         mock_mcp_client: BackendMCPClient,
     ) -> None:
-        """测试成功的情感分析"""
+        """测试成功的情感分析（不依赖MCP）"""
         # 准备测试数据
         msg = Msg(
             name="user",
@@ -126,32 +126,21 @@ class TestAnalyzeSentiment:
             role="user",
             metadata={"conversationId": "conv-123"},
         )
-        expected_result = {
-            "sentiment": "negative",
-            "intensity": "angry",
-            "score": 0.2,
-            "risk_level": "high",
-        }
-        mock_mcp_client.call_tool.return_value = expected_result
 
         # 执行测试
         result = await assistant_agent.analyze_sentiment(msg)
 
         # 验证结果
-        assert result == expected_result
-        mock_mcp_client.call_tool.assert_called_once_with(
-            "analyzeConversation",
-            conversationId="conv-123",
-            context="sentiment",
-            includeHistory=True,
-        )
+        assert result["sentiment"] == "negative"
+        assert result["risk_level"] == "high"
+        mock_mcp_client.call_tool.assert_not_called()
 
     async def test_analyze_sentiment_fallback(
         self,
         assistant_agent: AssistantAgent,
         mock_mcp_client: BackendMCPClient,
     ) -> None:
-        """测试情感分析失败时的降级处理"""
+        """测试中性情感的默认输出"""
         # 准备测试数据
         msg = Msg(
             name="user",
@@ -159,7 +148,6 @@ class TestAnalyzeSentiment:
             role="user",
             metadata={"conversationId": "conv-123"},
         )
-        mock_mcp_client.call_tool.side_effect = Exception("MCP调用失败")
 
         # 执行测试
         result = await assistant_agent.analyze_sentiment(msg)
@@ -168,7 +156,7 @@ class TestAnalyzeSentiment:
         assert result["sentiment"] == "neutral"
         assert result["intensity"] == "calm"
         assert result["risk_level"] == "low"
-        assert "error" in result
+        mock_mcp_client.call_tool.assert_not_called()
 
     async def test_analyze_sentiment_without_conversation_id(
         self,
@@ -178,13 +166,10 @@ class TestAnalyzeSentiment:
         """测试没有conversationId时使用msg.id"""
         msg = Msg(name="user", content="测试", role="user", metadata={})
         msg.id = "msg-456"
-        mock_mcp_client.call_tool.return_value = {"sentiment": "neutral"}
 
         await assistant_agent.analyze_sentiment(msg)
 
-        mock_mcp_client.call_tool.assert_called_once()
-        call_args = mock_mcp_client.call_tool.call_args
-        assert call_args.kwargs["conversationId"] == "msg-456"
+        mock_mcp_client.call_tool.assert_not_called()
 
 
 class TestGetCustomerProfile:
@@ -315,9 +300,8 @@ class TestPrefetchContext:
             metadata={"customerId": "cust-123"},
         )
 
-        # 模拟MCP调用
+        # 模拟MCP调用（客户画像+知识库）
         mock_mcp_client.call_tool.side_effect = [
-            {"sentiment": "neutral"},  # sentiment
             {"name": "张三"},  # customer_profile
             [{"title": "知识1"}],  # knowledge
         ]

@@ -92,6 +92,26 @@
 > 当前实现的简化Prompt以 `agentscope-service/src/agents/inspector_agent.py` 为准。
 
 ```
+
+### 3.3.3 提示词分层与注入规范
+
+**角色基座（稳定人设）**：
+- `docs/prompts/agents/inspector/base.md`
+
+**场景提示词（任务技能，按环节注入）**：
+- `docs/prompts/agents/inspector/quality_report.md`
+- `docs/prompts/agents/inspector/follow_up.md`
+- `docs/prompts/agents/inspector/report_summary.md`
+- `docs/prompts/agents/inspector/violation.md`
+
+**注入规则**：
+- 运行时系统提示词 = 角色基座 + 场景提示词（按 `prompt_stage` / `prompt_stages` 拼接）
+- 由调用方在 `Msg.metadata` 中注入：
+  - `prompt_stage`: 单一阶段（如 `quality_report`）
+  - `prompt_stages`: 多阶段（如 `["quality_report","follow_up"]`）
+
+**默认映射（当前实现）**：
+- 质检流程 → `prompt_stages = ["quality_report","follow_up","report_summary"]`
 你是专业的服务质检专家 InspectorAgent。
 
 ---
@@ -593,66 +613,6 @@ overallScore = (responseSpeed × 0.15) +
 ---
 
 **重要**: 质检评分需要客观公正，基于事实和数据，避免主观臆断。严重违规必须推送人工审核，确保质量安全。
-```
-
-#### 2.3 版本Prompt Diff
-
-> 本节仅在增量PRD中使用，基线PRD记录最终版本
-
-**v0.5相对v0.1的变更**:
-```diff
-核心职责:
-1. 对话质检
-2. 规范检查
-3. 违规识别
-4. 质检评分
-+ 5. 严重违规检测增强（信息泄露/辱骂客户/越权操作）
-
-违规类型:
-+ information_leakage: 信息泄露（critical级别）
-+ abuse_language: 辱骂客户（critical级别）
-+ unauthorized_operation: 越权操作（critical级别）
-```
-
-**v0.8相对v0.5的变更**:
-```diff
-核心职责:
-1. 对话质检
-2. 规范检查
-3. 违规识别
-4. 质检评分
-5. 严重违规检测
-+ 6. 改进建议生成（具体可执行）
-+ 7. 团队对比分析（排名、趋势）
-
-输出格式:
-{
-  "inspection": {...},
-+ "improvements": [
-+   {
-+     "dimension": "professionalism",
-+     "issue": "术语使用不准确",
-+     "suggestion": "学习常见技术术语",
-+     "priority": "high"
-+   }
-+ ]
-}
-```
-
-**v1.0相对v0.8的变更**:
-```diff
-核心职责:
-+ 8. 质检报告自动化（个人周报、团队月报）
-+ 9. 趋势分析（月度对比、同比环比）
-
-报告类型:
-+ individual_weekly: 个人周报
-+ team_monthly: 团队月报
-
-新增功能:
-+ 质检趋势分析（月度改进率、同比环比）
-+ 最佳实践识别（高分对话案例）
-+ 行动计划生成（actionItems）
 ```
 
 ---

@@ -10,8 +10,6 @@
  * 5. 组装完整响应返回前端
  */
 
-import { promises as fs } from 'fs';
-import path from 'path';
 
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
@@ -26,10 +24,6 @@ import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase
 import { config } from '@config/app.config';
 import { isImChannel } from '@domain/conversation/constants';
 import { AgentMode , Conversation } from '@domain/conversation/models/Conversation';
-import { CustomerProfile } from '@domain/customer/models/CustomerProfile';
-import { ContactInfo } from '@domain/customer/value-objects/ContactInfo';
-import { CustomerLevelInfo } from '@domain/customer/value-objects/CustomerLevelInfo';
-import { Metrics } from '@domain/customer/value-objects/Metrics';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
 import { ProblemRepository } from '@infrastructure/repositories/ProblemRepository';
@@ -538,178 +532,6 @@ export class ImController {
     }
   }
 
-  /**
-   * 同步企业微信Mock群聊数据（演示用）
-   * POST /im/wecom/mock/sync
-   */
-  async syncWecomMockGroupChats(
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ): Promise<void> {
-    try {
-      const body = (request.body ?? {}) as { limit?: number; reset?: boolean };
-      const data = await this.loadWecomMockData();
-      const groupChats = data.groupChatList.group_chat_list || [];
-      const limit = body.limit && body.limit > 0 ? Math.min(body.limit, groupChats.length) : groupChats.length;
-
-      let customersCreated = 0;
-      let messagesImported = 0;
-
-      if (body.reset) {
-        await this.conversationRepository.deleteByChannel('wecom');
-      }
-
-      for (const entry of groupChats.slice(0, limit)) {
-        const chatId = entry.chat_id;
-        const detail = data.groupChatDetails.group_chat_details?.[chatId]?.group_chat;
-        if (!detail) {
-          continue;
-        }
-
-        const customerId = `wecom-${chatId}`;
-        if (body.reset) {
-          await this.conversationRepository.deleteByCustomerId(customerId);
-        }
-        const profile = await this.customerProfileRepository.findById(customerId);
-        if (!profile) {
-          const contactInfo = ContactInfo.create({ preferredChannel: 'chat' });
-          const slaInfo = CustomerLevelInfo.create({
-            serviceLevel: 'silver',
-            responseTimeTargetMinutes: 60,
-            resolutionTimeTargetMinutes: 240,
-          });
-          const metrics = Metrics.create({
-            satisfactionScore: 0,
-            issueCount: 0,
-            averageResolutionMinutes: 0,
-          });
-
-          const newProfile = CustomerProfile.create({
-            customerId,
-            name: detail.name || customerId,
-            contactInfo,
-            slaInfo,
-            metrics,
-          });
-          await this.customerProfileRepository.save(newProfile);
-          customersCreated += 1;
-        }
-
-        const groupMembers = Array.isArray(detail.member_list)
-          ? detail.member_list
-              .map((member: { name?: string }) => member?.name?.trim())
-              .filter((name: string | undefined): name is string => Boolean(name))
-          : [];
-        const memberNameMap = Array.isArray(detail.member_list)
-          ? detail.member_list.reduce((acc: Record<string, string>, member: { userid?: string; name?: string }) => {
-              const userId = member?.userid?.trim();
-              const name = member?.name?.trim();
-              if (userId && name) {
-                acc[userId] = name;
-              }
-              return acc;
-            }, {})
-          : {};
-        const memberTypeMap = Array.isArray(detail.member_list)
-          ? detail.member_list.reduce((acc: Record<string, number>, member: { userid?: string; type?: number }) => {
-              const userId = member?.userid?.trim();
-              const type = member?.type;
-              if (userId && typeof type === 'number') {
-                acc[userId] = type;
-              }
-              return acc;
-            }, {})
-          : {};
-        const messages = data.groupChatMessages.group_chat_messages?.[chatId] || [];
-        const sortedMessages = [...messages].sort(
-          (a, b) => (a?.sent_at ?? 0) - (b?.sent_at ?? 0),
-        );
-        let activeConversation: Conversation | null = null;
-        for (const message of sortedMessages) {
-          if (!message?.content) {
-            continue;
-          }
-          const memberType = memberTypeMap[message.sender_id];
-          const normalizedSenderType =
-            message.sender_type === 'agent' || memberType === 1 ? 'agent' : 'customer';
-          const senderName = memberNameMap[message.sender_id] || undefined;
-          const messageMetadata = {
-            chatId,
-            groupName: detail.name,
-            groupMembers,
-            groupMemberMap: memberNameMap,
-            memberType,
-            senderType: normalizedSenderType,
-            senderId: message.sender_id,
-            senderName,
-            sentAt: message.sent_at,
-            status: entry.status,
-            issueProduct: message.issue_product,
-            faultLevel: message.fault_level,
-          };
-
-          if (normalizedSenderType === 'customer') {
-            const result = await this.coordinator.processCustomerMessage({
-              customerId,
-              content: message.content,
-              channel: 'wecom',
-              senderId: customerId,
-              metadata: messageMetadata,
-            });
-            activeConversation = await this.conversationRepository.findById(result.conversationId);
-            messagesImported += 1;
-            continue;
-          }
-
-          if (!activeConversation) {
-            const existing = await this.conversationRepository.findByFilters(
-              { customerId, status: 'open' },
-              { limit: 1, offset: 0 },
-            );
-            activeConversation = existing[0] ?? null;
-          }
-
-          if (!activeConversation) {
-            continue;
-          }
-
-          const agentId = message.sender_id || 'agent-system';
-          if (!activeConversation.agentId || activeConversation.agentId !== agentId) {
-            activeConversation.assignAgent(agentId, {
-              assignedBy: 'system',
-              reason: 'auto',
-              metadata: { source: 'wecom_mock' },
-            });
-            await this.conversationRepository.save(activeConversation);
-          }
-
-          await this.sendMessageUseCase.execute({
-            conversationId: activeConversation.id,
-            senderId: agentId,
-            senderType: 'internal',
-            content: message.content,
-            metadata: messageMetadata,
-          });
-          messagesImported += 1;
-        }
-      }
-
-      reply.code(200).send({
-        success: true,
-        data: {
-          groupChats: limit,
-          customersCreated,
-          messagesImported,
-        },
-      });
-    } catch (error) {
-      console.error('[ImController] syncWecomMockGroupChats error', error);
-      reply.code(500).send({
-        success: false,
-        error: error instanceof Error ? error.message : '服务器内部错误',
-      });
-    }
-  }
 
   /**
    * 获取会话历史消息
@@ -1867,34 +1689,4 @@ export class ImController {
     };
   }
 
-  private async loadWecomMockData(): Promise<{
-    groupChatList: { group_chat_list: Array<{ chat_id: string; status: number }> };
-    groupChatDetails: { group_chat_details: Record<string, { group_chat: any }> };
-    groupChatMessages: { group_chat_messages: Record<string, Array<any>> };
-  }> {
-    const groupChatList = await this.readWecomMockJson('groupchat_list.json');
-    const groupChatDetails = await this.readWecomMockJson('groupchat_details.json');
-    const groupChatMessages = await this.readWecomMockJson('groupchat_messages.json');
-    return { groupChatList, groupChatDetails, groupChatMessages };
-  }
-
-  private async readWecomMockJson(filename: string): Promise<any> {
-    const basePaths = [
-      path.resolve(process.cwd(), 'tests', 'wecom'),
-      path.resolve(process.cwd(), '..', 'tests', 'wecom'),
-    ];
-
-    let lastError: unknown = null;
-    for (const basePath of basePaths) {
-      const filePath = path.join(basePath, filename);
-      try {
-        const raw = await fs.readFile(filePath, 'utf8');
-        return JSON.parse(raw);
-      } catch (error) {
-        lastError = error;
-      }
-    }
-
-    throw new Error(`WeCom mock data file not found: ${filename}. ${String(lastError || '')}`);
-  }
 }

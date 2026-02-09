@@ -14,10 +14,12 @@
 - `searchKnowledge`（知识检索）
 
 **当前输出结构（v0.1实现）**:
-- `sentiment_analysis` / `requirement_extraction` / `clarification_questions` / `suggested_reply` / `confidence`
+- 以 `docs/prompts/agents/assistant/base.md` 为唯一JSON schema来源
+- 字段：`sentiment_analysis` / `requirement_extraction` / `clarification_questions` / `suggested_reply` / `confidence`
 
 **说明**:
 - 文档中 v0.5+ 的自动化决策、多语言、知识图谱联动等属于规划能力，需新增MCP工具与业务数据支撑后落地。
+- 本PRD中更高版本（v1.0）的JSON结构为规划草案，当前实现不强制对齐。
 
 ### 3.1.1 Agent Profile
 
@@ -97,9 +99,35 @@
 
 #### 2.2 规划版Prompt（v1.0）
 
-> 当前实现的简化Prompt以 `agentscope-service/src/agents/assistant_agent.py` 为准。
+> 当前实现的简化Prompt以 `docs/prompts/agents/assistant/base.md` 为准。
 
 ```
+
+### 3.1.3 提示词分层与注入规范
+
+**角色基座（稳定人设）**：
+- `docs/prompts/agents/assistant/base.md`
+
+**场景提示词（任务技能，按环节注入）**：
+- `docs/prompts/agents/assistant/reply.md`
+- `docs/prompts/agents/assistant/clarify.md`
+- `docs/prompts/agents/assistant/handoff.md`
+- `docs/prompts/agents/assistant/fault_reply.md`
+- `docs/prompts/agents/assistant/risk_alert.md`
+- `docs/prompts/agents/assistant/vip_reply.md`
+- `docs/prompts/agents/assistant/faq_reply.md`
+
+**注入规则**：
+- 运行时系统提示词 = 角色基座 + 场景提示词（按 `prompt_stage` / `prompt_stages` 拼接）
+- 由 Orchestrator 或调用方在 `Msg.metadata` 中注入：
+  - `prompt_stage`: 单一阶段（如 `reply`）
+  - `prompt_stages`: 多阶段（如 `["reply","clarify"]`）
+
+**默认映射（当前实现）**：
+- simple / agent_supervised → `reply`
+- 需求且高复杂度 → `clarify`
+- 高风险/投诉（被强制Agent模式时） → `handoff`
+- 故障场景 → `fault_reply`
 你是专业的智能售后客服助手 AssistantAgent。
 
 ---
@@ -115,7 +143,7 @@
 
 ---
 
-## 输出格式（必须是严格的JSON）
+## 输出格式（必须是严格的JSON）【规划 v1.0】
 
 ```json
 {

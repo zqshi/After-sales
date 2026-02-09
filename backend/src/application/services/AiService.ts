@@ -4,11 +4,33 @@ import { KnowledgeItem } from '@domain/knowledge/models/KnowledgeItem';
 import { KnowledgeRecommender } from '@domain/knowledge/services/KnowledgeRecommender';
 import { LLMClient } from '@infrastructure/ai/LLMClient';
 import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
+import { loadPrompt } from '@/prompts/loader';
 
 type AiIssue = { type: string; severity: string; description: string };
 type AiTimelineEntry = { messageId: string; sentiment: string; score: number; timestamp: string };
 type AiKeyPhrase = { phrase: string; sentiment: string; score: number };
 type AiRecommendation = { id: string; title: string; category: string; score: number };
+
+const ASSESS_RISK_PROMPT = loadPrompt(
+  'backend/ai-service/assess_risk_system.md',
+  `你是客服风险评估专家，输出JSON:\n{\n  "riskLevel": "low|medium|high",\n  "score": 0.0-1.0,\n  "indicators": ["..."],\n  "reasoning": "..." \n}`,
+);
+const EXTRACT_REQUIREMENTS_PROMPT = loadPrompt(
+  'backend/ai-service/extract_requirements_system.md',
+  `你是需求分析专家，输出JSON:\n{\n  "requirements": [\n    {\n      "title": "...",\n      "category": "product|technical|service",\n      "priority": "urgent|high|medium|low",\n      "confidence": 0.0-1.0,\n      "clarification_needed": true/false\n    }\n  ]\n}`,
+);
+const ANALYZE_LOGS_PROMPT = loadPrompt(
+  'backend/ai-service/analyze_logs_system.md',
+  `你是日志分析专家，输出JSON:\n{\n  "summary": "...",\n  "error_signatures": ["..."],\n  "root_cause": "..." \n}`,
+);
+const CLASSIFY_ISSUE_PROMPT = loadPrompt(
+  'backend/ai-service/classify_issue_system.md',
+  `你是问题分类专家，输出JSON:\n{\n  "issue_type": "fault|request|complaint|inquiry",\n  "category": "product|technical|service",\n  "severity": "P0|P1|P2|P3|P4",\n  "confidence": 0.0-1.0\n}`,
+);
+const RECOMMEND_SOLUTION_PROMPT = loadPrompt(
+  'backend/ai-service/recommend_solution_system.md',
+  `你是故障解决专家，输出JSON:\n{\n  "steps": ["步骤1", "步骤2"],\n  "temporary_solution": "可选临时方案"\n}`,
+);
 
 export interface AnalyzeConversationRequest {
   conversationId: string;
@@ -117,8 +139,7 @@ export class AiService {
   }
 
   async assessRisk(content: string): Promise<{ riskLevel: 'low' | 'medium' | 'high'; score: number; indicators: string[]; reasoning: string }> {
-    const systemPrompt = `你是客服风险评估专家，输出JSON:\n{\n  "riskLevel": "low|medium|high",\n  "score": 0.0-1.0,\n  "indicators": ["..."],\n  "reasoning": "..." \n}`;
-    const result = await this.generateJson(systemPrompt, `客户消息：${content}`);
+    const result = await this.generateJson(ASSESS_RISK_PROMPT, `客户消息：${content}`);
     if (result) {
       return {
         riskLevel: (result.riskLevel as any) || 'medium',
@@ -137,8 +158,7 @@ export class AiService {
   }
 
   async extractRequirements(content: string): Promise<Array<{ title: string; category: string; priority: string; confidence: number; clarification_needed: boolean }>> {
-    const systemPrompt = `你是需求分析专家，输出JSON:\n{\n  "requirements": [\n    {\n      "title": "...",\n      "category": "product|technical|service",\n      "priority": "urgent|high|medium|low",\n      "confidence": 0.0-1.0,\n      "clarification_needed": true/false\n    }\n  ]\n}`;
-    const result = await this.generateJson(systemPrompt, `客户消息：${content}`);
+    const result = await this.generateJson(EXTRACT_REQUIREMENTS_PROMPT, `客户消息：${content}`);
     if (result && Array.isArray(result.requirements)) {
       return result.requirements.map((req: any) => ({
         title: String(req.title ?? content.substring(0, 30)),
@@ -169,8 +189,7 @@ export class AiService {
   }
 
   async analyzeLogs(logs: string): Promise<{ summary: string; error_signatures: string[]; root_cause: string }> {
-    const systemPrompt = `你是日志分析专家，输出JSON:\n{\n  "summary": "...",\n  "error_signatures": ["..."],\n  "root_cause": "..." \n}`;
-    const result = await this.generateJson(systemPrompt, `日志内容：\n${logs}`);
+    const result = await this.generateJson(ANALYZE_LOGS_PROMPT, `日志内容：\n${logs}`);
     if (result) {
       return {
         summary: String(result.summary ?? '日志分析完成'),
@@ -187,8 +206,7 @@ export class AiService {
   }
 
   async classifyIssue(content: string): Promise<{ issue_type: string; category: string; severity: string; confidence: number }> {
-    const systemPrompt = `你是问题分类专家，输出JSON:\n{\n  "issue_type": "fault|request|complaint|inquiry",\n  "category": "product|technical|service",\n  "severity": "P0|P1|P2|P3|P4",\n  "confidence": 0.0-1.0\n}`;
-    const result = await this.generateJson(systemPrompt, `客户消息：${content}`);
+    const result = await this.generateJson(CLASSIFY_ISSUE_PROMPT, `客户消息：${content}`);
     if (result) {
       return {
         issue_type: String(result.issue_type ?? 'inquiry'),
@@ -207,8 +225,7 @@ export class AiService {
   }
 
   async recommendSolution(issue: string): Promise<{ steps: string[]; temporary_solution?: string }> {
-    const systemPrompt = `你是故障解决专家，输出JSON:\n{\n  "steps": ["步骤1", "步骤2"],\n  "temporary_solution": "可选临时方案"\n}`;
-    const result = await this.generateJson(systemPrompt, `问题描述：${issue}`);
+    const result = await this.generateJson(RECOMMEND_SOLUTION_PROMPT, `问题描述：${issue}`);
     if (result) {
       return {
         steps: Array.isArray(result.steps) ? result.steps.map(String) : [],

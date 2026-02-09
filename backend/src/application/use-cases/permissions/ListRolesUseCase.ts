@@ -1,10 +1,10 @@
 import { PermissionKey } from '../../../config/permissions';
 import { resolveUiPermissions } from '../../../config/uiPermissions';
-import { RoleRepository } from '../../../infrastructure/repositories/RoleRepository';
 import { RoleResponseDTO } from '../../dto/permissions/RoleResponseDTO';
+import { IRoleRepository } from '../../../domain/permissions/repositories/IRoleRepository';
 
 export class ListRolesUseCase {
-  constructor(private readonly roleRepository: RoleRepository) {}
+  constructor(private readonly roleRepository: IRoleRepository) {}
 
   async execute(): Promise<RoleResponseDTO[]> {
     const roles = await this.roleRepository.list();

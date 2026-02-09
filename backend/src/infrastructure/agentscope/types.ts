@@ -19,6 +19,9 @@ import { UpdateTaskStatusUseCase } from '@application/use-cases/task/UpdateTaskS
 import { KnowledgeRecommender } from '@domain/knowledge/services/KnowledgeRecommender';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { KnowledgeRepository } from '@infrastructure/repositories/KnowledgeRepository';
+import { McpToolCallRepository } from '@infrastructure/repositories/McpToolCallRepository';
+import { AgentCallRepository } from '@infrastructure/repositories/AgentCallRepository';
+import { AgentMemoryRepository } from '@infrastructure/repositories/AgentMemoryRepository';
 import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
 import { SurveyRepository } from '@infrastructure/repositories/SurveyRepository';
 import { TaskRepository } from '@infrastructure/repositories/TaskRepository';
@@ -55,4 +58,7 @@ export interface AgentScopeDependencies {
   aiService: AiService;
   qualityReportRepository: QualityReportRepository;
   surveyRepository: SurveyRepository;
+  mcpToolCallRepository: McpToolCallRepository;
+  agentCallRepository?: AgentCallRepository;
+  agentMemoryRepository?: AgentMemoryRepository;
 }

@@ -23,6 +23,7 @@ from src.config.settings import settings
 from src.events.bridge import AgentEventPublisher, NodeEventLedger
 from src.router.orchestrator_agent import OrchestratorAgent
 from src.tools.mcp_tools import setup_toolkit
+from src.tools.persistence import PersistenceClient
 
 
 class WebSocketManager:
@@ -60,18 +61,23 @@ async def lifespan(app: FastAPI):
     settings.initialize_agentscope()
     toolkit_bundle = await setup_toolkit()
 
+    persistence = PersistenceClient(toolkit_bundle.backend_client)
+
     # 创建3个独立Agent
     assistant_agent = await AssistantAgent.create(
         toolkit_bundle.toolkit,
         toolkit_bundle.backend_client,
+        persistence,
     )
     engineer_agent = await EngineerAgent.create(
         toolkit_bundle.toolkit,
         toolkit_bundle.backend_client,
+        persistence,
     )
     inspector_agent = await InspectorAgent.create(
         toolkit_bundle.toolkit,
         toolkit_bundle.backend_client,
+        persistence,
     )
     human_agent = HumanAgentAdapter("HumanSupport", app.state.ws_manager)
 
@@ -81,6 +87,7 @@ async def lifespan(app: FastAPI):
         engineer_agent=engineer_agent,
         human_agent=human_agent,
         mcp_client=toolkit_bundle.backend_client,
+        persistence=persistence,
         ws_manager=app.state.ws_manager,
     )
 

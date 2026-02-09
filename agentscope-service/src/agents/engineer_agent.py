@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Any
 import json
 import os
-import os
+import time
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIChatFormatter
@@ -25,43 +25,49 @@ from agentscope.model import OpenAIChatModel
 from agentscope.tool import Toolkit
 
 from src.tools.mcp_tools import BackendMCPClient
+from src.tools.persistence import PersistenceClient
+from src.memory.persistent_memory import PersistentMemory
 from src.prompts.loader import prompt_registry
+from src.prompts.agent_prompt import build_agent_prompt
 
 
 # EngineerAgent的系统Prompt
 ENGINEER_AGENT_PROMPT = prompt_registry.get(
-    "engineer_agent.md",
+    "agents/engineer/base.md",
     fallback="""你是专业的售后工程师。
 
-核心职责：
-1. 故障诊断（根据症状分析根本原因）
-2. 方案生成（分步骤可操作的解决方案）
-3. 严重性评估（P0-P4分级）
-4. 技术报告输出
+目标：
+- 快速定位根因，评估影响与严重性
+- 给出可执行、分步骤的解决方案
+- 输出结构化技术报告，便于交付与升级
 
 工作流程：
-1. 信息收集（故障现象、时间、环境、错误码）
-2. 知识库检索（相似案例、技术文档）
-3. 工单检索（历史类似问题）
-4. 根因分析（前端/后端/网络/数据）
-5. 方案生成（临时方案+根本修复）
-6. 严重性评级和升级决策
+1. 关键信息收集（现象/时间/环境/错误码/影响范围）
+2. 结合上下文与工具结果进行排查
+3. 根因分析（前端/后端/网络/数据/配置）
+4. 方案生成（临时方案 + 根本修复）
+5. 严重性评级与是否升级
 
-严重性分级标准：
-- P0: 系统宕机，大量用户无法使用核心功能
-- P1: 核心功能异常，影响部分用户
-- P2: 非核心功能异常，有临时方案
-- P3: 小问题，不影响使用
-- P4: 优化建议
+严重性分级：
+- P0: 系统宕机或关键业务大面积不可用
+- P1: 核心功能严重受损，影响部分用户
+- P2: 非核心功能异常，有替代或临时方案
+- P3: 小问题，可绕过，不影响主流程
+- P4: 优化建议/体验提升
 
-可用工具：
+可用工具（按需使用）：
 - searchKnowledge: TaxKB知识库检索（MCP）
 - searchTickets: 历史工单检索（MCP）
 - getSystemStatus: 系统状态查询（MCP）
 - createTask: 创建工单（P0/P1自动创建）（MCP）
 
-输出要求：
-你必须输出JSON格式的结构化结果：
+输出要求（强制）：
+- 只输出JSON，禁止额外解释或Markdown
+- solution_steps 必须可执行、可验证
+- technical_report 使用Markdown，但作为JSON字段值输出
+- 信息不足时，在 suggested_reply 中提出最关键的补充问题
+
+JSON格式：
 
 {
   "fault_diagnosis": {
@@ -182,6 +188,7 @@ class EngineerAgent(ReActAgent):
         formatter: OpenAIChatFormatter,
         toolkit: Toolkit,
         mcp_client: BackendMCPClient,
+        persistence: PersistenceClient | None = None,
         memory: InMemoryMemory | None = None,
         max_iters: int = 10,
     ) -> None:
@@ -195,14 +202,53 @@ class EngineerAgent(ReActAgent):
             max_iters=max_iters,
         )
         self.mcp_client = mcp_client
-        self._prompt_filename = "engineer_agent.md"
+        self.persistence = persistence
+        self._prompt_filename = "agents/engineer/base.md"
 
     async def __call__(self, msg: Msg) -> Msg:
         base_prompt = prompt_registry.get(self._prompt_filename, fallback=ENGINEER_AGENT_PROMPT)
+        if self.persistence:
+            memory = PersistentMemory(
+                self.persistence,
+                msg.metadata.get("conversationId") if msg.metadata else None,
+                self.name,
+            )
+            await memory.hydrate()
+            self.memory = memory
         if os.getenv("AGENTSCOPE_PREFETCH_ENABLED", "false").lower() == "true":
             await self._prefetch_context(msg)
-        self.sys_prompt = self._inject_prefetch_context(base_prompt, msg.metadata or {})
-        return await super().__call__(msg)
+        combined_prompt = build_agent_prompt(base_prompt, "engineer", msg.metadata or {})
+        self.sys_prompt = self._inject_prefetch_context(combined_prompt, msg.metadata or {})
+        start = time.time()
+        try:
+            response = await super().__call__(msg)
+            if self.persistence:
+                await self.persistence.record_agent_call(
+                    conversation_id=msg.metadata.get("conversationId") if msg.metadata else None,
+                    agent_name=self.name,
+                    agent_role="engineer",
+                    mode=msg.metadata.get("mode") if msg.metadata else None,
+                    status="success",
+                    duration_ms=int((time.time() - start) * 1000),
+                    input_payload={"content": msg.content},
+                    output_payload={"content": response.content},
+                    metadata=msg.metadata or {},
+                )
+            return response
+        except Exception as exc:
+            if self.persistence:
+                await self.persistence.record_agent_call(
+                    conversation_id=msg.metadata.get("conversationId") if msg.metadata else None,
+                    agent_name=self.name,
+                    agent_role="engineer",
+                    mode=msg.metadata.get("mode") if msg.metadata else None,
+                    status="error",
+                    duration_ms=int((time.time() - start) * 1000),
+                    input_payload={"content": msg.content},
+                    error_message=str(exc),
+                    metadata=msg.metadata or {},
+                )
+            raise
 
     async def _prefetch_context(self, msg: Msg) -> None:
         metadata = msg.metadata or {}
@@ -254,7 +300,8 @@ class EngineerAgent(ReActAgent):
     async def create(
         cls,
         toolkit: Toolkit,
-        mcp_client: BackendMCPClient
+        mcp_client: BackendMCPClient,
+        persistence: PersistenceClient | None = None,
     ) -> "EngineerAgent":
         """
         创建EngineerAgent实例
@@ -282,11 +329,12 @@ class EngineerAgent(ReActAgent):
 
         return cls(
             name="EngineerAgent",
-            sys_prompt=prompt_registry.get("engineer_agent.md", fallback=ENGINEER_AGENT_PROMPT),
+            sys_prompt=prompt_registry.get("agents/engineer/base.md", fallback=ENGINEER_AGENT_PROMPT),
             model=model,
             formatter=formatter,
             toolkit=toolkit,
             mcp_client=mcp_client,
+            persistence=persistence,
             memory=InMemoryMemory(),
             max_iters=10,  # 故障诊断可能需要更多轮推理
         )

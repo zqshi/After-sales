@@ -158,6 +158,7 @@ describe('Agent Collaboration Integration', () => {
       mockAiService as any,
       mockEventBus as any,
       mockQualityReportRepo as any,
+      { save: async () => ({}) } as any,
     );
     mockUseCases.createReviewRequest.execute.mockResolvedValue({ id: 'review-001' });
   });

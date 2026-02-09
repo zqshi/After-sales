@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Any
 import json
 import os
-import os
+import time
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIChatFormatter
@@ -25,12 +25,15 @@ from agentscope.model import OpenAIChatModel
 from agentscope.tool import Toolkit
 
 from src.tools.mcp_tools import BackendMCPClient
+from src.tools.persistence import PersistenceClient
+from src.memory.persistent_memory import PersistentMemory
 from src.prompts.loader import prompt_registry
+from src.prompts.agent_prompt import build_agent_prompt, load_agent_stage_config
 
 
 # InspectorAgent的系统Prompt
 INSPECTOR_AGENT_PROMPT = prompt_registry.get(
-    "inspector_agent.md",
+    "agents/inspector/base.md",
     fallback="""你是专业的质检专员。
 
 核心职责：
@@ -46,15 +49,20 @@ INSPECTOR_AGENT_PROMPT = prompt_registry.get(
    - 合规性：20%
    - 语气语调：20%
 
-2. 情绪改善（0-100%）
+2. 情绪改善（0-100）
    - 对话前后情绪变化
    - 问题解决程度
 
-3. 客户满意度（1-5星）
-   - 基于对话质量预测
+3. 客户满意度（1-5分，可为1-5浮点）
+   - 基于对话质量与情绪改善预测
 
-输出要求：
-你必须输出JSON格式的结构化结果：
+输出要求（强制）：
+- 只输出JSON，禁止额外解释或Markdown
+- quality_score 需与维度权重一致（允许±5分浮动）
+- risk_indicators 填写潜在合规/舆情/升级风险
+- need_follow_up 与 follow_up_reason 必须一致
+
+JSON格式：
 
 {
   "quality_score": 0-100,
@@ -153,6 +161,7 @@ class InspectorAgent(ReActAgent):
         formatter: OpenAIChatFormatter,
         toolkit: Toolkit,
         mcp_client: BackendMCPClient,
+        persistence: PersistenceClient | None = None,
         memory: InMemoryMemory | None = None,
         max_iters: int = 8,
     ) -> None:
@@ -166,14 +175,53 @@ class InspectorAgent(ReActAgent):
             max_iters=max_iters,
         )
         self.mcp_client = mcp_client
-        self._prompt_filename = "inspector_agent.md"
+        self.persistence = persistence
+        self._prompt_filename = "agents/inspector/base.md"
 
     async def __call__(self, msg: Msg) -> Msg:
         base_prompt = prompt_registry.get(self._prompt_filename, fallback=INSPECTOR_AGENT_PROMPT)
+        if self.persistence:
+            memory = PersistentMemory(
+                self.persistence,
+                msg.metadata.get("conversationId") if msg.metadata else None,
+                self.name,
+            )
+            await memory.hydrate()
+            self.memory = memory
         if os.getenv("AGENTSCOPE_PREFETCH_ENABLED", "false").lower() == "true":
             await self._prefetch_context(msg)
-        self.sys_prompt = self._inject_prefetch_context(base_prompt, msg.metadata or {})
-        return await super().__call__(msg)
+        combined_prompt = build_agent_prompt(base_prompt, "inspector", msg.metadata or {})
+        self.sys_prompt = self._inject_prefetch_context(combined_prompt, msg.metadata or {})
+        start = time.time()
+        try:
+            response = await super().__call__(msg)
+            if self.persistence:
+                await self.persistence.record_agent_call(
+                    conversation_id=msg.metadata.get("conversationId") if msg.metadata else None,
+                    agent_name=self.name,
+                    agent_role="inspector",
+                    mode=msg.metadata.get("mode") if msg.metadata else None,
+                    status="success",
+                    duration_ms=int((time.time() - start) * 1000),
+                    input_payload={"content": msg.content},
+                    output_payload={"content": response.content},
+                    metadata=msg.metadata or {},
+                )
+            return response
+        except Exception as exc:
+            if self.persistence:
+                await self.persistence.record_agent_call(
+                    conversation_id=msg.metadata.get("conversationId") if msg.metadata else None,
+                    agent_name=self.name,
+                    agent_role="inspector",
+                    mode=msg.metadata.get("mode") if msg.metadata else None,
+                    status="error",
+                    duration_ms=int((time.time() - start) * 1000),
+                    input_payload={"content": msg.content},
+                    error_message=str(exc),
+                    metadata=msg.metadata or {},
+                )
+            raise
 
     async def _prefetch_context(self, msg: Msg) -> None:
         metadata = msg.metadata or {}
@@ -211,7 +259,8 @@ class InspectorAgent(ReActAgent):
     async def create(
         cls,
         toolkit: Toolkit,
-        mcp_client: BackendMCPClient
+        mcp_client: BackendMCPClient,
+        persistence: PersistenceClient | None = None,
     ) -> "InspectorAgent":
         """
         创建InspectorAgent实例
@@ -239,11 +288,12 @@ class InspectorAgent(ReActAgent):
 
         return cls(
             name="InspectorAgent",
-            sys_prompt=prompt_registry.get("inspector_agent.md", fallback=INSPECTOR_AGENT_PROMPT),
+            sys_prompt=prompt_registry.get("agents/inspector/base.md", fallback=INSPECTOR_AGENT_PROMPT),
             model=model,
             formatter=formatter,
             toolkit=toolkit,
             mcp_client=mcp_client,
+            persistence=persistence,
             memory=InMemoryMemory(),
             max_iters=8,
         )
@@ -414,7 +464,11 @@ class InspectorAgent(ReActAgent):
             name="system",
             content=f"请对以下对话进行质检评分：\n\n{history_text}",
             role="system",
-            metadata={"conversationId": conversation_id}
+            metadata={
+                "conversationId": conversation_id,
+                "prompt_stage": "quality_report",
+                "prompt_stages": self._load_quality_stages(),
+            }
         )
 
         # 3. Agent执行质检（调用父类reply方法，LLM会生成结构化报告）
@@ -465,6 +519,13 @@ class InspectorAgent(ReActAgent):
         )
 
         return report
+
+    def _load_quality_stages(self) -> list[str]:
+        data = load_agent_stage_config()
+        stages = data.get("inspector", {}).get("quality") if isinstance(data, dict) else None
+        if isinstance(stages, list) and stages:
+            return [str(s) for s in stages]
+        return ["quality_report", "follow_up", "report_summary"]
 
     async def generate_report(self, inspection_data: dict[str, Any]) -> dict[str, Any]:
         """

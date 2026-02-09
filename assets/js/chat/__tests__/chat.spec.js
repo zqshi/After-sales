@@ -13,6 +13,8 @@ const api = {
   fetchMonitoringAlerts: vi.fn(),
   fetchAuditSummary: vi.fn(),
   createTask: vi.fn(),
+  createWorkorder: vi.fn(),
+  fetchWorkorders: vi.fn(),
   fetchTasks: vi.fn(),
   fetchQualityProfile: vi.fn(),
   isApiEnabled: vi.fn(),
@@ -343,6 +345,8 @@ describe('chat module', () => {
 
   it('warns when creating ticket with api disabled', async () => {
     api.isApiEnabled.mockReturnValue(false);
+    api.createWorkorder.mockResolvedValue({ data: { ticket_id: 1 } });
+    api.createTask.mockResolvedValue({ data: { id: 'task-1' } });
     vi.useFakeTimers();
     const mod = await import('../index.js');
     mod.openTicket();
@@ -351,17 +355,47 @@ describe('chat module', () => {
 
     document.querySelector('#ticket-title').value = '故障';
     document.querySelector('#ticket-detail').value = '详情';
-    document.querySelector('#ticket-tags').value = 'auth';
     document.querySelector('#ticket-date').value = '2025-01-01';
     document.querySelector('#ticket-time').value = '10:00';
-    document.querySelector('#ticket-type').value = 'bug';
-    document.querySelector('#ticket-product').value = 'cloud';
-    document.querySelector('#ticket-impact').value = 'high';
-    document.querySelector('#ticket-incident').value = 'yes';
-    document.querySelector('#ticket-company').value = 'Acme';
+    document.querySelector('#ticket-type').value = '1';
+    document.querySelector('#ticket-priority').value = '1';
+    document.querySelector('#ticket-customer-id').value = '1001';
+    document.querySelector('#ticket-customer-name').value = 'Acme';
+    document.querySelector('#ticket-product-id').value = '2001';
+    document.querySelector('#ticket-creator-id').value = '3001';
+    document.querySelector('#ticket-creator-name').value = 'Alice';
 
     document.querySelector('[data-action="create-ticket"]').click();
     expect(notifications.showNotification).toHaveBeenCalledWith('API 未启用，无法创建工单', 'warning');
+  });
+
+  it('creates workorder and stores local task on submit', async () => {
+    api.isApiEnabled.mockReturnValue(true);
+    api.createWorkorder.mockResolvedValue({ data: { ticket_id: 99, ticket_no: 'WO-99' } });
+    api.createTask.mockResolvedValue({ data: { id: 'task-99' } });
+    vi.useFakeTimers();
+    const mod = await import('../index.js');
+    mod.openTicket();
+    vi.runAllTimers();
+    vi.useRealTimers();
+
+    document.querySelector('#ticket-title').value = '故障';
+    document.querySelector('#ticket-detail').value = '详情';
+    document.querySelector('#ticket-date').value = '2025-01-01';
+    document.querySelector('#ticket-time').value = '10:00';
+    document.querySelector('#ticket-type').value = '1';
+    document.querySelector('#ticket-priority').value = '1';
+    document.querySelector('#ticket-customer-id').value = '1001';
+    document.querySelector('#ticket-customer-name').value = 'Acme';
+    document.querySelector('#ticket-product-id').value = '2001';
+    document.querySelector('#ticket-creator-id').value = '3001';
+    document.querySelector('#ticket-creator-name').value = 'Alice';
+
+    document.querySelector('[data-action="create-ticket"]').click();
+    await flushPromises();
+
+    expect(api.createWorkorder).toHaveBeenCalled();
+    expect(api.createTask).toHaveBeenCalled();
   });
 
   it('renders assist check content with knowledge and actions', async () => {
@@ -465,7 +499,23 @@ describe('chat module', () => {
     api.isApiEnabled.mockReturnValue(true);
     api.fetchTasks.mockResolvedValue({
       data: {
-        items: [{ id: 't1', title: '工单A', description: '详情', customerId: 'cust', createdAt: '2025-01-01', status: '处理中', assigneeName: 'Alice', priority: 'high' }],
+        items: [{
+          id: 't1',
+          title: '工单A',
+          createdAt: '2025-01-01',
+          status: 'in_progress',
+          priority: 'high',
+          metadata: {
+            title: '工单A',
+            detail: '详情',
+            customer_organization_name: '客户A',
+            created_time: 1735689600,
+            reported_time: 1735689600,
+            type: 1,
+            priority: 1,
+            product_group: '存储',
+          },
+        }],
       },
     });
 

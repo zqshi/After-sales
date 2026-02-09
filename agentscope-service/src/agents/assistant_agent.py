@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Any
 import json
 import os
-import os
+import time
 
 from agentscope.agent import ReActAgent
 from agentscope.formatter import OpenAIChatFormatter
@@ -25,33 +25,44 @@ from agentscope.model import OpenAIChatModel
 from agentscope.tool import Toolkit
 
 from src.tools.mcp_tools import BackendMCPClient
+from src.tools.persistence import PersistenceClient
+from src.memory.persistent_memory import PersistentMemory
 from src.prompts.loader import prompt_registry
+from src.prompts.agent_prompt import build_agent_prompt
 
 
 # AssistantAgent的系统Prompt
 ASSISTANT_AGENT_PROMPT = prompt_registry.get(
-    "assistant_agent.md",
+    "agents/assistant/base.md",
     fallback="""你是专业的售后客服助手。
 
-核心职责：
-1. 分析客户情感（正面/中性/负面，风险等级）
-2. 提取客户需求（产品/技术/服务类需求）
-3. 澄清模糊需求（通过追问明确意图）
-4. 生成友好的回复建议
+目标：
+- 快速识别情绪与风险
+- 抽取客户需求与优先级
+- 用最少的追问澄清关键缺口
+- 生成可直接发送的友好回复
 
 工作原则：
-• 保持礼貌和温度
-• 回复简洁明了（避免技术术语）
-• 不确定时主动升级人工
-• 客户体验优先
+- 礼貌、有温度、同理心
+- 简洁、易懂、避免堆叠术语
+- 关键信息缺失时用问题最小化补齐
+- 风险/投诉场景优先建议升级人工
 
-可用工具：
-- analyzeConversation: 深度情感分析（MCP）
+可用工具（按需使用，默认不调用）：
 - getCustomerProfile: 查看客户画像（MCP）
 - searchKnowledge: 知识库检索（MCP）
 
-输出要求：
-你必须输出JSON格式的结构化结果，包含以下字段：
+说明：
+- 情感/风险分析由模型自身推理完成，无需依赖外部工具。
+- 只有在需要补充客户画像或知识库内容时才调用工具。
+
+输出要求（强制）：
+- 只输出JSON，禁止额外解释或Markdown
+- 字段必须完整，类型必须正确
+- clarification_questions 仅在需要时填写，否则为空数组
+- suggested_reply 可直接发给客户，避免承诺无法保证的时效
+
+JSON格式：
 
 {
   "sentiment_analysis": {
@@ -143,6 +154,7 @@ class AssistantAgent(ReActAgent):
         formatter: OpenAIChatFormatter,
         toolkit: Toolkit,
         mcp_client: BackendMCPClient,
+        persistence: PersistenceClient | None = None,
         memory: InMemoryMemory | None = None,
         max_iters: int = 6,
     ) -> None:
@@ -156,15 +168,54 @@ class AssistantAgent(ReActAgent):
             max_iters=max_iters,
         )
         self.mcp_client = mcp_client
-        self._prompt_filename = "assistant_agent.md"
+        self.persistence = persistence
+        self._prompt_filename = "agents/assistant/base.md"
 
     async def __call__(self, msg: Msg) -> Msg:
         # Hot reload prompt on each call
         base_prompt = prompt_registry.get(self._prompt_filename, fallback=ASSISTANT_AGENT_PROMPT)
+        if self.persistence:
+            memory = PersistentMemory(
+                self.persistence,
+                msg.metadata.get("conversationId") if msg.metadata else None,
+                self.name,
+            )
+            await memory.hydrate()
+            self.memory = memory
         if os.getenv("AGENTSCOPE_PREFETCH_ENABLED", "false").lower() == "true":
             await self._prefetch_context(msg)
-        self.sys_prompt = self._inject_prefetch_context(base_prompt, msg.metadata or {})
-        return await super().__call__(msg)
+        combined_prompt = build_agent_prompt(base_prompt, "assistant", msg.metadata or {})
+        self.sys_prompt = self._inject_prefetch_context(combined_prompt, msg.metadata or {})
+        start = time.time()
+        try:
+            response = await super().__call__(msg)
+            if self.persistence:
+                await self.persistence.record_agent_call(
+                    conversation_id=msg.metadata.get("conversationId") if msg.metadata else None,
+                    agent_name=self.name,
+                    agent_role="assistant",
+                    mode=msg.metadata.get("mode") if msg.metadata else None,
+                    status="success",
+                    duration_ms=int((time.time() - start) * 1000),
+                    input_payload={"content": msg.content},
+                    output_payload={"content": response.content},
+                    metadata=msg.metadata or {},
+                )
+            return response
+        except Exception as exc:
+            if self.persistence:
+                await self.persistence.record_agent_call(
+                    conversation_id=msg.metadata.get("conversationId") if msg.metadata else None,
+                    agent_name=self.name,
+                    agent_role="assistant",
+                    mode=msg.metadata.get("mode") if msg.metadata else None,
+                    status="error",
+                    duration_ms=int((time.time() - start) * 1000),
+                    input_payload={"content": msg.content},
+                    error_message=str(exc),
+                    metadata=msg.metadata or {},
+                )
+            raise
 
     async def _prefetch_context(self, msg: Msg) -> None:
         metadata = msg.metadata or {}
@@ -210,7 +261,8 @@ class AssistantAgent(ReActAgent):
     async def create(
         cls,
         toolkit: Toolkit,
-        mcp_client: BackendMCPClient
+        mcp_client: BackendMCPClient,
+        persistence: PersistenceClient | None = None,
     ) -> "AssistantAgent":
         """
         创建AssistantAgent实例
@@ -238,18 +290,19 @@ class AssistantAgent(ReActAgent):
 
         return cls(
             name="AssistantAgent",
-            sys_prompt=prompt_registry.get("assistant_agent.md", fallback=ASSISTANT_AGENT_PROMPT),
+            sys_prompt=prompt_registry.get("agents/assistant/base.md", fallback=ASSISTANT_AGENT_PROMPT),
             model=model,
             formatter=formatter,
             toolkit=toolkit,
             mcp_client=mcp_client,
+            persistence=persistence,
             memory=InMemoryMemory(),
             max_iters=6,  # 最多6轮对话
         )
 
     async def analyze_sentiment(self, msg: Msg) -> dict[str, Any]:
         """
-        情感分析（通过MCP调用后端）
+        情感分析（模型侧推理，无需MCP）
 
         Args:
             msg: 用户消息
@@ -257,24 +310,29 @@ class AssistantAgent(ReActAgent):
         Returns:
             情感分析结果
         """
-        try:
-            conversation_id = msg.metadata.get("conversationId", msg.id)
-            result = await self.mcp_client.call_tool(
-                "analyzeConversation",
-                conversationId=conversation_id,
-                context="sentiment",
-                includeHistory=True,
-            )
-            return result
-        except Exception as e:
-            # 降级：返回中性情感
+        content = msg.content or ""
+        negative_keywords = ["烂", "差", "垃圾", "投诉", "退款", "不满意", "太差", "欺骗", "生气", "愤怒"]
+        positive_keywords = ["谢谢", "很好", "满意", "赞", "表扬", "不错"]
+        if any(kw in content for kw in negative_keywords):
             return {
-                "sentiment": "neutral",
-                "intensity": "calm",
-                "score": 0.7,
-                "risk_level": "low",
-                "error": str(e)
+                "sentiment": "negative",
+                "intensity": "angry",
+                "score": 0.2,
+                "risk_level": "high",
             }
+        if any(kw in content for kw in positive_keywords):
+            return {
+                "sentiment": "positive",
+                "intensity": "calm",
+                "score": 0.85,
+                "risk_level": "low",
+            }
+        return {
+            "sentiment": "neutral",
+            "intensity": "calm",
+            "score": 0.7,
+            "risk_level": "low",
+        }
 
     async def get_customer_profile(self, customer_id: str) -> dict[str, Any]:
         """

@@ -15,6 +15,7 @@ export class TaskResponseDTO {
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
+  metadata?: Record<string, unknown>;
 
   static fromTask(task: Task): TaskResponseDTO {
     const dto = new TaskResponseDTO();
@@ -32,6 +33,7 @@ export class TaskResponseDTO {
     dto.completedAt = task.completedAt?.toISOString();
     dto.createdAt = task.createdAt.toISOString();
     dto.updatedAt = task.updatedAt.toISOString();
+    dto.metadata = task.metadata;
     return dto;
   }
 }

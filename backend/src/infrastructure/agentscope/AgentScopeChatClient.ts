@@ -6,6 +6,7 @@ export interface AgentScopeChatRequest {
   customerId: string;
   message: string;
   metadata?: Record<string, unknown>;
+  agentName?: string;
 }
 
 export interface AgentScopeChatResponse {
@@ -166,7 +167,10 @@ export class AgentScopeChatClient {
           conversation_id: request.conversationId,
           message: request.message,
           customer_id: request.customerId,
-          metadata: request.metadata ?? {},
+          metadata: {
+            ...(request.metadata ?? {}),
+            agentName: request.agentName,
+          },
         }),
         signal: controller.signal,
       });
