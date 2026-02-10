@@ -16,6 +16,10 @@ export interface ConversationListItemDTO {
   status: string;
   priority: string;
   slaStatus: string;
+  issueDescription?: string;
+  relatedProduct?: string;
+  tags?: string[];
+  unreadCount?: number;
   createdAt: string;
   updatedAt: string;
   closedAt?: string;
@@ -37,6 +41,11 @@ export class ConversationListResponseDTO {
     const dto = new ConversationListResponseDTO();
     dto.items = conversations.map((conversation) => {
       const lastMessage = conversation.messages[conversation.messages.length - 1];
+      const metadata = conversation.metadata ?? {};
+      const issueDescription = (metadata as { issueDescription?: string }).issueDescription;
+      const relatedProduct = (metadata as { relatedProduct?: string }).relatedProduct;
+      const tags = (metadata as { tags?: string[] }).tags;
+      const unreadCount = (metadata as { unreadCount?: number }).unreadCount;
 
       return {
         id: conversation.id,
@@ -46,6 +55,10 @@ export class ConversationListResponseDTO {
         status: conversation.status,
         priority: conversation.priority,
         slaStatus: conversation.slaStatus,
+        issueDescription,
+        relatedProduct,
+        tags: Array.isArray(tags) ? tags : [],
+        unreadCount: typeof unreadCount === 'number' ? unreadCount : 0,
         createdAt: conversation.createdAt.toISOString(),
         updatedAt: conversation.updatedAt.toISOString(),
         closedAt: conversation.closedAt?.toISOString(),

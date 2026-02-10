@@ -14,6 +14,30 @@ export function customerRoutes(
     await profileController.getProfile(request, reply);
   });
 
+  fastify.post('/api/customers', {
+    config: { permissions: ['customers.write'] },
+  }, async (request, reply) => {
+    await profileController.createProfile(request, reply);
+  });
+
+  fastify.post('/api/customers/:id/bind-external', {
+    config: { permissions: ['customers.write'] },
+  }, async (request, reply) => {
+    await profileController.bindExternalIdentity(request, reply);
+  });
+
+  fastify.get('/api/customers/:id/bindings', {
+    config: { permissions: ['customers.read'] },
+  }, async (request, reply) => {
+    await profileController.getBindings(request, reply);
+  });
+
+  fastify.delete('/api/customers/:id/bindings', {
+    config: { permissions: ['customers.write'] },
+  }, async (request, reply) => {
+    await profileController.unbindExternalIdentity(request, reply);
+  });
+
   fastify.post('/api/customers/:id/refresh', {
     config: { permissions: ['customers.write'] },
   }, async (request, reply) => {

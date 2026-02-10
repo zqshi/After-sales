@@ -110,10 +110,14 @@ import { CloseConversationUseCase } from './application/use-cases/CloseConversat
 import { CreateConversationUseCase } from './application/use-cases/CreateConversationUseCase';
 import { AddInteractionUseCase } from './application/use-cases/customer/AddInteractionUseCase';
 import { AddServiceRecordUseCase } from './application/use-cases/customer/AddServiceRecordUseCase';
+import { BindExternalIdentityUseCase } from './application/use-cases/customer/BindExternalIdentityUseCase';
+import { CreateCustomerProfileUseCase } from './application/use-cases/customer/CreateCustomerProfileUseCase';
+import { GetCustomerBindingsUseCase } from './application/use-cases/customer/GetCustomerBindingsUseCase';
 import { GetCustomerInteractionsUseCase } from './application/use-cases/customer/GetCustomerInteractionsUseCase';
 import { GetCustomerProfileUseCase } from './application/use-cases/customer/GetCustomerProfileUseCase';
 import { MarkCustomerAsVIPUseCase } from './application/use-cases/customer/MarkCustomerAsVIPUseCase';
 import { RefreshCustomerProfileUseCase } from './application/use-cases/customer/RefreshCustomerProfileUseCase';
+import { UnbindExternalIdentityUseCase } from './application/use-cases/customer/UnbindExternalIdentityUseCase';
 import { UpdateCommitmentProgressUseCase } from './application/use-cases/customer/UpdateCommitmentProgressUseCase';
 import { GetConversationUseCase } from './application/use-cases/GetConversationUseCase';
 import { ListConversationsUseCase } from './application/use-cases/ListConversationsUseCase';
@@ -132,6 +136,7 @@ import { OutboxProcessor } from './infrastructure/events/OutboxProcessor';
 import { TempDirCleaner } from './infrastructure/maintenance/TempDirCleaner';
 import { ConversationRepository } from './infrastructure/repositories/ConversationRepository';
 import { CustomerProfileRepository } from './infrastructure/repositories/CustomerProfileRepository';
+import { ExternalIdentityRepository } from './infrastructure/repositories/ExternalIdentityRepository';
 import { QualityReportRepository } from './infrastructure/repositories/QualityReportRepository';
 import { SurveyRepository } from './infrastructure/repositories/SurveyRepository';
 import { ActionStepExecutor } from './infrastructure/workflow/executors/ActionStepExecutor';
@@ -210,6 +215,7 @@ export async function createApp(
   const agentCallRepository = new AgentCallRepository(dataSource);
   const agentMemoryRepository = new AgentMemoryRepository(dataSource);
   const customerProfileRepository = new CustomerProfileRepository(dataSource);
+  const externalIdentityRepository = new ExternalIdentityRepository(dataSource);
   const requirementRepository = new RequirementRepository(dataSource, outboxEventBus);
   const problemRepository = new ProblemRepository(dataSource);
   const reviewRequestRepository = new ReviewRequestRepository(dataSource);
@@ -271,6 +277,22 @@ export async function createApp(
     conversationRepository,
   );
 
+  const createCustomerProfileUseCase = new CreateCustomerProfileUseCase(
+    customerProfileRepository,
+    externalIdentityRepository,
+  );
+  const bindExternalIdentityUseCase = new BindExternalIdentityUseCase(
+    customerProfileRepository,
+    externalIdentityRepository,
+  );
+  const getCustomerBindingsUseCase = new GetCustomerBindingsUseCase(
+    customerProfileRepository,
+    externalIdentityRepository,
+  );
+  const unbindExternalIdentityUseCase = new UnbindExternalIdentityUseCase(
+    customerProfileRepository,
+    externalIdentityRepository,
+  );
   const getCustomerProfileUseCase = new GetCustomerProfileUseCase(
     customerProfileRepository,
   );
@@ -386,6 +408,10 @@ export async function createApp(
   );
 
   const customerProfileController = new CustomerProfileController(
+    createCustomerProfileUseCase,
+    bindExternalIdentityUseCase,
+    getCustomerBindingsUseCase,
+    unbindExternalIdentityUseCase,
     getCustomerProfileUseCase,
     refreshCustomerProfileUseCase,
     getCustomerInteractionsUseCase,
@@ -578,6 +604,7 @@ export async function createApp(
     taskRepository,
     conversationRepository,
     customerProfileRepository,
+    externalIdentityRepository,
     sendMessageUseCase,
     reviewRequestRepository,
     completeReviewRequestUseCase,

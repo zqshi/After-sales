@@ -21,6 +21,7 @@ import { ListConversationsUseCase } from '../../../application/use-cases/ListCon
 import { SendMessageUseCase } from '../../../application/use-cases/SendMessageUseCase';
 import { UpdateConversationUseCase } from '../../../application/use-cases/UpdateConversationUseCase';
 import { ValidationError } from '../../../infrastructure/validation/Validator';
+import { normalizeCustomerId } from '../../../domain/customer/CustomerId';
 
 export class ConversationController {
   constructor(
@@ -43,7 +44,10 @@ export class ConversationController {
   ): Promise<void> {
     try {
       const payload = request.body as CreateConversationRequestDTO;
-      const result = await this.createConversationUseCase.execute(payload);
+      const result = await this.createConversationUseCase.execute({
+        ...payload,
+        customerId: this.normalizeCustomerIdForChannel(payload.customerId, payload.channel),
+      });
 
       void reply.code(201).send({
         success: true,
@@ -52,6 +56,18 @@ export class ConversationController {
     } catch (error) {
       this.handleError(error, reply);
     }
+  }
+
+  private normalizeCustomerIdForChannel(customerId: string, channel: string): string {
+    const normalizedChannel = typeof channel === 'string' ? channel.toLowerCase() : '';
+    const thirdPartyChannels = new Set(['feishu', 'wecom', 'wechat', 'qq', 'dingtalk']);
+    if (!thirdPartyChannels.has(normalizedChannel)) {
+      return customerId;
+    }
+    return normalizeCustomerId({
+      customerId,
+      channel: normalizedChannel,
+    });
   }
 
   /**
@@ -211,6 +227,47 @@ export class ConversationController {
       void reply.code(200).send({
         success: true,
         data: result,
+      });
+    } catch (error) {
+      this.handleError(error, reply);
+    }
+  }
+
+  /**
+   * GET /api/conversations/:id/messages/:messageId
+   * 获取指定消息（用于定位）
+   */
+  async getMessage(
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    try {
+      const { id: conversationId, messageId } = request.params as {
+        id: string;
+        messageId: string;
+      };
+
+      const result = await this.getConversationUseCase.execute({
+        conversationId,
+        includeMessages: true,
+        userId: this.getUserId(request),
+      });
+
+      const message = result.messages.find((item) => item.id === messageId);
+      if (!message) {
+        void reply.code(404).send({
+          success: false,
+          error: {
+            message: `Message not found: ${messageId}`,
+            code: 'NOT_FOUND',
+          },
+        });
+        return;
+      }
+
+      void reply.code(200).send({
+        success: true,
+        data: message,
       });
     } catch (error) {
       this.handleError(error, reply);

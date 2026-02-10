@@ -10,6 +10,7 @@
 ## 📋 目录
 
 - [API概览](#api概览)
+- [API覆盖与缺口报告](#api覆盖与缺口报告)
 - [Agent管理API](#agent管理api)
 - [质检API](#质检api)
 - [对话处理API](#对话处理api)
@@ -54,6 +55,19 @@
 > 备注：`/api/orchestrator/*` 相关路由为规划接口，当前实现未提供。
 
 **未来计划**: API Key认证
+
+---
+
+## API覆盖与缺口报告
+
+项目内所有API与缺口的静态扫描报告已生成：
+
+- `docs/api/API_COVERAGE.md`
+- `docs/api/API_COVERAGE.html`
+- `docs/api/API_REFERENCE_FULL.md`
+- `docs/api/API_REFERENCE_FULL.html`
+
+> 说明：报告包含 Fastify 后端（/api/v1 + /metrics + /health）、AgentScope 服务（5000端口）以及前端调用扫描结果，并标注潜在缺口与未使用接口。
 
 ---
 
@@ -584,3 +598,7 @@ MCP（Model Context Protocol）工具由Backend提供，AgentScope通过HTTP调�
 
 **文档维护者**: After-Sales 开发团队
 **最后更新**: 2026-01-26
+
+## API 模块文档
+
+模块级文档已生成于 `docs/api/modules/`。

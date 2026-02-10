@@ -24,8 +24,10 @@ import { CreateTaskUseCase } from '@application/use-cases/task/CreateTaskUseCase
 import { config } from '@config/app.config';
 import { isImChannel } from '@domain/conversation/constants';
 import { AgentMode , Conversation } from '@domain/conversation/models/Conversation';
+import { normalizeCustomerId } from '@domain/customer/CustomerId';
 import { ConversationRepository } from '@infrastructure/repositories/ConversationRepository';
 import { CustomerProfileRepository } from '@infrastructure/repositories/CustomerProfileRepository';
+import { ExternalIdentityRepository } from '@infrastructure/repositories/ExternalIdentityRepository';
 import { ProblemRepository } from '@infrastructure/repositories/ProblemRepository';
 import { QualityReportRepository } from '@infrastructure/repositories/QualityReportRepository';
 import { ReviewRequestRepository } from '@infrastructure/repositories/ReviewRequestRepository';
@@ -50,6 +52,7 @@ export class ImController {
     private readonly taskRepository: TaskRepository,
     private readonly conversationRepository: ConversationRepository,
     private readonly customerProfileRepository: CustomerProfileRepository,
+    private readonly externalIdentityRepository: ExternalIdentityRepository,
     private readonly sendMessageUseCase: SendMessageUseCase,
     private readonly reviewRequestRepository: ReviewRequestRepository,
     private readonly completeReviewRequestUseCase: CompleteReviewRequestUseCase,
@@ -77,9 +80,12 @@ export class ImController {
         });
       }
 
+      const normalizedCustomerId = this.normalizeIncomingCustomerId(body);
+      await this.ensureExternalIdentityMapping(body, normalizedCustomerId);
+
       // 2. 调用ConversationTaskCoordinator处理消息
       const processingResult = await this.coordinator.processCustomerMessage({
-        customerId: body.customerId,
+        customerId: normalizedCustomerId,
         content: body.content,
         channel: body.channel,
         senderId: body.senderId,
@@ -255,6 +261,47 @@ export class ImController {
         success: false,
         error: error instanceof Error ? error.message : '服务器内部错误',
       });
+    }
+  }
+
+  private normalizeIncomingCustomerId(body: IncomingMessageRequest): string {
+    const channel = typeof body.channel === 'string' ? body.channel.toLowerCase() : '';
+    const thirdPartyChannels = new Set(['feishu', 'wecom', 'wechat', 'qq', 'dingtalk']);
+    if (!thirdPartyChannels.has(channel)) {
+      return body.customerId;
+    }
+    const identityType = typeof (body.metadata as any)?.identityType === 'string'
+      ? (body.metadata as any).identityType as 'user' | 'group' | 'anon'
+      : undefined;
+    return normalizeCustomerId({
+      customerId: body.customerId,
+      channel,
+      identityType,
+    });
+  }
+
+  private async ensureExternalIdentityMapping(
+    body: IncomingMessageRequest,
+    normalizedCustomerId: string,
+  ): Promise<void> {
+    const channel = typeof body.channel === 'string' ? body.channel.toLowerCase() : '';
+    const thirdPartyChannels = new Set(['feishu', 'wecom', 'wechat', 'qq', 'dingtalk']);
+    if (!thirdPartyChannels.has(channel)) {
+      return;
+    }
+    const identityType = typeof (body.metadata as any)?.identityType === 'string'
+      ? (body.metadata as any).identityType as 'user' | 'group' | 'anon'
+      : 'user';
+    try {
+      await this.externalIdentityRepository.upsert({
+        customerId: normalizedCustomerId,
+        channel,
+        externalType: identityType,
+        externalId: body.customerId,
+        metadata: body.metadata ?? {},
+      });
+    } catch (err) {
+      console.warn('[ImController] external identity upsert failed', err);
     }
   }
 

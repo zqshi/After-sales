@@ -111,6 +111,12 @@ export function conversationRoutes(
    *         schema:
    *           type: integer
    *           minimum: 1
+   *     description: |
+   *       返回对话时间线条目，包含历史对话摘要字段：
+   *       - issueDescription: 问题描述摘要（来自对话metadata）
+   *       - relatedProduct: 关联产品（来自对话metadata）
+   *       - tags: 标签数组（来自对话metadata）
+   *       - unreadCount: 未读数量（来自对话metadata）
    *     responses:
    *       200:
    *         description: 对话列表
@@ -293,6 +299,42 @@ export function conversationRoutes(
     },
     async (request, reply) => {
       await controller.sendMessage(request, reply);
+    },
+  );
+
+  /**
+   * @swagger
+   * /api/conversations/{id}/messages/{messageId}:
+   *   get:
+   *     tags:
+   *       - Conversations
+   *     summary: 定位消息
+   *     description: 获取指定消息在对话中的详情，用于前端定位。
+   *     parameters:
+   *       - name: id
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *       - name: messageId
+   *         in: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: 消息详情
+   *       404:
+   *         description: 对话或消息不存在
+   */
+  fastify.get(
+    '/api/conversations/:id/messages/:messageId',
+    {
+      config: { permissions: ['conversations.read'] },
+      preHandler: [accessMiddleware.checkConversationAccess('read')],
+    },
+    async (request, reply) => {
+      await controller.getMessage(request, reply);
     },
   );
 
